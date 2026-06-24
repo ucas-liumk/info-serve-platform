@@ -63,6 +63,15 @@ export const constantRoutes: RouteRecordRaw[] = [
     hidden: true
   },
   {
+    path: '/appcenter',
+    component: () => import('@/layout/portal/index.vue'),
+    children: [
+      { path: '', name: 'AppPortal', component: () => import('@/views/appcenter/portal/index.vue'), meta: { title: '应用广场' } },
+      { path: 'favorites', name: 'AppFavorites', component: () => import('@/views/appcenter/portal/favorites.vue'), meta: { title: '收藏应用' } },
+      { path: 'messages', name: 'AppMessages', component: () => import('@/views/appcenter/portal/messages.vue'), meta: { title: '消息中心' } }
+    ]
+  },
+  {
     path: '',
     component: Layout,
     redirect: '/index',

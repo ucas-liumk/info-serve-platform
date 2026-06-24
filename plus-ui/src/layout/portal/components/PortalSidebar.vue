@@ -26,8 +26,12 @@ import { unreadCount } from '@/api/appcenter/portal';
 const unread = ref(0);
 
 onMounted(async () => {
-  const res: any = await unreadCount();
-  unread.value = res.data || 0;
+  try {
+    const res: any = await unreadCount();
+    unread.value = res.data || 0;
+  } catch (e) {
+    console.error('加载未读消息数失败', e);
+  }
 });
 </script>
 
