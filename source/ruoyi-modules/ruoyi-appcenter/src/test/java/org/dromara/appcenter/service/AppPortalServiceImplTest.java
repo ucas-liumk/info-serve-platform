@@ -282,7 +282,33 @@ class AppPortalServiceImplTest {
     // ============================================================
 
     @Test
+    void favorite_add_whenAppMissingOrOffline_shouldThrow() {
+        // Case 1: app not found (null)
+        when(applicationMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.favorite(999L, true))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("不存在或已下架");
+        verify(favoriteMapper, never()).insert(any(AppFavorite.class));
+
+        // Case 2: app found but offline (status = "1")
+        AppApplication offlineApp = new AppApplication();
+        offlineApp.setAppId(998L);
+        offlineApp.setStatus("1");
+        when(applicationMapper.selectById(998L)).thenReturn(offlineApp);
+
+        assertThatThrownBy(() -> service.favorite(998L, true))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("不存在或已下架");
+        verify(favoriteMapper, never()).insert(any(AppFavorite.class));
+    }
+
+    @Test
     void favorite_add_whenNotExists_shouldInsert() {
+        AppApplication onlineApp = new AppApplication();
+        onlineApp.setAppId(1L);
+        onlineApp.setStatus("0");
+        when(applicationMapper.selectById(1L)).thenReturn(onlineApp);
         when(favoriteMapper.selectCount(any())).thenReturn(0L);
         when(favoriteMapper.insert(any(AppFavorite.class))).thenReturn(1);
 
@@ -293,6 +319,10 @@ class AppPortalServiceImplTest {
 
     @Test
     void favorite_add_whenAlreadyExists_shouldNotInsert() {
+        AppApplication onlineApp = new AppApplication();
+        onlineApp.setAppId(1L);
+        onlineApp.setStatus("0");
+        when(applicationMapper.selectById(1L)).thenReturn(onlineApp);
         when(favoriteMapper.selectCount(any())).thenReturn(1L);
 
         service.favorite(1L, true);
@@ -324,8 +354,36 @@ class AppPortalServiceImplTest {
     // ============================================================
 
     @Test
+    void recommend_add_whenAppMissingOrOffline_shouldThrow() {
+        // Case 1: app not found (null)
+        when(applicationMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.recommend(999L, true))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("不存在或已下架");
+        verify(recommendMapper, never()).insert(any(AppRecommend.class));
+        verify(applicationMapper, never()).update(any(), any());
+
+        // Case 2: app found but offline (status = "1")
+        AppApplication offlineApp = new AppApplication();
+        offlineApp.setAppId(998L);
+        offlineApp.setStatus("1");
+        when(applicationMapper.selectById(998L)).thenReturn(offlineApp);
+
+        assertThatThrownBy(() -> service.recommend(998L, true))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("不存在或已下架");
+        verify(recommendMapper, never()).insert(any(AppRecommend.class));
+        verify(applicationMapper, never()).update(any(), any());
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void recommend_add_whenNotExists_shouldInsertAndIncrementCount() {
+        AppApplication onlineApp = new AppApplication();
+        onlineApp.setAppId(1L);
+        onlineApp.setStatus("0");
+        when(applicationMapper.selectById(1L)).thenReturn(onlineApp);
         when(recommendMapper.selectCount(any())).thenReturn(0L);
         when(recommendMapper.insert(any(AppRecommend.class))).thenReturn(1);
         when(applicationMapper.update(isNull(), any())).thenReturn(1);
@@ -342,6 +400,10 @@ class AppPortalServiceImplTest {
 
     @Test
     void recommend_add_whenAlreadyExists_shouldNotInsert() {
+        AppApplication onlineApp = new AppApplication();
+        onlineApp.setAppId(1L);
+        onlineApp.setStatus("0");
+        when(applicationMapper.selectById(1L)).thenReturn(onlineApp);
         when(recommendMapper.selectCount(any())).thenReturn(1L);
 
         service.recommend(1L, true);

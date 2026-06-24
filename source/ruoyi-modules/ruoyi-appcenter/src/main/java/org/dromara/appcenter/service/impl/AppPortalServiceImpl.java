@@ -115,6 +115,12 @@ public class AppPortalServiceImpl implements IAppPortalService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void favorite(Long appId, boolean add) {
+        if (add) {
+            AppApplication app = applicationMapper.selectById(appId);
+            if (app == null || !"0".equals(app.getStatus())) {
+                throw new ServiceException("应用不存在或已下架");
+            }
+        }
         Long userId = LoginHelper.getUserId();
         Long exist = favoriteMapper.selectCount(Wrappers.<AppFavorite>lambdaQuery()
             .eq(AppFavorite::getUserId, userId).eq(AppFavorite::getAppId, appId));
@@ -133,6 +139,12 @@ public class AppPortalServiceImpl implements IAppPortalService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void recommend(Long appId, boolean add) {
+        if (add) {
+            AppApplication app = applicationMapper.selectById(appId);
+            if (app == null || !"0".equals(app.getStatus())) {
+                throw new ServiceException("应用不存在或已下架");
+            }
+        }
         Long userId = LoginHelper.getUserId();
         Long exist = recommendMapper.selectCount(Wrappers.<AppRecommend>lambdaQuery()
             .eq(AppRecommend::getUserId, userId).eq(AppRecommend::getAppId, appId));
