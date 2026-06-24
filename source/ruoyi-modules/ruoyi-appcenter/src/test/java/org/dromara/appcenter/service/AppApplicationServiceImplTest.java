@@ -1,23 +1,30 @@
 package org.dromara.appcenter.service;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.github.linpeilie.Converter;
 import org.dromara.appcenter.domain.AppApplication;
 import org.dromara.appcenter.domain.bo.AppApplicationBo;
 import org.dromara.appcenter.domain.vo.AppApplicationVo;
 import org.dromara.appcenter.mapper.AppApplicationMapper;
 import org.dromara.appcenter.service.impl.AppApplicationServiceImpl;
+import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,6 +34,62 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AppApplicationServiceImplTest {
+
+    /**
+     * Class-level Converter mock injected into MapstructUtils.CONVERTER via sun.misc.Unsafe
+     * (accessed reflectively to avoid a compile-time dependency on internal JDK APIs).
+     * Unsafe.putObject bypasses the "final" restriction for static fields in user classes.
+     */
+    static Converter converterMock;
+    private static Converter savedConverter;
+    private static Object unsafe;     // sun.misc.Unsafe, held as Object to avoid import
+    private static long converterOffset;
+    private static Object converterFieldBase;
+
+    @BeforeAll
+    static void initConverterMock() throws Exception {
+        converterMock = mock(Converter.class);
+
+        // Ensure MapstructUtils is class-initialized — use a SpringUtil static mock so
+        // its static initializer (which calls SpringUtil.getBean) can succeed.
+        try (MockedStatic<SpringUtil> suMock = mockStatic(SpringUtil.class)) {
+            suMock.when(() -> SpringUtil.getBean(Converter.class)).thenReturn(converterMock);
+            Class.forName("org.dromara.common.core.utils.MapstructUtils");
+        } catch (Exception ignored) {
+            // Class may already be initialized — proceed with Unsafe injection below
+        }
+
+        // Obtain sun.misc.Unsafe via reflection (avoids compile-time import of internal API)
+        Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+        Field theUnsafeField = unsafeClass.getDeclaredField("theUnsafe");
+        theUnsafeField.setAccessible(true);
+        unsafe = theUnsafeField.get(null);
+
+        // Locate the MapstructUtils.CONVERTER static field
+        Field converterField = MapstructUtils.class.getDeclaredField("CONVERTER");
+        converterField.setAccessible(true);
+
+        Method staticFieldOffset = unsafeClass.getMethod("staticFieldOffset", Field.class);
+        Method staticFieldBase = unsafeClass.getMethod("staticFieldBase", Field.class);
+        Method getObject = unsafeClass.getMethod("getObject", Object.class, long.class);
+        Method putObject = unsafeClass.getMethod("putObject", Object.class, long.class, Object.class);
+
+        converterOffset = (long) staticFieldOffset.invoke(unsafe, converterField);
+        converterFieldBase = staticFieldBase.invoke(unsafe, converterField);
+        savedConverter = (Converter) getObject.invoke(unsafe, converterFieldBase, converterOffset);
+
+        // Replace CONVERTER with our mock — Unsafe bypasses the final restriction
+        putObject.invoke(unsafe, converterFieldBase, converterOffset, converterMock);
+    }
+
+    @AfterAll
+    static void restoreConverter() throws Exception {
+        if (unsafe != null) {
+            Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+            Method putObject = unsafeClass.getMethod("putObject", Object.class, long.class, Object.class);
+            putObject.invoke(unsafe, converterFieldBase, converterOffset, savedConverter);
+        }
+    }
 
     @Mock
     private AppApplicationMapper baseMapper;
@@ -41,6 +104,7 @@ class AppApplicationServiceImplTest {
         pageQuery = new PageQuery();
         pageQuery.setPageNum(1);
         pageQuery.setPageSize(10);
+        clearInvocations(converterMock);
     }
 
     @Test
@@ -189,5 +253,52 @@ class AppApplicationServiceImplTest {
 
         assertThat(result).isEmpty();
         verify(baseMapper).selectVoList(any());
+    }
+
+    // ============================================================
+    // insertByBo / updateByBo — cover MapstructUtils.convert paths
+    // converterMock is injected into MapstructUtils.CONVERTER in @BeforeAll
+    // ============================================================
+
+    @Test
+    void insertByBo_shouldCallInsertAndReturnTrue() {
+        doReturn(new AppApplication()).when(converterMock).convert(any(AppApplicationBo.class), eq(AppApplication.class));
+        when(baseMapper.insert(any(AppApplication.class))).thenReturn(1);
+
+        Boolean result = service.insertByBo(new AppApplicationBo());
+
+        assertThat(result).isTrue();
+        verify(baseMapper).insert(any(AppApplication.class));
+    }
+
+    @Test
+    void insertByBo_shouldReturnFalseWhenInsertFails() {
+        doReturn(new AppApplication()).when(converterMock).convert(any(AppApplicationBo.class), eq(AppApplication.class));
+        when(baseMapper.insert(any(AppApplication.class))).thenReturn(0);
+
+        Boolean result = service.insertByBo(new AppApplicationBo());
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void updateByBo_shouldCallUpdateByIdAndReturnTrue() {
+        doReturn(new AppApplication()).when(converterMock).convert(any(AppApplicationBo.class), eq(AppApplication.class));
+        when(baseMapper.updateById(any(AppApplication.class))).thenReturn(1);
+
+        Boolean result = service.updateByBo(new AppApplicationBo());
+
+        assertThat(result).isTrue();
+        verify(baseMapper).updateById(any(AppApplication.class));
+    }
+
+    @Test
+    void updateByBo_shouldReturnFalseWhenUpdateFails() {
+        doReturn(new AppApplication()).when(converterMock).convert(any(AppApplicationBo.class), eq(AppApplication.class));
+        when(baseMapper.updateById(any(AppApplication.class))).thenReturn(0);
+
+        Boolean result = service.updateByBo(new AppApplicationBo());
+
+        assertThat(result).isFalse();
     }
 }

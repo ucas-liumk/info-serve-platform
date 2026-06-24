@@ -66,7 +66,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
         return dataInfo;
     }
 
-    List<PortalAppVo> toPortalVos(List<AppApplication> apps) {
+    private List<PortalAppVo> toPortalVos(List<AppApplication> apps) {
         if (apps.isEmpty()) {
             return Collections.emptyList();
         }

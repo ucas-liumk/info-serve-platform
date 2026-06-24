@@ -1,5 +1,6 @@
 package org.dromara.appcenter.service;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.dromara.appcenter.domain.*;
 import org.dromara.appcenter.domain.vo.AppCategoryVo;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -256,6 +258,7 @@ class AppPortalServiceImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void use_appOnline_shouldReturnAccessUrlAndIncrementUseCount() {
         AppApplication app = new AppApplication();
         app.setAppId(1L);
@@ -267,7 +270,11 @@ class AppPortalServiceImplTest {
         String result = service.use(1L);
 
         assertThat(result).isEqualTo("https://example.com/app");
-        verify(applicationMapper).update(isNull(), any());
+
+        ArgumentCaptor<LambdaUpdateWrapper<AppApplication>> cap =
+            ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(applicationMapper).update(isNull(), cap.capture());
+        assertThat(cap.getValue().getSqlSet()).contains("use_count = use_count + 1");
     }
 
     // ============================================================
@@ -317,6 +324,7 @@ class AppPortalServiceImplTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("unchecked")
     void recommend_add_whenNotExists_shouldInsertAndIncrementCount() {
         when(recommendMapper.selectCount(any())).thenReturn(0L);
         when(recommendMapper.insert(any(AppRecommend.class))).thenReturn(1);
@@ -325,7 +333,11 @@ class AppPortalServiceImplTest {
         service.recommend(1L, true);
 
         verify(recommendMapper).insert(any(AppRecommend.class));
-        verify(applicationMapper).update(isNull(), any());
+
+        ArgumentCaptor<LambdaUpdateWrapper<AppApplication>> cap =
+            ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(applicationMapper).update(isNull(), cap.capture());
+        assertThat(cap.getValue().getSqlSet()).contains("recommend_count = recommend_count + 1");
     }
 
     @Test
