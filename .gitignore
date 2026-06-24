@@ -1,0 +1,16 @@
+# build outputs
+**/target/
+plus-ui/node_modules/
+plus-ui/dist/
+plus-ui/.eslintcache
+# runtime data & logs
+data/
+logs/
+# generated initdb (regenerate via deploy/scripts/generate-initdb.py)
+deploy/initdb-mysql/
+deploy/initdb-postgres/
+# SDD scratch ledger
+.superpowers/
+# misc
+.DS_Store
+*.class
