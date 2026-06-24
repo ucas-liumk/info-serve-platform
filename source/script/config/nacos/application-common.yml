@@ -295,3 +295,7 @@ tenant:
     - sys_client
     - sys_oss_config
     - flow_spel
+    - app_category
+    - app_favorite
+    - app_message
+    - app_recommend

@@ -241,6 +241,25 @@ services:
     networks:
       - infosys-ruoyi-cloud-plus
 
+  ruoyi-appcenter:
+    image: ${APPCENTER_IMAGE}
+    container_name: infosys-ruoyi-cloud-plus-appcenter
+    restart: unless-stopped
+    environment:
+      <<: *ruoyi-env
+      SERVER_PORT: 9206
+    volumes:
+      - ../logs/appcenter:/ruoyi/appcenter/logs
+    depends_on:
+      nacos:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - infosys-ruoyi-cloud-plus
+
   ruoyi-gen:
     image: ${GEN_IMAGE}
     container_name: infosys-ruoyi-cloud-plus-gen
