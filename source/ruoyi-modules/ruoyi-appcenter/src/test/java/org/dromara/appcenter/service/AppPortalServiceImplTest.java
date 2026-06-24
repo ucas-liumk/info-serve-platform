@@ -351,6 +351,7 @@ class AppPortalServiceImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void recommend_remove_whenExists_shouldDeleteAndDecrementCount() {
         when(recommendMapper.selectCount(any())).thenReturn(1L);
         when(applicationMapper.update(isNull(), any())).thenReturn(1);
@@ -358,7 +359,11 @@ class AppPortalServiceImplTest {
         service.recommend(1L, false);
 
         verify(recommendMapper).delete(any());
-        verify(applicationMapper).update(isNull(), any());
+
+        ArgumentCaptor<LambdaUpdateWrapper<AppApplication>> captor =
+            ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(applicationMapper).update(isNull(), captor.capture());
+        assertThat(captor.getValue().getSqlSet()).contains("recommend_count = GREATEST(recommend_count - 1, 0)");
     }
 
     @Test
