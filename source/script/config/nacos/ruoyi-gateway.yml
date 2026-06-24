@@ -69,6 +69,13 @@ spring:
               uri: lb://ruoyi-workflow
               predicates:
                 - Path=/warm-flow-ui/**,/warm-flow/**
+            # 应用中心
+            - id: ruoyi-appcenter
+              uri: lb://ruoyi-appcenter
+              predicates:
+                - Path=/appcenter/**
+              filters:
+                - StripPrefix=1
             # 演示服务
             - id: ruoyi-demo
               uri: lb://ruoyi-demo
