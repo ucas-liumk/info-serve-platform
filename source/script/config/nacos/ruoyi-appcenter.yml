@@ -14,10 +14,3 @@ mybatis-plus:
   mapper-package: org.dromara.appcenter.mapper
   type-aliases-package: org.dromara.appcenter.domain
 
-# 租户过滤：app_* 表中仅 app_application 含 tenant_id，其余需排除
-tenant:
-  excludes:
-    - app_category
-    - app_favorite
-    - app_message
-    - app_recommend
