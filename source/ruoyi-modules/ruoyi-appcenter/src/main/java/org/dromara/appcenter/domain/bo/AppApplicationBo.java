@@ -1,12 +1,15 @@
 package org.dromara.appcenter.domain.bo;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.dromara.appcenter.domain.AppApplication;
 import org.dromara.common.mybatis.core.domain.BaseEntity;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
+@AutoMapper(target = AppApplication.class)
 public class AppApplicationBo extends BaseEntity {
     private Long appId;
     @NotBlank(message = "应用名称不能为空")

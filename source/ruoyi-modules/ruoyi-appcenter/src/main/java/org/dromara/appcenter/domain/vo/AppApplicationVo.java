@@ -1,11 +1,15 @@
 package org.dromara.appcenter.domain.vo;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import org.dromara.appcenter.domain.AppApplication;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
 @Data
+@AutoMapper(target = AppApplication.class)
 public class AppApplicationVo implements Serializable {
     @Serial private static final long serialVersionUID = 1L;
     private Long appId;

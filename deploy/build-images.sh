@@ -58,4 +58,8 @@ build_java_image() {
   build_java_image "infosys/ruoyi-cloud-plus-monitor:2.6.2" \
     "${SOURCE_DIR}/ruoyi-visual/ruoyi-monitor" \
     "target/ruoyi-monitor.jar"
+
+  build_java_image "infosys/ruoyi-cloud-plus-appcenter:2.6.2" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-appcenter" \
+    "target/ruoyi-appcenter.jar"
 } 2>&1 | tee "${LOG_DIR}/docker-build-images.log"
