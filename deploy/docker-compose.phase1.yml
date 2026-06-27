@@ -1,0 +1,21 @@
+services:
+  nginx-web:
+    volumes:
+      - ../plus-ui/dist:/usr/share/nginx/html:ro
+      - ./nginx.phase1.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../logs/nginx:/var/log/nginx
+
+  ruoyi-monitor:
+    profiles: ["full"]
+
+  ruoyi-snailjob-server:
+    profiles: ["full"]
+
+  ruoyi-gen:
+    profiles: ["full"]
+
+  ruoyi-job:
+    profiles: ["full"]
+
+  ruoyi-workflow:
+    profiles: ["full"]

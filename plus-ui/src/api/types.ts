@@ -4,6 +4,7 @@
 export type RegisterForm = {
   tenantId: string;
   username: string;
+  phonenumber: string;
   password: string;
   confirmPassword?: string;
   code?: string;

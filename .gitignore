@@ -6,6 +6,14 @@ plus-ui/.eslintcache
 # runtime data & logs
 data/
 logs/
+# local test traces, screenshots and generated reports
+.playwright-cli/
+output/
+screenshots/
+# local release bundles; publish binary packages outside the source repo
+releases/
+# root-level visual scratch files
+/*.png
 # generated initdb (regenerate via deploy/scripts/generate-initdb.py)
 deploy/initdb-mysql/
 deploy/initdb-postgres/

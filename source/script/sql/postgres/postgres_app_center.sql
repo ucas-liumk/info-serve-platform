@@ -112,41 +112,30 @@ CREATE INDEX idx_app_message_user ON app_message (user_id, is_read);
 COMMENT ON TABLE app_message IS '应用中心消息';
 
 -- ----------------------------------------------------------------
--- 种子数据：分类 (5条)
+-- 种子数据：分类 (3条)
 -- ----------------------------------------------------------------
 INSERT INTO app_category (category_id, category_name, category_code, icon, order_num, create_time) VALUES
-(1, '云原生',   'cloud',    'cloud',  1, now()),
-(2, '开发工具', 'dev',      'code',   2, now()),
-(3, '数据存储', 'data',     'db',     3, now()),
-(4, '监控运维', 'ops',      'gauge',  4, now()),
-(5, '安全工具', 'security', 'shield', 5, now());
+(1, '文档处理', 'document', 'document', 1, now()),
+(2, '图形绘制', 'diagram',  'edit',     2, now()),
+(3, '协作白板', 'whiteboard','guide',    3, now());
 
 -- ----------------------------------------------------------------
--- 种子数据：应用 (6条)
+-- 种子数据：应用 (3条)
 -- ----------------------------------------------------------------
 INSERT INTO app_application
     (app_id, app_name, app_code, version, category_id, icon, accent,
      description, tags, access_url, status, is_security,
      use_count, recommend_count, order_num, create_time)
 VALUES
-(1, 'Dify',      'dify',      'v1.2.0',  1, 'D', 'blue',
- '开源大语言模型(LLM)应用开发平台,提供可视化编排与部署能力。',
- 'AI模型,LLM,低代码',     'http://192.168.8.4:18001', '0', '0', 356, 128, 1, now()),
-(2, 'Airflow',   'airflow',   'v2.7.1',  1, 'A', 'violet',
- '开源工作流调度平台,支持复杂任务编排、调度和监控。',
- '工作流,调度',            'http://192.168.8.4:18002', '0', '0', 289,  90, 2, now()),
-(3, 'MinIO',     'minio',     'RELEASE', 3, 'M', 'slate',
- '高性能分布式对象存储,兼容 S3 协议,适合缓存与备份。',
- '存储,对象存储,S3',       'http://192.168.8.4:18003', '0', '0', 210,  86, 3, now()),
-(4, 'Grafana',   'grafana',   'v10.2.0', 4, 'G', 'orange',
- '开源可观测性平台,支持多数据源可视化与监控告警。',
- '监控,可视化,告警',       'http://192.168.8.4:18004', '0', '0', 532, 140, 4, now()),
-(5, 'Portainer', 'portainer', 'v2.19.3', 1, 'P', 'cyan',
- '轻量级容器管理 UI,支持 Docker 与 Kubernetes 管理。',
- '容器,Docker,K8s',        'http://192.168.8.4:18005', '0', '0',  98,  42, 5, now()),
-(6, 'Vault',     'vault',     'v1.15.0', 5, 'V', 'black',
- '开源密钥管理与数据保护工具,支持动态密钥与访问控制。',
- '安全,密钥管理',           'http://192.168.8.4:18006', '0', '1', 133,  60, 6, now());
+(1, 'Stirling PDF', 'stirling-pdf', 'latest', 1, 'PDF', '#2563eb',
+ 'PDF 合并、拆分、压缩、转换与页面处理工具，即开即用。',
+ 'PDF,文档处理,转换', 'http://127.0.0.1:18080', '0', '0', 128, 36, 1, now()),
+(2, 'draw.io', 'drawio', 'latest', 2, 'DIO', '#0f766e',
+ '流程图、架构图、网络拓扑和业务图示绘制工具。',
+ '流程图,架构图,绘图', 'http://127.0.0.1:18082', '0', '0', 96, 28, 2, now()),
+(3, 'Excalidraw', 'excalidraw', 'latest', 3, 'EX', '#c2410c',
+ '轻量白板和草图协作工具，适合快速表达方案和讨论。',
+ '白板,草图,协作', 'http://127.0.0.1:18090', '0', '0', 84, 24, 3, now());
 
 -- ----------------------------------------------------------------
 -- sys_menu: 应用中心目录 + 菜单 + 按钮权限

@@ -1046,7 +1046,7 @@ comment on column sys_config.remark        is '备注';
 insert into sys_config values(1, '000000', '主框架页-默认皮肤样式名称',      'sys.index.skinName',            'skin-blue',     'Y', 103, 1, sysdate, null, null, '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow' );
 insert into sys_config values(2, '000000', '用户管理-账号初始密码',         'sys.user.initPassword',         '123456',        'Y', 103, 1, sysdate, null, null, '初始化密码 123456' );
 insert into sys_config values(3, '000000', '主框架页-侧边栏主题',           'sys.index.sideTheme',           'theme-dark',    'Y', 103, 1, sysdate, null, null, '深色主题theme-dark，浅色主题theme-light' );
-insert into sys_config values(5, '000000', '账号自助-是否开启用户注册功能',   'sys.account.registerUser',      'false',         'Y', 103, 1, sysdate, null, null, '是否开启注册用户功能（true开启，false关闭）');
+insert into sys_config values(5, '000000', '账号自助-是否开启用户注册功能',   'true',         'Y', 103, 1, sysdate, null, null, '是否开启注册用户功能（true开启，false关闭）');
 insert into sys_config values(11, '000000', 'OSS预览列表资源开关',          'sys.oss.previewListResource',   'true',          'Y', 103, 1, sysdate, null, null, 'true:开启, false:关闭');
 
 
@@ -1327,11 +1327,11 @@ comment on column sys_oss_config.create_time    is '创建时间';
 comment on column sys_oss_config.update_by      is '更新者';
 comment on column sys_oss_config.update_time    is '更新时间';
 
-insert into sys_oss_config values (1, '000000', 'minio',  'ruoyi',            'ruoyi123',        'ruoyi',             '', '127.0.0.1:9000',                '','N', '',            '1', '0', '', NULL, 103, 1, sysdate, 1, sysdate);
+insert into sys_oss_config values (1, '000000', 'minio',  'ruoyi',            'ruoyi123',        'ruoyi',             '', 'minio:9000',                    '','N', '',            '1', '0', '', NULL, 103, 1, sysdate, 1, sysdate);
 insert into sys_oss_config values (2, '000000', 'qiniu',  'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'ruoyi',             '', 's3-cn-north-1.qiniucs.com',     '','N', '',            '1', '1', '', NULL, 103, 1, sysdate, 1, sysdate);
 insert into sys_oss_config values (3, '000000', 'aliyun', 'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'ruoyi',             '', 'oss-cn-beijing.aliyuncs.com',   '','N', '',            '1', '1', '', NULL, 103, 1, sysdate, 1, sysdate);
 insert into sys_oss_config values (4, '000000', 'qcloud', 'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'ruoyi-1250000000',  '', 'cos.ap-beijing.myqcloud.com',   '','N', 'ap-beijing',  '1', '1', '', NULL, 103, 1, sysdate, 1, sysdate);
-insert into sys_oss_config values (5, '000000', 'image',  'ruoyi',            'ruoyi123',        'ruoyi',             'image', '127.0.0.1:9000',           '','N', '',            '1', '1', '', NULL, 103, 1, sysdate, 1, sysdate);
+insert into sys_oss_config values (5, '000000', 'image',  'ruoyi',            'ruoyi123',        'ruoyi',             'image', 'minio:9000',               '','N', '',            '1', '1', '', NULL, 103, 1, sysdate, 1, sysdate);
 
 
 -- ----------------------------

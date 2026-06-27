@@ -135,14 +135,12 @@ public class SysLoginService {
         String tenantId = registerBody.getTenantId();
         String username = registerBody.getUsername();
         String password = registerBody.getPassword();
+        String phonenumber = registerBody.getPhonenumber();
+        if (StringUtils.isBlank(phonenumber)) {
+            throw new ServiceException("手机号不能为空");
+        }
         // 校验用户类型是否存在
         String userType = UserType.getUserType(registerBody.getUserType()).getUserType();
-
-        boolean captchaEnabled = captchaProperties.getEnabled();
-        // 验证码开关
-        if (captchaEnabled) {
-            validateCaptcha(tenantId, username, registerBody.getCode(), registerBody.getUuid());
-        }
 
         // 注册用户信息
         RemoteUserBo remoteUserBo = new RemoteUserBo();
@@ -150,6 +148,7 @@ public class SysLoginService {
         remoteUserBo.setUserName(username);
         remoteUserBo.setNickName(username);
         remoteUserBo.setPassword(BCrypt.hashpw(password));
+        remoteUserBo.setPhonenumber(phonenumber);
         remoteUserBo.setUserType(userType);
 
         boolean regFlag = remoteUserService.registerUserInfo(remoteUserBo);

@@ -63,18 +63,24 @@ export const constantRoutes: RouteRecordRaw[] = [
     hidden: true
   },
   {
-    path: '/appcenter',
+    path: '/portal',
     component: () => import('@/layout/portal/index.vue'),
     children: [
-      { path: '', name: 'AppPortal', component: () => import('@/views/appcenter/portal/index.vue'), meta: { title: '应用广场' } },
-      { path: 'favorites', name: 'AppFavorites', component: () => import('@/views/appcenter/portal/favorites.vue'), meta: { title: '收藏应用' } },
-      { path: 'messages', name: 'AppMessages', component: () => import('@/views/appcenter/portal/messages.vue'), meta: { title: '消息中心' } }
+      { path: '', name: 'InfoPortalHome', component: () => import('@/views/portal/index.vue'), meta: { title: '服务概览' } },
+      { path: 'resources', name: 'InfoResources', component: () => import('@/views/infoservice/resources/index.vue'), meta: { title: '资料共享' } },
+      { path: 'tools', name: 'InfoTools', component: () => import('@/views/appcenter/portal/index.vue'), meta: { title: '工具即用' } },
+      { path: 'forum', name: 'InfoForum', component: () => import('@/views/infoservice/forum/index.vue'), meta: { title: '服务论坛' } }
     ]
+  },
+  {
+    path: '/appcenter',
+    redirect: '/portal/tools',
+    hidden: true
   },
   {
     path: '',
     component: Layout,
-    redirect: '/index',
+    redirect: '/portal',
     children: [
       {
         path: '/index',

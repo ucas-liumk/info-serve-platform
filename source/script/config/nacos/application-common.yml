@@ -299,3 +299,6 @@ tenant:
     - app_favorite
     - app_message
     - app_recommend
+    - info_resource_category
+    - info_forum_board
+    - info_forum_like

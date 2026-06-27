@@ -79,7 +79,7 @@ def generate_nacos_update_sql() -> None:
                 f"WHERE data_id={sql_string(path.name)} AND group_id='DEFAULT_GROUP' AND tenant_id='{tenant}';\n"
             )
     # 新模块配置在基线中无行,需 INSERT(MySQL ry-config 为 Nacos 存储)
-    new_configs = ["ruoyi-appcenter.yml"]
+    new_configs = ["ruoyi-appcenter.yml", "ruoyi-infoservice.yml"]
     for name in new_configs:
         path = config_dir / name
         content = normalize_nacos_content(name, path.read_text(encoding="utf-8"))
@@ -101,14 +101,15 @@ def generate_nacos_update_sql() -> None:
 
 
 def write_pg_business_db() -> None:
-    """复制官方 PG 业务脚本 + 应用中心脚本,并生成首启初始化脚本。"""
+    """复制官方 PG 业务脚本 + 一期业务扩展脚本,并生成首启初始化脚本。"""
     pg_src = SOURCE / "script" / "sql" / "postgres"
     dumps_dir = OUT_PG / "dumps"
     dumps_dir.mkdir(parents=True, exist_ok=True)
-    extra = "postgres_app_center.sql"  # 追加到 ry-cloud
+    extras = ["postgres_app_center.sql", "postgres_info_service.sql"]  # 追加到 ry-cloud
     for _, filename in PG_DATABASES:
         shutil.copyfile(pg_src / filename, dumps_dir / filename)
-    shutil.copyfile(pg_src / extra, dumps_dir / extra)
+    for extra in extras:
+        shutil.copyfile(pg_src / extra, dumps_dir / extra)
 
     pairs = " ".join(f'"{db}:{filename}"' for db, filename in PG_DATABASES)
     init_sh = (
@@ -122,8 +123,11 @@ def write_pg_business_db() -> None:
         '  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "CREATE DATABASE \\"$db\\";"\n'
         '  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$db" -f "$DUMP_DIR/$file"\n'
         "done\n"
-        'echo ">> importing app center schema into ry-cloud"\n'
-        f'psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "ry-cloud" -f "$DUMP_DIR/{extra}"\n'
+        'echo ">> importing phase1 extension schemas into ry-cloud"\n'
+        + "".join(
+            f'psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "ry-cloud" -f "$DUMP_DIR/{extra}"\n'
+            for extra in extras
+        ) +
         'echo ">> postgres business databases initialized"\n'
     )
     target = OUT_PG / "00-init.sh"

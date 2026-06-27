@@ -1,133 +1,103 @@
 <template>
-  <div class="login">
-    <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form">
-      <div class="title-box">
-        <h3 class="title">{{ title }}</h3>
-        <lang-select />
+  <main class="auth-page auth-page--login">
+    <section class="auth-visual" aria-label="信息中心数智服务平台">
+      <div class="auth-brand">
+        <img class="auth-brand__logo" :src="logoUrl" alt="信息中心数智服务平台" />
+        <div>
+          <h1>信息中心数智服务平台</h1>
+          <p>数智驱动 · 高效服务 · 共创共享</p>
+        </div>
       </div>
-      <el-form-item v-if="tenantEnabled" prop="tenantId">
-        <el-select v-model="loginForm.tenantId" filterable :placeholder="proxy.$t('login.selectPlaceholder')" style="width: 100%">
-          <el-option v-for="item in tenantList" :key="item.tenantId" :label="item.companyName" :value="item.tenantId"></el-option>
-          <template #prefix><svg-icon icon-class="company" class="el-input__icon input-icon" /></template>
-        </el-select>
-      </el-form-item>
-      <el-form-item prop="username">
-        <el-input v-model="loginForm.username" type="text" size="large" auto-complete="off" :placeholder="proxy.$t('login.username')">
-          <template #prefix><svg-icon icon-class="user" class="el-input__icon input-icon" /></template>
+    </section>
+
+    <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="auth-card auth-card--login">
+      <div class="auth-card__heading">
+        <h2>欢迎登录</h2>
+        <p>信息中心数智服务平台</p>
+      </div>
+
+      <el-form-item prop="username" class="auth-form-item">
+        <el-input v-model="loginForm.username" type="text" size="large" autocomplete="off" placeholder="请输入用户名">
+          <template #prefix>
+            <el-icon class="auth-input-icon"><User /></el-icon>
+          </template>
         </el-input>
       </el-form-item>
-      <el-form-item prop="password">
+
+      <el-form-item prop="password" class="auth-form-item">
         <el-input
           v-model="loginForm.password"
           type="password"
           size="large"
-          auto-complete="off"
-          :placeholder="proxy.$t('login.password')"
+          autocomplete="off"
+          placeholder="请输入密码"
+          show-password
           @keyup.enter="handleLogin"
         >
-          <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
+          <template #prefix>
+            <el-icon class="auth-input-icon"><Lock /></el-icon>
+          </template>
         </el-input>
       </el-form-item>
-      <el-form-item v-if="captchaEnabled" prop="code">
-        <el-input
-          v-model="loginForm.code"
-          size="large"
-          auto-complete="off"
-          :placeholder="proxy.$t('login.code')"
-          style="width: 63%"
-          @keyup.enter="handleLogin"
-        >
-          <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
-        </el-input>
-        <div class="login-code">
-          <img :src="codeUrl" class="login-code-img" @click="getCode" />
-        </div>
-      </el-form-item>
-      <el-checkbox v-model="loginForm.rememberMe" style="margin: 0 0 25px 0">{{ proxy.$t('login.rememberPassword') }}</el-checkbox>
-      <el-form-item style="float: right">
-        <el-button circle :title="proxy.$t('login.social.wechat')" @click="doSocialLogin('wechat')">
-          <svg-icon icon-class="wechat" />
+
+      <div class="auth-options">
+        <el-checkbox v-model="loginForm.rememberMe">记住我</el-checkbox>
+        <button class="auth-link-button" type="button" @click="showForgetTip">忘记密码?</button>
+      </div>
+
+      <el-form-item class="auth-submit">
+        <el-button :loading="loading" size="large" type="primary" class="auth-submit-button" @click.prevent="handleLogin">
+          <span v-if="!loading">登 录</span>
+          <span v-else>登录中...</span>
         </el-button>
-        <el-button circle :title="proxy.$t('login.social.maxkey')" @click="doSocialLogin('maxkey')">
-          <svg-icon icon-class="maxkey" />
-        </el-button>
-        <el-button circle :title="proxy.$t('login.social.topiam')" @click="doSocialLogin('topiam')">
-          <svg-icon icon-class="topiam" />
-        </el-button>
-        <el-button circle :title="proxy.$t('login.social.gitee')" @click="doSocialLogin('gitee')">
-          <svg-icon icon-class="gitee" />
-        </el-button>
-        <el-button circle :title="proxy.$t('login.social.github')" @click="doSocialLogin('github')">
-          <svg-icon icon-class="github" />
-        </el-button>
-      </el-form-item>
-      <el-form-item style="width: 100%">
-        <el-button :loading="loading" size="large" type="primary" style="width: 100%" @click.prevent="handleLogin">
-          <span v-if="!loading">{{ proxy.$t('login.login') }}</span>
-          <span v-else>{{ proxy.$t('login.logging') }}</span>
-        </el-button>
-        <div v-if="register" style="float: right">
-          <router-link class="link-type" :to="'/register'">{{ proxy.$t('login.switchRegisterPage') }}</router-link>
-        </div>
+
+        <template v-if="register">
+          <div class="auth-divider"><span>或</span></div>
+          <div class="auth-switch-line">
+            <span>还没有账号?</span>
+            <router-link :to="'/register'">立即注册</router-link>
+          </div>
+        </template>
       </el-form-item>
     </el-form>
-    <!--  底部  -->
-    <div class="el-login-footer">
-      <span>Copyright © 2018-2026 疯狂的狮子Li All Rights Reserved.</span>
-    </div>
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
-import { getCodeImg, getTenantList } from '@/api/login';
-import { authRouterUrl } from '@/api/system/social/auth';
-import { useUserStore } from '@/store/modules/user';
-import { LoginData, TenantVO } from '@/api/types';
+import { Lock, User } from '@element-plus/icons-vue';
 import { to } from 'await-to-js';
-import { HttpStatus } from '@/enums/RespEnum';
-import { useI18n } from 'vue-i18n';
+import { LoginData } from '@/api/types';
+import { useUserStore } from '@/store/modules/user';
+import logoUrl from '@/assets/portal/home-logo.png';
 
-const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-
-const title = import.meta.env.VITE_APP_TITLE;
 const userStore = useUserStore();
 const router = useRouter();
-const { t } = useI18n();
 
 const loginForm = ref<LoginData>({
   tenantId: '000000',
-  username: 'admin',
-  password: 'admin123',
+  username: '',
+  password: '',
   rememberMe: false,
   code: '',
   uuid: ''
 } as LoginData);
 
 const loginRules: ElFormRules = {
-  tenantId: [{ required: true, trigger: 'blur', message: t('login.rule.tenantId.required') }],
-  username: [{ required: true, trigger: 'blur', message: t('login.rule.username.required') }],
-  password: [{ required: true, trigger: 'blur', message: t('login.rule.password.required') }],
-  code: [{ required: true, trigger: 'change', message: t('login.rule.code.required') }]
+  username: [{ required: true, trigger: 'blur', message: '请输入用户名' }],
+  password: [{ required: true, trigger: 'blur', message: '请输入密码' }]
 };
 
-const codeUrl = ref('');
 const loading = ref(false);
-// 验证码开关
-const captchaEnabled = ref(true);
-// 租户开关
-const tenantEnabled = ref(true);
-
-// 注册开关
-const register = ref(false);
-const redirect = ref('/');
+const captchaEnabled = ref(false);
+const register = ref(true);
+const redirect = ref('/portal');
 const loginRef = ref<ElFormInstance>();
-// 租户列表
-const tenantList = ref<TenantVO[]>([]);
 
 watch(
   () => router.currentRoute.value,
   (newRoute: any) => {
-    redirect.value = newRoute.query && newRoute.query.redirect && decodeURIComponent(newRoute.query.redirect);
+    const queryRedirect = newRoute.query && newRoute.query.redirect;
+    redirect.value = queryRedirect ? decodeURIComponent(queryRedirect) : '/portal';
   },
   { immediate: true }
 );
@@ -136,28 +106,25 @@ const handleLogin = () => {
   loginRef.value?.validate(async (valid: boolean, fields: any) => {
     if (valid) {
       loading.value = true;
-      // 勾选了需要记住密码设置在 localStorage 中设置记住用户名和密码
       if (loginForm.value.rememberMe) {
         localStorage.setItem('tenantId', String(loginForm.value.tenantId));
         localStorage.setItem('username', String(loginForm.value.username));
         localStorage.setItem('password', String(loginForm.value.password));
         localStorage.setItem('rememberMe', String(loginForm.value.rememberMe));
       } else {
-        // 否则移除
         localStorage.removeItem('tenantId');
         localStorage.removeItem('username');
         localStorage.removeItem('password');
         localStorage.removeItem('rememberMe');
       }
-      // 调用action的登录方法
+
       const [err] = await to(userStore.login(loginForm.value));
       if (!err) {
-        const redirectUrl = redirect.value || '/';
+        const redirectUrl = redirect.value || '/portal';
         await router.push(redirectUrl);
         loading.value = false;
       } else {
         loading.value = false;
-        // 重新获取验证码
         if (captchaEnabled.value) {
           await getCode();
         }
@@ -168,21 +135,6 @@ const handleLogin = () => {
   });
 };
 
-/**
- * 获取验证码
- */
-const getCode = async () => {
-  const res = await getCodeImg();
-  const { data } = res;
-  captchaEnabled.value = data.captchaEnabled === undefined ? true : data.captchaEnabled;
-  if (captchaEnabled.value) {
-    // 刷新验证码时清空输入框
-    loginForm.value.code = '';
-    codeUrl.value = 'data:image/gif;base64,' + data.img;
-    loginForm.value.uuid = data.uuid;
-  }
-};
-
 const getLoginData = () => {
   const tenantId = localStorage.getItem('tenantId');
   const username = localStorage.getItem('username');
@@ -190,189 +142,28 @@ const getLoginData = () => {
   const rememberMe = localStorage.getItem('rememberMe');
   loginForm.value = {
     tenantId: tenantId === null ? String(loginForm.value.tenantId) : tenantId,
-    username: username === null ? String(loginForm.value.username) : username,
-    password: password === null ? String(loginForm.value.password) : String(password),
-    rememberMe: rememberMe === null ? false : Boolean(rememberMe)
+    username: username === null ? '' : username,
+    password: password === null ? '' : String(password),
+    rememberMe: rememberMe === 'true'
   } as LoginData;
 };
 
-/**
- * 获取租户列表
- */
-const initTenantList = async () => {
-  const { data } = await getTenantList(false);
-  tenantEnabled.value = data.tenantEnabled === undefined ? true : data.tenantEnabled;
-  if (tenantEnabled.value) {
-    tenantList.value = data.voList;
-    if (tenantList.value != null && tenantList.value.length !== 0) {
-      loginForm.value.tenantId = tenantList.value[0].tenantId;
-    }
-  }
+const getCode = async () => {
+  captchaEnabled.value = false;
+  loginForm.value.code = '';
+  loginForm.value.uuid = '';
 };
 
-/**
- * 第三方登录
- * @param type
- */
-const doSocialLogin = (type: string) => {
-  authRouterUrl(type, loginForm.value.tenantId).then((res: any) => {
-    if (res.code === HttpStatus.SUCCESS) {
-      // 获取授权地址跳转
-      window.location.href = res.data;
-    } else {
-      ElMessage.error(res.msg);
-    }
-  });
+const showForgetTip = () => {
+  ElMessage.info('第一版本暂未开放找回密码');
 };
 
 onMounted(() => {
-  getCode();
-  initTenantList();
   getLoginData();
+  getCode();
 });
 </script>
 
 <style lang="scss" scoped>
-.login {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  background-image: url('../assets/images/login-background.jpg');
-  background-size: cover;
-  background-position: center;
-}
-
-.title-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .title {
-    margin: 0px auto 26px auto;
-    text-align: center;
-    color: var(--el-text-color-primary);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-
-  :deep(.lang-select--style) {
-    line-height: 0;
-    color: var(--el-text-color-secondary);
-  }
-}
-
-.login-form {
-  border-radius: var(--app-radius-lg);
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  width: min(420px, 90vw);
-  padding: 32px 30px 12px 30px;
-  z-index: 1;
-  box-shadow: var(--app-shadow-lg);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  .el-input {
-    height: 40px;
-    input {
-      height: 40px;
-    }
-  }
-
-  .input-icon {
-    height: 39px;
-    width: 14px;
-    margin-left: 0px;
-  }
-}
-
-.login-tip {
-  font-size: 13px;
-  text-align: center;
-  color: #bfbfbf;
-}
-
-.login-form :deep(.el-input__wrapper) {
-  background-color: rgba(255, 255, 255, 0.9);
-}
-
-.login-form :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
-.login-form :deep(.el-button--primary) {
-  border-radius: var(--app-radius-md);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
-}
-
-.login-form :deep(.el-button.is-circle) {
-  background: rgba(15, 23, 42, 0.04);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  color: var(--el-text-color-regular);
-}
-
-.login-form :deep(.el-button.is-circle:hover) {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.2);
-}
-
-.login-code {
-  width: calc(37% - 10px);
-  height: 40px;
-  float: right;
-  margin-left: 10px;
-  box-sizing: border-box;
-  border-radius: var(--app-radius-sm);
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--el-border-color-light);
-
-  img {
-    cursor: pointer;
-    vertical-align: middle;
-    display: block;
-    width: 100%;
-    height: 40px;
-    object-fit: cover;
-  }
-}
-
-.el-login-footer {
-  height: 40px;
-  line-height: 40px;
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.75);
-  font-family: Arial, serif;
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-
-.login-code-img {
-  height: 40px;
-  padding-left: 0;
-}
-
-:global(html.dark) {
-  .login-form {
-    background: rgba(17, 24, 39, 0.9);
-    border-color: rgba(148, 163, 184, 0.2);
-  }
-
-  .login-form :deep(.el-input__wrapper) {
-    background-color: rgba(17, 24, 39, 0.7);
-  }
-
-  .login-form :deep(.el-button.is-circle) {
-    background: rgba(148, 163, 184, 0.12);
-    border-color: rgba(148, 163, 184, 0.25);
-    color: #e5e7eb;
-  }
-
-  .el-login-footer {
-    color: rgba(226, 232, 240, 0.65);
-  }
-}
+@use "@/assets/styles/auth-page.scss";
 </style>

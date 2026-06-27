@@ -76,6 +76,13 @@ spring:
                 - Path=/appcenter/**
               filters:
                 - StripPrefix=1
+            # 信息中心数智服务
+            - id: ruoyi-infoservice
+              uri: lb://ruoyi-infoservice
+              predicates:
+                - Path=/infoservice/**
+              filters:
+                - StripPrefix=1
             # 演示服务
             - id: ruoyi-demo
               uri: lb://ruoyi-demo

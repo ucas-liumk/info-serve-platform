@@ -23,7 +23,7 @@ router.beforeEach(async (to, from, next) => {
     to.meta.title && useSettingsStore().setTitle(to.meta.title as string);
     /* has token*/
     if (to.path === '/login') {
-      next({ path: '/appcenter' });
+      next({ path: '/portal' });
       NProgress.done();
     } else if (isWhiteList(to.path)) {
       next();

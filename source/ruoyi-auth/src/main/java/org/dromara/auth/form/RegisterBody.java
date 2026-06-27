@@ -31,6 +31,12 @@ public class RegisterBody extends LoginBody {
     private String password;
 
     /**
+     * 手机号
+     */
+    @NotBlank(message = "{user.phonenumber.not.blank}")
+    private String phonenumber;
+
+    /**
      * 用户类型
      */
     private String userType;
