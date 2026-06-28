@@ -6,6 +6,7 @@
 import { login, callback } from '@/api/login';
 import { setToken, getToken } from '@/utils/auth';
 import { LoginData } from '@/api/types';
+import { ADMIN_HOME_PATH } from '@/constants/router';
 
 const route = useRoute();
 const loading = ref(true);
@@ -30,14 +31,14 @@ const processResponse = async (res: any) => {
   }
   ElMessage.success(res.msg);
   setTimeout(() => {
-    location.href = import.meta.env.VITE_APP_CONTEXT_PATH + 'index';
+    location.href = import.meta.env.VITE_APP_CONTEXT_PATH + ADMIN_HOME_PATH.replace(/^\//, '');
   }, 2000);
 };
 
 const handleError = (error: any) => {
   ElMessage.error(error.message);
   setTimeout(() => {
-    location.href = import.meta.env.VITE_APP_CONTEXT_PATH + 'index';
+    location.href = import.meta.env.VITE_APP_CONTEXT_PATH + ADMIN_HOME_PATH.replace(/^\//, '');
   }, 2000);
 };
 

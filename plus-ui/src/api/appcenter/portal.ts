@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { PortalApp, PortalCategory, PortalMessage } from './types';
+import { PortalApp, PortalCategory, PortalDemandForm, PortalDemandItem, PortalMessage } from './types';
 
 export function listCategories(): AxiosPromise<PortalCategory[]> {
   return request({ url: '/appcenter/portal/categories', method: 'get' });
@@ -44,4 +44,24 @@ export function unreadCount(): AxiosPromise<number> {
 
 export function readMessage(id: number) {
   return request({ url: `/appcenter/portal/messages/${id}/read`, method: 'post' });
+}
+
+export function deleteReadMessage(id: number) {
+  return request({ url: `/appcenter/portal/messages/${id}`, method: 'delete' });
+}
+
+export function clearReadMessages() {
+  return request({ url: '/appcenter/portal/messages/history/clear', method: 'delete' });
+}
+
+export function submitDemand(data: PortalDemandForm) {
+  return request({ url: '/appcenter/portal/demands', method: 'post', data });
+}
+
+export function listMyDemands(query: any): AxiosPromise<PortalDemandItem[]> {
+  return request({ url: '/appcenter/portal/demands/my', method: 'get', params: query });
+}
+
+export function deleteMyDemand(id: number) {
+  return request({ url: `/appcenter/portal/demands/${id}`, method: 'delete' });
 }

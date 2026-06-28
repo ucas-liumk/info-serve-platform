@@ -26,13 +26,14 @@ import { useAppStore } from '@/store/modules/app';
 import { useSettingsStore } from '@/store/modules/settings';
 import { usePermissionStore } from '@/store/modules/permission';
 import { RouteRecordRaw } from 'vue-router';
+import { ADMIN_BASE_PATH, ADMIN_HOME_PATH } from '@/constants/router';
 
 // 顶部栏初始数
 const visibleNumber = ref<number>(-1);
 // 当前激活菜单的 index
 const currentIndex = ref<string>();
 // 隐藏侧边栏路由
-const hideList = ['/index', '/user/profile'];
+const hideList = [ADMIN_HOME_PATH, `${ADMIN_BASE_PATH}/user/profile`];
 
 const appStore = useAppStore();
 const settingsStore = useSettingsStore();
@@ -85,14 +86,14 @@ const childrenMenus = computed(() => {
 // 默认激活的菜单
 const activeMenu = computed(() => {
   let path = route.path;
-  if (path === '/index') {
-    path = '/system/user';
+  if (path === ADMIN_HOME_PATH) {
+    path = `${ADMIN_BASE_PATH}/system/user`;
   }
   let activePath = path;
   if (path !== undefined && path.lastIndexOf('/') > 0 && hideList.indexOf(path) === -1) {
-    const tmpPath = path.substring(1, path.length);
+    const pathParts = path.split('/').filter(Boolean);
     if (!route.meta.link) {
-      activePath = '/' + tmpPath.substring(0, tmpPath.indexOf('/'));
+      activePath = path.startsWith(`${ADMIN_BASE_PATH}/`) && pathParts.length >= 2 ? `${ADMIN_BASE_PATH}/${pathParts[1]}` : `/${pathParts[0]}`;
       appStore.toggleSideBarHide(false);
     }
   } else if (!route.children) {

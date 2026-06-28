@@ -35,25 +35,9 @@ build_java_image() {
     "${SOURCE_DIR}/ruoyi-modules/ruoyi-system" \
     "target/ruoyi-system.jar"
 
-  build_java_image "infosys/ruoyi-cloud-plus-gen:2.6.2" \
-    "${SOURCE_DIR}/ruoyi-modules/ruoyi-gen" \
-    "target/ruoyi-gen.jar"
-
-  build_java_image "infosys/ruoyi-cloud-plus-job:2.6.2" \
-    "${SOURCE_DIR}/ruoyi-modules/ruoyi-job" \
-    "target/ruoyi-job.jar"
-
   build_java_image "infosys/ruoyi-cloud-plus-resource:2.6.2" \
     "${SOURCE_DIR}/ruoyi-modules/ruoyi-resource" \
     "target/ruoyi-resource.jar"
-
-  build_java_image "infosys/ruoyi-cloud-plus-workflow:2.6.2" \
-    "${SOURCE_DIR}/ruoyi-modules/ruoyi-workflow" \
-    "target/ruoyi-workflow.jar"
-
-  build_java_image "infosys/ruoyi-cloud-plus-snailjob:2.6.2" \
-    "${SOURCE_DIR}/ruoyi-visual/ruoyi-snailjob-server" \
-    "target/ruoyi-snailjob-server.jar"
 
   build_java_image "infosys/ruoyi-cloud-plus-monitor:2.6.2" \
     "${SOURCE_DIR}/ruoyi-visual/ruoyi-monitor" \

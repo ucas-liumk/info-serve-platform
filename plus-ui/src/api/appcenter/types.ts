@@ -11,6 +11,7 @@ export interface PortalApp {
   accessUrl: string;
   isSecurity: string;
   useCount: number;
+  favoriteCount: number;
   recommendCount: number;
   favorited: boolean;
   recommended: boolean;
@@ -31,4 +32,24 @@ export interface PortalMessage {
   msgType: string;
   isRead: string;
   createTime: string;
+}
+
+export interface PortalDemandForm {
+  demandType: 'new_app' | 'suggestion';
+  appId?: number;
+  appName: string;
+  content: string;
+  contact?: string;
+}
+
+export interface PortalDemandItem {
+  demandId: number;
+  demandType: 'new_app' | 'suggestion';
+  appName: string;
+  content: string;
+  contact?: string;
+  status: '0' | '1' | '2' | '3';
+  handleRemark?: string;
+  handledTime?: string;
+  createTime?: string;
 }

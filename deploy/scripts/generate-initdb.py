@@ -42,24 +42,29 @@ def sql_string(value: str) -> str:
     return "'" + value.replace("\\", "\\\\").replace("'", "''") + "'"
 
 
-def normalize_nacos_content(name: str, content: str) -> str:
-    # Nacos 自身配置库仍在 MySQL，db.url 在 compose 中以 JAVA_OPTS 注入，这里仅处理业务数据源
-    content = content.replace("jdbc:postgresql://localhost:5432/", "jdbc:postgresql://postgres:5432/")
-    content = content.replace("jdbc:postgresql://127.0.0.1:5432/", "jdbc:postgresql://postgres:5432/")
-    # 业务数据源账号口令
+def normalize_nacos_content(name: str, content: str, tenant: str) -> str:
+    """生成 Nacos 配置。
+
+    dev 面向本机 Java 调试，使用宿主机 81xx 端口。
+    prod 面向 Docker 容器部署，使用容器服务名和容器内部默认端口。
+    """
     content = content.replace("username: ruoyi\n    password: password", "username: ruoyi\n    password: ruoyi123")
-    # 兼容历史 mysql 残留写法（seata 等未部署组件，inert）
-    content = content.replace("jdbc:mysql://localhost:3306/", "jdbc:mysql://mysql:3306/")
-    content = content.replace("jdbc:mysql://127.0.0.1:3306/", "jdbc:mysql://mysql:3306/")
     content = content.replace("store.db.user=root\nstore.db.password=password", "store.db.user=root\nstore.db.password=ruoyi123")
-    if name == "application-common.yml":
-        content = content.replace("rabbitmq:\n    host: localhost", "rabbitmq:\n    host: rabbitmq")
-        content = content.replace("redis:\n      host: localhost", "redis:\n      host: redis")
-    if name == "ruoyi-job.yml":
-        content = content.replace("host: 127.0.0.1\n    port: 17888", "host: ruoyi-snailjob-server\n    port: 17888")
-    if name == "ruoyi-auth.yml":
-        content = content.replace("address: http://localhost:80", "address: http://nginx-web")
-        content = content.replace("captcha:\n    # 是否开启验证码\n    enabled: true", "captcha:\n    # 是否开启验证码\n    enabled: false")
+
+    if tenant == "prod":
+        # Nacos 自身配置库仍在 MySQL，db.url 在 compose 中以 JAVA_OPTS 注入，这里仅处理业务数据源
+        content = content.replace("jdbc:postgresql://localhost:8132/", "jdbc:postgresql://postgres:5432/")
+        content = content.replace("jdbc:postgresql://127.0.0.1:8132/", "jdbc:postgresql://postgres:5432/")
+        content = content.replace("jdbc:mysql://localhost:8136/", "jdbc:mysql://mysql:3306/")
+        content = content.replace("jdbc:mysql://127.0.0.1:8136/", "jdbc:mysql://mysql:3306/")
+        if name == "application-common.yml":
+            content = content.replace("rabbitmq:\n    host: localhost\n    port: 8172", "rabbitmq:\n    host: rabbitmq\n    port: 5672")
+            content = content.replace("redis:\n      host: localhost\n      port: 8179", "redis:\n      host: redis\n      port: 6379")
+        if name == "ruoyi-job.yml":
+            content = content.replace("host: 127.0.0.1\n    port: 8192", "host: ruoyi-snailjob-server\n    port: 8192")
+        if name == "ruoyi-auth.yml":
+            content = content.replace("address: http://localhost:7018", "address: http://nginx-web")
+            content = content.replace("captcha:\n    # 是否开启验证码\n    enabled: true", "captcha:\n    # 是否开启验证码\n    enabled: false")
     return content
 
 
@@ -70,9 +75,9 @@ def generate_nacos_update_sql() -> None:
     for path in sorted(config_dir.iterdir()):
         if path.name == "README.md" or not path.is_file():
             continue
-        content = normalize_nacos_content(path.name, path.read_text(encoding="utf-8"))
-        literal = sql_string(content)
         for tenant in ("dev", "prod"):
+            content = normalize_nacos_content(path.name, path.read_text(encoding="utf-8"), tenant)
+            literal = sql_string(content)
             statements.append(
                 "UPDATE config_info "
                 f"SET content={literal}, md5=MD5({literal}), gmt_modified=NOW() "
@@ -82,9 +87,9 @@ def generate_nacos_update_sql() -> None:
     new_configs = ["ruoyi-appcenter.yml", "ruoyi-infoservice.yml"]
     for name in new_configs:
         path = config_dir / name
-        content = normalize_nacos_content(name, path.read_text(encoding="utf-8"))
-        literal = sql_string(content)
         for tenant in ("dev", "prod"):
+            content = normalize_nacos_content(name, path.read_text(encoding="utf-8"), tenant)
+            literal = sql_string(content)
             statements.append(
                 "INSERT INTO config_info "
                 "(data_id, group_id, content, md5, gmt_create, gmt_modified, src_user, src_ip, app_name, tenant_id, c_desc, c_use, effect, type, c_schema, encrypted_data_key) "

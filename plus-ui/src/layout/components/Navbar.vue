@@ -14,7 +14,7 @@
         <el-select
           v-if="userId === 1 && tenantEnabled"
           v-model="companyName"
-          class="min-w-244px mr-2"
+          class="tenant-select min-w-244px mr-2"
           clearable
           filterable
           reserve-keyword
@@ -32,9 +32,8 @@
             <svg-icon class-name="search-icon" icon-class="search" />
           </div>
         </el-tooltip>
-        <!-- 消息 -->
         <el-tooltip :content="proxy.$t('navbar.message')" effect="dark" placement="bottom">
-          <div style="display:flex;align-items:center">
+          <div style="display: flex; align-items: center">
             <el-popover placement="bottom" trigger="click" transition="el-zoom-in-top" :width="300" :persistent="false">
               <template #reference>
                 <el-badge :value="newNotice > 0 ? newNotice : ''" :max="99">
@@ -47,21 +46,21 @@
             </el-popover>
           </div>
         </el-tooltip>
-        <el-tooltip content="Github" effect="dark" placement="bottom">
+        <!-- <el-tooltip content="Github" effect="dark" placement="bottom">
           <ruo-yi-git id="ruoyi-git" class="right-menu-item hover-effect" />
-        </el-tooltip>
-
+        </el-tooltip> -->
+        <!--
         <el-tooltip :content="proxy.$t('navbar.document')" effect="dark" placement="bottom">
           <ruo-yi-doc id="ruoyi-doc" class="right-menu-item hover-effect" />
-        </el-tooltip>
+        </el-tooltip> -->
 
         <el-tooltip :content="proxy.$t('navbar.full')" effect="dark" placement="bottom">
           <screenfull id="screenfull" class="right-menu-item hover-effect" />
         </el-tooltip>
-
+        <!--
         <el-tooltip :content="proxy.$t('navbar.language')" effect="dark" placement="bottom">
           <lang-select id="lang-select" class="right-menu-item hover-effect" />
-        </el-tooltip>
+        </el-tooltip> -->
 
         <el-tooltip :content="proxy.$t('navbar.layoutSize')" effect="dark" placement="bottom">
           <size-select id="size-select" class="right-menu-item hover-effect" />
@@ -75,7 +74,7 @@
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <router-link v-if="!dynamic" to="/user/profile">
+              <router-link v-if="!dynamic" to="/admin/user/profile">
                 <el-dropdown-item>{{ proxy.$t('navbar.personalCenter') }}</el-dropdown-item>
               </router-link>
               <el-dropdown-item v-if="settingsStore.showSettings" command="setLayout">
@@ -105,14 +104,15 @@ import notice from './notice/index.vue';
 import router from '@/router';
 import { ElMessageBoxOptions } from 'element-plus/es/components/message-box/src/message-box.type';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
-import Logo from "@/layout/components/Sidebar/Logo.vue";
-import TopBar from './TopBar'
+import Logo from '@/layout/components/Sidebar/Logo.vue';
+import TopBar from './TopBar';
+import { ADMIN_HOME_PATH } from '@/constants/router';
 
 const appStore = useAppStore();
 const userStore = useUserStore();
 const settingsStore = useSettingsStore();
 const noticeStore = storeToRefs(useNoticeStore());
-const newNotice = ref(<number>0);
+const newNotice = ref<number>(0);
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -120,25 +120,21 @@ const userId = ref(userStore.userId);
 const navType = computed(() => settingsStore.navType);
 const showLogo = computed(() => settingsStore.sidebarLogo);
 
-const companyName = ref(undefined);
+const companyName = ref<string>();
 const tenantList = ref<TenantVO[]>([]);
-// 是否切换了租户
 const dynamic = ref(false);
-// 租户开关
 const tenantEnabled = ref(true);
-// 搜索菜单
 const searchMenuRef = ref<InstanceType<typeof SearchMenu>>();
 
 const openSearchMenu = () => {
   searchMenuRef.value?.openSearch();
 };
 
-// 动态切换
 const dynamicTenantEvent = async (tenantId: string) => {
   if (companyName.value != null && companyName.value !== '') {
     await dynamicTenant(tenantId);
     dynamic.value = true;
-    await proxy?.$router.push('/');
+    await proxy?.$router.push(ADMIN_HOME_PATH);
     await proxy?.$tab.closeAllPage();
     await proxy?.$tab.refreshPage();
   }
@@ -147,12 +143,11 @@ const dynamicTenantEvent = async (tenantId: string) => {
 const dynamicClearEvent = async () => {
   await dynamicClear();
   dynamic.value = false;
-  await proxy?.$router.push('/');
+  await proxy?.$router.push(ADMIN_HOME_PATH);
   await proxy?.$tab.closeAllPage();
   await proxy?.$tab.refreshPage();
 };
 
-/** 租户列表 */
 const initTenantList = async () => {
   const { data } = await getTenantList(true);
   tenantEnabled.value = data.tenantEnabled === undefined ? true : data.tenantEnabled;
@@ -190,18 +185,18 @@ const emits = defineEmits(['setLayout']);
 const setLayout = () => {
   emits('setLayout');
 };
-// 定义Command方法对象 通过key直接调用方法
+
 const commandMap: { [key: string]: any } = {
   setLayout,
   logout
 };
+
 const handleCommand = (command: string) => {
-  // 判断是否存在该方法
   if (commandMap[command]) {
     commandMap[command]();
   }
 };
-//用深度监听 消息
+
 watch(
   () => noticeStore.state.value.notices,
   (newVal) => {
@@ -212,6 +207,105 @@ watch(
 </script>
 
 <style lang="scss" scoped>
+.navbar {
+  display: flex;
+  align-items: center;
+  height: 50px;
+  overflow: hidden;
+  position: relative;
+  background: #ffffff;
+
+  .hamburger-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 50px;
+    height: 100%;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.025);
+    }
+  }
+
+  .breadcrumb-container {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .topmenu-container,
+  .topbar-container {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.right-menu {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  height: 100%;
+  padding-right: 12px;
+  margin-left: auto;
+
+  .tenant-select {
+    flex: 0 0 244px;
+    width: 244px;
+  }
+
+  .right-menu-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 8px;
+    color: #5a5e66;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 50px;
+    vertical-align: middle;
+
+    &.hover-effect {
+      transition: background 0.2s;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.025);
+      }
+    }
+  }
+
+  .avatar-container {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    margin-left: 6px;
+
+    .avatar-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      padding: 0 8px;
+      cursor: pointer;
+
+      .user-avatar {
+        display: block;
+        flex: 0 0 32px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .el-icon {
+        font-size: 12px;
+      }
+    }
+  }
+}
+
 .navbar.navtop {
   .hamburger-container {
     display: none !important;
@@ -232,118 +326,5 @@ watch(
 
 .align-center {
   align-items: center;
-}
-
-.navbar {
-  height: 50px;
-  overflow: hidden;
-  position: relative;
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  box-shadow: none;
-  display: flex;
-  align-items: center;
-  // padding: 0 8px;
-  box-sizing: border-box;
-
-  .hamburger-container {
-    line-height: 46px;
-    height: 100%;
-    //float: left;
-    cursor: pointer;
-    transition: background 0.3s;
-    -webkit-tap-highlight-color: transparent;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    margin-right: 8px;
-
-    &:hover {
-      background: var(--el-fill-color-lighter);
-    }
-  }
-
-  .breadcrumb-container {
-    //float: left;
-    flex-shrink: 0;
-  }
-
-  .topmenu-container {
-    position: absolute;
-    left: 50px;
-  }
-
-  .topbar-container {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    margin-left: 8px;
-  }
-
-
-  .errLog-container {
-    display: inline-block;
-    vertical-align: top;
-  }
-
-  .right-menu {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    margin-left: auto;
-
-    &:focus {
-      outline: none;
-    }
-
-    .right-menu-item {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 8px;
-      height: 32px;
-      font-size: 18px;
-      color: var(--el-text-color-regular);
-      border-radius: var(--app-radius-md);
-
-      &.hover-effect {
-        cursor: pointer;
-        transition: background 0.2s ease, color 0.2s ease;
-
-        &:hover {
-          background: var(--el-fill-color-light);
-          color: var(--el-color-primary);
-        }
-      }
-    }
-
-    .avatar-container {
-      margin-right: 40px;
-
-      .avatar-wrapper {
-        margin-top: 0;
-        position: relative;
-
-        .user-avatar {
-          cursor: pointer;
-          width: 40px;
-          height: 40px;
-          border-radius: var(--app-radius-md);
-          margin-top: 0;
-          display: block;
-        }
-
-        i {
-          cursor: pointer;
-          position: absolute;
-          right: -20px;
-          top: 25px;
-          font-size: 12px;
-        }
-      }
-    }
-  }
 }
 </style>

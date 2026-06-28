@@ -12,7 +12,7 @@
         @click.middle="!isAffix(tag) ? closeSelectedTag(tag) : ''"
         @contextmenu.prevent="openMenu(tag, $event)"
       >
-        <svg-icon v-if="tagsIcon && tag.meta && tag.meta.icon && tag.meta.icon !== '#'" :icon-class="tag.meta.icon"/>
+        <svg-icon v-if="tagsIcon && tag.meta && tag.meta.icon && tag.meta.icon !== '#'" :icon-class="tag.meta.icon" />
         <span class="tags-view-item-title">{{ tag.title }}</span>
         <span v-if="!isAffix(tag)" @click.prevent.stop="closeSelectedTag(tag)">
           <close class="el-icon-close" style="width: 1em; height: 1em; vertical-align: middle" />
@@ -37,6 +37,7 @@ import { useSettingsStore } from '@/store/modules/settings';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useTagsViewStore } from '@/store/modules/tagsView';
 import { RouteRecordRaw, RouteLocationNormalized } from 'vue-router';
+import { ADMIN_HOME_PATH } from '@/constants/router';
 
 const visible = ref(false);
 const top = ref(0);
@@ -52,7 +53,7 @@ const router = useRouter();
 const visitedViews = computed(() => useTagsViewStore().getVisitedViews());
 const routes = computed(() => usePermissionStore().getRoutes());
 const theme = computed(() => useSettingsStore().theme);
-const tagsIcon = computed(() => useSettingsStore().tagsIcon)
+const tagsIcon = computed(() => useSettingsStore().tagsIcon);
 
 watch(route, () => {
   addTags();
@@ -81,7 +82,7 @@ const isAffix = (tag: RouteLocationNormalized) => {
 };
 const isFirstView = () => {
   try {
-    return selectedTag.value.fullPath === '/index' || selectedTag.value.fullPath === visitedViews.value[1].fullPath;
+    return selectedTag.value.fullPath === ADMIN_HOME_PATH || selectedTag.value.fullPath === visitedViews.value[1].fullPath;
   } catch (err) {
     return false;
   }
@@ -204,7 +205,7 @@ const toLastView = (visitedViews: RouteLocationNormalized[], view?: RouteLocatio
       // to reload home page
       router.replace({ path: '/redirect' + view?.fullPath });
     } else {
-      router.push('/');
+      router.push(ADMIN_HOME_PATH);
     }
   }
 };
@@ -261,7 +262,11 @@ onMounted(() => {
       margin-left: 5px;
       margin-top: 4px;
       border-radius: var(--app-radius-md);
-      transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      transition:
+        box-shadow 0.2s ease,
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
       &:hover {
         color: var(--el-color-primary);
         border-color: var(--el-color-primary-light-5);

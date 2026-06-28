@@ -8,6 +8,7 @@
 -- 关联表必须先删(外键顺序)
 -- ----------------------------------------------------------------
 DROP TABLE IF EXISTS app_message;
+DROP TABLE IF EXISTS app_demand;
 DROP TABLE IF EXISTS app_recommend;
 DROP TABLE IF EXISTS app_favorite;
 DROP TABLE IF EXISTS app_application;
@@ -112,6 +113,36 @@ CREATE INDEX idx_app_message_user ON app_message (user_id, is_read);
 COMMENT ON TABLE app_message IS '应用中心消息';
 
 -- ----------------------------------------------------------------
+-- 应用需求反馈
+-- ----------------------------------------------------------------
+CREATE TABLE app_demand (
+    demand_id      int8          NOT NULL,
+    demand_type    varchar(20)   NOT NULL,
+    app_id         int8          DEFAULT NULL,
+    app_name       varchar(100)  NOT NULL,
+    reference_url  varchar(500)  DEFAULT NULL,
+    content        text          NOT NULL,
+    contact        varchar(100)  DEFAULT NULL,
+    requester_id   int8          DEFAULT NULL,
+    requester_name varchar(100)  DEFAULT NULL,
+    status         char(1)       DEFAULT '0',
+    handle_remark  varchar(1000) DEFAULT NULL,
+    handled_by     int8          DEFAULT NULL,
+    handled_time   timestamp     DEFAULT NULL,
+    tenant_id      varchar(20)   DEFAULT '000000',
+    del_flag       char(1)       DEFAULT '0',
+    create_dept    int8          DEFAULT NULL,
+    create_by      int8          DEFAULT NULL,
+    create_time    timestamp     DEFAULT NULL,
+    update_by      int8          DEFAULT NULL,
+    update_time    timestamp     DEFAULT NULL,
+    CONSTRAINT pk_app_demand PRIMARY KEY (demand_id)
+);
+CREATE INDEX idx_app_demand_status ON app_demand (tenant_id, status, create_time);
+CREATE INDEX idx_app_demand_requester ON app_demand (requester_id, create_time);
+COMMENT ON TABLE app_demand IS '应用需求反馈';
+
+-- ----------------------------------------------------------------
 -- 种子数据：分类 (3条)
 -- ----------------------------------------------------------------
 INSERT INTO app_category (category_id, category_name, category_code, icon, order_num, create_time) VALUES
@@ -138,26 +169,31 @@ VALUES
  '白板,草图,协作', 'http://127.0.0.1:18090', '0', '0', 84, 24, 3, now());
 
 -- ----------------------------------------------------------------
--- sys_menu: 应用中心目录 + 菜单 + 按钮权限
+-- sys_menu: 门户应用管理目录 + 工具即用菜单 + 按钮权限
 -- 幂等: ON CONFLICT (menu_id) DO NOTHING
 -- ----------------------------------------------------------------
 
--- 应用中心 目录 (menu_id=2000)
+-- 门户应用管理 目录 (menu_id=2000)
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
-VALUES (2000, '应用中心', 0, 5, 'appcenter', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now())
+VALUES (2000, '门户应用管理', 0, 5, 'portal-apps', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
--- 应用管理 菜单 (menu_id=2010)
+-- 工具应用 菜单 (menu_id=2010)
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
-VALUES (2010, '应用管理', 2000, 1, 'application', 'appcenter/application/index', '', '1', '0', 'C', '0', '0', 'appcenter:application:list', 'list', 103, 1, now())
+VALUES (2010, '工具应用', 2000, 1, 'application', 'admin/appcenter/application/index', '', '1', '0', 'C', '0', '0', 'appcenter:application:list', 'list', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
--- 分类管理 菜单 (menu_id=2020)
+-- 工具分类 菜单 (menu_id=2020)
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
-VALUES (2020, '分类管理', 2000, 2, 'category', 'appcenter/category/index', '', '1', '0', 'C', '0', '0', 'appcenter:category:list', 'tree', 103, 1, now())
+VALUES (2020, '工具分类', 2000, 2, 'category', 'admin/appcenter/category/index', '', '1', '0', 'C', '0', '0', 'appcenter:category:list', 'tree', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
--- 按钮权限 (menu_id 2011-2014, 2021-2024)
+-- 需求反馈 菜单 (menu_id=2030)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
+VALUES (2030, '需求反馈', 2000, 3, 'demand', 'admin/appcenter/demand/index', '', '1', '0', 'C', '0', '0', 'appcenter:demand:list', 'message', 103, 1, now())
+ON CONFLICT (menu_id) DO NOTHING;
+
+-- 按钮权限 (menu_id 2011-2014, 2021-2024, 2031-2033)
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
 VALUES
 (2011, '应用查询', 2010, 1, '', '', '', '1', '0', 'F', '0', '0', 'appcenter:application:query',  '#', 103, 1, now()),
@@ -167,5 +203,8 @@ VALUES
 (2021, '分类查询', 2020, 1, '', '', '', '1', '0', 'F', '0', '0', 'appcenter:category:query',     '#', 103, 1, now()),
 (2022, '分类新增', 2020, 2, '', '', '', '1', '0', 'F', '0', '0', 'appcenter:category:add',       '#', 103, 1, now()),
 (2023, '分类修改', 2020, 3, '', '', '', '1', '0', 'F', '0', '0', 'appcenter:category:edit',      '#', 103, 1, now()),
-(2024, '分类删除', 2020, 4, '', '', '', '1', '0', 'F', '0', '0', 'appcenter:category:remove',    '#', 103, 1, now())
+(2024, '分类删除', 2020, 4, '', '', '', '1', '0', 'F', '0', '0', 'appcenter:category:remove',    '#', 103, 1, now()),
+(2031, '需求查询', 2030, 1, '', '', '', '1', '0', 'F', '0', '0', 'appcenter:demand:query',       '#', 103, 1, now()),
+(2032, '需求处理', 2030, 2, '', '', '', '1', '0', 'F', '0', '0', 'appcenter:demand:edit',        '#', 103, 1, now()),
+(2033, '需求删除', 2030, 3, '', '', '', '1', '0', 'F', '0', '0', 'appcenter:demand:remove',      '#', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;

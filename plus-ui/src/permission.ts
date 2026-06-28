@@ -9,60 +9,94 @@ import { useUserStore } from '@/store/modules/user';
 import { useSettingsStore } from '@/store/modules/settings';
 import { usePermissionStore } from '@/store/modules/permission';
 import { ElMessage } from 'element-plus/es';
+import { ADMIN_BASE_PATH, PORTAL_HOME_PATH } from '@/constants/router';
 
 NProgress.configure({ showSpinner: false });
-const whiteList = ['/login', '/register', '/social-callback', '/register*', '/register/*'];
+
+const whiteList = ['/login', '/social-callback'];
+const adminLegacyRoots = ['/system', '/monitor', '/tool', '/workflow', '/infoservice'];
+const adminLegacyPrefixes = ['/appcenter'];
 
 const isWhiteList = (path: string) => {
   return whiteList.some((pattern) => isPathMatch(pattern, path));
 };
 
+const isSameOrChildPath = (path: string, rootPath: string) => {
+  return path === rootPath || path.startsWith(`${rootPath}/`);
+};
+
+const getAdminCompatPath = (path: string) => {
+  if (isSameOrChildPath(path, ADMIN_BASE_PATH)) {
+    return path;
+  }
+  if (adminLegacyRoots.some((rootPath) => isSameOrChildPath(path, rootPath))) {
+    return `${ADMIN_BASE_PATH}${path}`;
+  }
+  if (adminLegacyPrefixes.some((rootPath) => path.startsWith(`${rootPath}/`))) {
+    return `${ADMIN_BASE_PATH}${path}`;
+  }
+  return path;
+};
+
 router.beforeEach(async (to, from, next) => {
   NProgress.start();
+
   if (getToken()) {
     to.meta.title && useSettingsStore().setTitle(to.meta.title as string);
-    /* has token*/
+    const userStore = useUserStore();
+
     if (to.path === '/login') {
-      next({ path: '/portal' });
+      next({ path: PORTAL_HOME_PATH });
       NProgress.done();
-    } else if (isWhiteList(to.path)) {
-      next();
-    } else {
-      if (useUserStore().roles.length === 0) {
-        isRelogin.show = true;
-        // 判断当前用户是否已拉取完user_info信息
-        const [err] = await tos(useUserStore().getInfo());
-        if (err) {
-          await useUserStore().logout();
-          ElMessage.error(err);
-          next({ path: '/' });
-        } else {
-          isRelogin.show = false;
-          const accessRoutes = await usePermissionStore().generateRoutes();
-          // 根据roles权限生成可访问的路由表
-          accessRoutes.forEach((route) => {
-            if (!isHttp(route.path)) {
-              router.addRoute(route); // 动态添加可访问路由表
-            }
-          });
-          // @ts-expect-error hack方法 确保addRoutes已完成
-          next({ path: to.path, replace: true, params: to.params, query: to.query, hash: to.hash, name: to.name as string }); // hack方法 确保addRoutes已完成
-        }
-      } else {
-        next();
-      }
+      return;
     }
-  } else {
-    // 没有token
+
     if (isWhiteList(to.path)) {
-      // 在免登录白名单，直接进入
       next();
-    } else {
-      const redirect = encodeURIComponent(to.fullPath || '/');
-      next(`/login?redirect=${redirect}`); // 否则全部重定向到登录页
-      NProgress.done();
+      return;
     }
+
+    const targetPath = getAdminCompatPath(to.path);
+
+    if (userStore.roles.length === 0) {
+      isRelogin.show = true;
+      const [err] = await tos(userStore.getInfo());
+
+      if (err) {
+        await userStore.logout();
+        ElMessage.error(err);
+        next({ path: PORTAL_HOME_PATH });
+        return;
+      }
+
+      isRelogin.show = false;
+      const accessRoutes = await usePermissionStore().generateRoutes();
+      accessRoutes.forEach((route) => {
+        if (!isHttp(route.path)) {
+          router.addRoute(route);
+        }
+      });
+      next({ path: targetPath, replace: true, params: to.params, query: to.query, hash: to.hash });
+      return;
+    }
+
+    if (targetPath !== to.path) {
+      next({ path: targetPath, replace: true, query: to.query, hash: to.hash });
+      return;
+    }
+
+    next();
+    return;
   }
+
+  if (isWhiteList(to.path)) {
+    next();
+    return;
+  }
+
+  const redirect = encodeURIComponent(to.fullPath || PORTAL_HOME_PATH);
+  next(`/login?redirect=${redirect}`);
+  NProgress.done();
 });
 
 router.afterEach(() => {

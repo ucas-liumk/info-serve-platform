@@ -1,27 +1,27 @@
 datasource:
   system-master:
     # 迁移至 PostgreSQL；reWriteBatchedInserts=true 为 PG 批处理优化
-    url: jdbc:postgresql://localhost:5432/ry-cloud?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
+    url: jdbc:postgresql://localhost:8132/ry-cloud?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
     username: ruoyi
-    password: password
+    password: ruoyi123
   gen:
-    url: jdbc:postgresql://localhost:5432/ry-cloud?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
+    url: jdbc:postgresql://localhost:8132/ry-cloud?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
     username: ruoyi
-    password: password
+    password: ruoyi123
   job:
-    url: jdbc:postgresql://localhost:5432/ry-job?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
+    url: jdbc:postgresql://localhost:8132/ry-job?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
     username: ruoyi
-    password: password
+    password: ruoyi123
   workflow:
-    url: jdbc:postgresql://localhost:5432/ry-workflow?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
+    url: jdbc:postgresql://localhost:8132/ry-workflow?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
     username: ruoyi
-    password: password
+    password: ruoyi123
 #  system-oracle:
 #    url: jdbc:oracle:thin:@//localhost:1521/XE
 #    username: ROOT
 #    password: password
 #  system-postgres:
-#    url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
+#    url: jdbc:postgresql://localhost:8132/postgres?useUnicode=true&characterEncoding=utf8&useSSL=true&autoReconnect=true&reWriteBatchedInserts=true
 #    username: root
 #    password: password
 

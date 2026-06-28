@@ -30,6 +30,7 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/modules/user';
+import { ADMIN_HOME_PATH } from '@/constants/router';
 
 const props = withDefaults(
   defineProps<{
@@ -73,7 +74,7 @@ const emitSearch = () => {
   emit('update:modelValue', kw.value);
   emit('search', kw.value);
 };
-const goAdmin = () => router.push('/index');
+const goAdmin = () => router.push(ADMIN_HOME_PATH);
 </script>
 
 <style scoped>
@@ -130,7 +131,9 @@ const goAdmin = () => router.push('/index');
   padding: 0 14px 0 18px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 0 0 1px #d5dce8 inset, 0 10px 26px rgba(30, 45, 76, 0.06);
+  box-shadow:
+    0 0 0 1px #d5dce8 inset,
+    0 10px 26px rgba(30, 45, 76, 0.06);
 }
 
 :deep(.search .el-input__inner) {

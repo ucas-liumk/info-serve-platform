@@ -144,9 +144,13 @@ public class WebFluxUtils {
      */
     public static Mono<Void> webFluxResponseWriter(ServerHttpResponse response, String contentType, HttpStatus status, Object value, int code) {
         response.setStatusCode(status);
-        response.getHeaders().add(HttpHeaders.CONTENT_TYPE, contentType);
+        MediaType mediaType = MediaType.parseMediaType(contentType);
+        if (mediaType.getCharset() == null) {
+            mediaType = new MediaType(mediaType, StandardCharsets.UTF_8);
+        }
+        response.getHeaders().setContentType(mediaType);
         R<?> result = R.fail(code, value.toString());
-        DataBuffer dataBuffer = response.bufferFactory().wrap(JsonUtils.toJsonString(result).getBytes());
+        DataBuffer dataBuffer = response.bufferFactory().wrap(JsonUtils.toJsonString(result).getBytes(StandardCharsets.UTF_8));
         return response.writeWith(Mono.just(dataBuffer));
     }
 }

@@ -2,7 +2,7 @@
   <el-breadcrumb class="app-breadcrumb" separator="/">
     <transition-group name="breadcrumb">
       <el-breadcrumb-item v-for="(item, index) in levelList" :key="item.path">
-        <span v-if="item.redirect === 'noRedirect' || index == levelList.length - 1" class="no-redirect">{{ item.meta?.title }}</span>
+        <span v-if="item.redirect === 'noRedirect' || index === levelList.length - 1" class="no-redirect">{{ item.meta?.title }}</span>
         <a v-else @click.prevent="handleLink(item)">{{ item.meta?.title }}</a>
       </el-breadcrumb-item>
     </transition-group>
@@ -10,66 +10,75 @@
 </template>
 
 <script setup lang="ts">
-import { RouteLocationMatched } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
 import { usePermissionStore } from '@/store/modules/permission';
+import { ADMIN_BASE_PATH, ADMIN_HOME_PATH } from '@/constants/router';
 
 const route = useRoute();
 const router = useRouter();
 const permissionStore = usePermissionStore();
-const levelList = ref<RouteLocationMatched[]>([]);
+const levelList = ref<any[]>([]);
 
-const getBreadcrumb = () => {
-  // only show routes with meta.title
-  let matched = [];
-  const pathNum = findPathNum(route.path);
-  // multi-level menu
-  if (pathNum > 2) {
-    const reg = /\/\w+/gi;
-    const pathList = route.path.match(reg).map((item, index) => {
-      if (index !== 0) item = item.slice(1);
-      return item;
-    });
-    getMatched(pathList, permissionStore.defaultRoutes, matched);
-  } else {
-    matched = route.matched.filter((item) => item.meta && item.meta.title);
-  }
-  // 判断是否为首页
-  if (!isDashboard(matched[0])) {
-    matched = [{ path: '/index', meta: { title: '首页' } }].concat(matched);
-  }
-  levelList.value = matched.filter((item) => item.meta && item.meta.title && item.meta.breadcrumb !== false);
-};
-const findPathNum = (str, char = '/') => {
+const findPathNum = (str: string, char = '/') => {
   if (typeof str !== 'string' || str.length === 0) return 0;
   return str.split(char).length - 1;
 };
-const getMatched = (pathList, routeList, matched) => {
-  const data = routeList.find((item) => item.path == pathList[0] || (item.name += '').toLowerCase() == pathList[0]);
-  if (data) {
+
+const getMatched = (pathList: string[], routeList: RouteRecordRaw[]) => {
+  const matched: RouteRecordRaw[] = [];
+
+  const walk = (list: RouteRecordRaw[], paths: string[]) => {
+    const currentPath = paths[0];
+    const data = list.find((item) => item.path === currentPath || item.name?.toString().toLowerCase() === currentPath);
+    if (!data) return;
+
     matched.push(data);
-    if (data.children && pathList.length) {
-      pathList.shift();
-      getMatched(pathList, data.children, matched);
+    if (data.children && paths.length > 1) {
+      walk(data.children, paths.slice(1));
     }
-  }
+  };
+
+  walk(routeList, pathList);
+  return matched;
 };
-const isDashboard = (route: RouteLocationMatched) => {
-  const name = route && (route.name as string);
-  if (!name) {
-    return false;
-  }
-  return name.trim() === 'Index';
+
+const isDashboard = (item?: any) => {
+  const name = item?.name as string | undefined;
+  return name?.trim() === 'Index';
 };
-const handleLink = (item) => {
-  const { redirect, path } = item;
-  redirect ? router.push(redirect) : router.push(path);
+
+const getBreadcrumb = () => {
+  let matched: any[] = [];
+
+  if (route.path.startsWith(`${ADMIN_BASE_PATH}/`)) {
+    matched = route.matched.filter((item) => item.meta && item.meta.title);
+  } else if (findPathNum(route.path) > 2) {
+    const pathList = route.path.match(/\/\w+/gi)?.map((item, index) => (index === 0 ? item : item.slice(1))) ?? [];
+    matched = getMatched(pathList, permissionStore.defaultRoutes);
+  } else {
+    matched = route.matched.filter((item) => item.meta && item.meta.title);
+  }
+
+  if (!isDashboard(matched[0])) {
+    matched = [{ path: ADMIN_HOME_PATH, meta: { title: '后台首页' } }, ...matched];
+  }
+
+  levelList.value = matched.filter((item) => item.meta && item.meta.title && item.meta.breadcrumb !== false);
+};
+
+const handleLink = (item: any) => {
+  if (item.redirect && item.redirect !== 'noRedirect') {
+    router.push(item.redirect);
+    return;
+  }
+  router.push(item.path);
 };
 
 watchEffect(() => {
-  // if you go to the redirect page, do not update the breadcrumbs
   if (route.path.startsWith('/redirect/')) return;
   getBreadcrumb();
 });
+
 onMounted(() => {
   getBreadcrumb();
 });

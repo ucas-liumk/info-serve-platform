@@ -1,31 +1,13 @@
-import { createWebHistory, createRouter, RouteRecordRaw } from 'vue-router';
-/* Layout */
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import Layout from '@/layout/index.vue';
+import { ADMIN_BASE_PATH, ADMIN_HOME_PATH, PORTAL_HOME_PATH } from '@/constants/router';
 
-/**
- * Note: 路由配置项
- *
- * hidden: true                     // 当设置 true 的时候该路由不会再侧边栏出现 如401，login等页面，或者如一些编辑页面/edit/1
- * alwaysShow: true                 // 当你一个路由下面的 children 声明的路由大于1个时，自动会变成嵌套的模式--如组件页面
- *                                  // 只有一个时，会将那个子路由当做根路由显示在侧边栏--如引导页面
- *                                  // 若你想不管路由下面的 children 声明的个数都显示你的根路由
- *                                  // 你可以设置 alwaysShow: true，这样它就会忽略之前定义的规则，一直显示根路由
- * redirect: noRedirect             // 当设置 noRedirect 的时候该路由在面包屑导航中不可被点击
- * name:'router-name'               // 设定路由的名字，一定要填写不然使用<keep-alive>时会出现各种问题
- * query: '{"id": 1, "name": "ry"}' // 访问路由的默认传递参数
- * roles: ['admin', 'common']       // 访问路由的角色权限
- * permissions: ['a:a:a', 'b:b:b']  // 访问路由的菜单权限
- * meta : {
-    noCache: true                   // 如果设置为true，则不会被 <keep-alive> 缓存(默认 false)
-    title: 'title'                  // 设置该路由在侧边栏和面包屑中展示的名字
-    icon: 'svg-name'                // 设置该路由的图标，对应路径src/assets/icons/svg
-    breadcrumb: false               // 如果设置为false，则不会在breadcrumb面包屑中显示
-    activeMenu: '/system/user'      // 当路由设置了该属性，则会高亮相对应的侧边栏。
-  }
- */
-
-// 公共路由
 export const constantRoutes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    redirect: PORTAL_HOME_PATH,
+    hidden: true
+  },
   {
     path: '/redirect',
     component: Layout,
@@ -49,12 +31,7 @@ export const constantRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/register',
-    component: () => import('@/views/register.vue'),
-    hidden: true
-  },
-  {
-    path: '/:pathMatch(.*)*',
-    component: () => import('@/views/error/404.vue'),
+    redirect: '/login',
     hidden: true
   },
   {
@@ -63,61 +40,65 @@ export const constantRoutes: RouteRecordRaw[] = [
     hidden: true
   },
   {
-    path: '/portal',
+    path: PORTAL_HOME_PATH,
     component: () => import('@/layout/portal/index.vue'),
+    hidden: true,
     children: [
-      { path: '', name: 'InfoPortalHome', component: () => import('@/views/portal/index.vue'), meta: { title: '服务概览' } },
-      { path: 'resources', name: 'InfoResources', component: () => import('@/views/infoservice/resources/index.vue'), meta: { title: '资料共享' } },
-      { path: 'tools', name: 'InfoTools', component: () => import('@/views/appcenter/portal/index.vue'), meta: { title: '工具即用' } },
-      { path: 'forum', name: 'InfoForum', component: () => import('@/views/infoservice/forum/index.vue'), meta: { title: '服务论坛' } }
+      { path: '', name: 'InfoPortalHome', component: () => import('@/views/portal/home/index.vue'), meta: { title: '服务概览' } },
+      { path: 'resources', name: 'InfoResources', component: () => import('@/views/portal/resources/index.vue'), meta: { title: '资料共享' } },
+      { path: 'tools', name: 'InfoTools', component: () => import('@/views/portal/tools/index.vue'), meta: { title: '工具即用' } },
+      { path: 'forum', name: 'InfoForum', component: () => import('@/views/portal/forum/index.vue'), meta: { title: '服务论坛' } }
     ]
   },
   {
     path: '/appcenter',
-    redirect: '/portal/tools',
+    redirect: `${PORTAL_HOME_PATH}/tools`,
     hidden: true
   },
   {
-    path: '',
+    path: '/index',
+    redirect: ADMIN_HOME_PATH,
+    hidden: true
+  },
+  {
+    path: ADMIN_BASE_PATH,
     component: Layout,
-    redirect: '/portal',
+    redirect: ADMIN_HOME_PATH,
     children: [
       {
-        path: '/index',
-        component: () => import('@/views/index.vue'),
+        path: 'index',
+        component: () => import('@/views/admin/home/index.vue'),
         name: 'Index',
-        meta: { title: '首页', icon: 'dashboard', affix: true }
+        meta: { title: '后台首页', icon: 'dashboard', affix: true }
       }
     ]
   },
   {
-    path: '/user',
+    path: `${ADMIN_BASE_PATH}/user`,
     component: Layout,
     hidden: true,
     redirect: 'noredirect',
     children: [
       {
         path: 'profile',
-        component: () => import('@/views/system/user/profile/index.vue'),
+        component: () => import('@/views/admin/system/user/profile/index.vue'),
         name: 'Profile',
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    component: () => import('@/views/error/404.vue'),
+    hidden: true
   }
 ];
 
-// 动态路由，基于用户权限动态去加载
-export const dynamicRoutes: RouteRecordRaw[] = [
+export const dynamicRoutes: RouteRecordRaw[] = [];
 
-];
-
-/**
- * 创建路由
- */
 const router = createRouter({
   history: createWebHistory(import.meta.env.VITE_APP_CONTEXT_PATH),
   routes: constantRoutes,
-  // 刷新时，滚动条位置还原
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition;

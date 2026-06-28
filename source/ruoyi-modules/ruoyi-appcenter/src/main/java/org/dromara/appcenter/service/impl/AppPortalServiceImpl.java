@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.dromara.appcenter.domain.*;
+import org.dromara.appcenter.domain.bo.AppDemandSubmitBo;
 import org.dromara.appcenter.domain.vo.*;
 import org.dromara.appcenter.mapper.*;
+import org.dromara.appcenter.service.IAppDemandService;
 import org.dromara.appcenter.service.IAppPortalService;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
@@ -28,13 +30,15 @@ public class AppPortalServiceImpl implements IAppPortalService {
     private final AppFavoriteMapper favoriteMapper;
     private final AppRecommendMapper recommendMapper;
     private final AppMessageMapper messageMapper;
+    private final IAppDemandService demandService;
 
     @Override
     public List<AppCategoryVo> categories() {
-        return categoryMapper.selectVoList(
+        return categoryMapper.selectList(
             Wrappers.<AppCategory>lambdaQuery()
                 .eq(AppCategory::getStatus, "0")
-                .orderByAsc(AppCategory::getOrderNum));
+                .orderByAsc(AppCategory::getOrderNum))
+            .stream().map(this::toCategoryVo).toList();
     }
 
     @Override
@@ -75,6 +79,10 @@ public class AppPortalServiceImpl implements IAppPortalService {
         Set<Long> favs = favoriteMapper.selectList(Wrappers.<AppFavorite>lambdaQuery()
                 .eq(AppFavorite::getUserId, userId).in(AppFavorite::getAppId, appIds))
             .stream().map(AppFavorite::getAppId).collect(Collectors.toSet());
+        Map<Long, Long> favoriteCounts = favoriteMapper.selectList(Wrappers.<AppFavorite>lambdaQuery()
+                .in(AppFavorite::getAppId, appIds))
+            .stream()
+            .collect(Collectors.groupingBy(AppFavorite::getAppId, Collectors.counting()));
         Set<Long> recs = recommendMapper.selectList(Wrappers.<AppRecommend>lambdaQuery()
                 .eq(AppRecommend::getUserId, userId).in(AppRecommend::getAppId, appIds))
             .stream().map(AppRecommend::getAppId).collect(Collectors.toSet());
@@ -92,8 +100,9 @@ public class AppPortalServiceImpl implements IAppPortalService {
             v.setTags(a.getTags());
             v.setAccessUrl(a.getAccessUrl());
             v.setIsSecurity(a.getIsSecurity());
-            v.setUseCount(a.getUseCount());
-            v.setRecommendCount(a.getRecommendCount());
+            v.setUseCount(Optional.ofNullable(a.getUseCount()).orElse(0L));
+            v.setFavoriteCount(favoriteCounts.getOrDefault(a.getAppId(), 0L));
+            v.setRecommendCount(Optional.ofNullable(a.getRecommendCount()).orElse(0L));
             v.setCategoryName(catNames.get(a.getCategoryId()));
             v.setFavorited(favs.contains(a.getAppId()));
             v.setRecommended(recs.contains(a.getAppId()));
@@ -108,7 +117,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
             throw new ServiceException("应用不存在或已下架");
         }
         applicationMapper.update(null, Wrappers.<AppApplication>lambdaUpdate()
-            .setSql("use_count = use_count + 1").eq(AppApplication::getAppId, appId));
+            .setSql("use_count = COALESCE(use_count, 0) + 1").eq(AppApplication::getAppId, appId));
         return app.getAccessUrl();
     }
 
@@ -188,12 +197,13 @@ public class AppPortalServiceImpl implements IAppPortalService {
     @Override
     public TableDataInfo<AppMessageVo> messages(String isRead, PageQuery pageQuery) {
         Long userId = LoginHelper.getUserId();
-        Page<AppMessageVo> page = messageMapper.selectVoPage(pageQuery.build(),
+        Page<AppMessage> page = messageMapper.selectPage(pageQuery.build(),
             Wrappers.<AppMessage>lambdaQuery()
                 .eq(AppMessage::getUserId, userId)
                 .eq(StringUtils.isNotBlank(isRead), AppMessage::getIsRead, isRead)
                 .orderByDesc(AppMessage::getCreateTime));
-        return TableDataInfo.build(page);
+        List<AppMessageVo> rows = page.getRecords().stream().map(this::toMessageVo).toList();
+        return new TableDataInfo<>(rows, page.getTotal());
     }
 
     @Override
@@ -211,5 +221,74 @@ public class AppPortalServiceImpl implements IAppPortalService {
         up.setIsRead("1");
         messageMapper.update(up, Wrappers.<AppMessage>lambdaUpdate()
             .eq(AppMessage::getMessageId, messageId).eq(AppMessage::getUserId, userId));
+    }
+
+    @Override
+    public void deleteReadMessage(Long messageId) {
+        Long userId = LoginHelper.getUserId();
+        AppMessage message = messageMapper.selectOne(Wrappers.<AppMessage>lambdaQuery()
+            .eq(AppMessage::getMessageId, messageId)
+            .eq(AppMessage::getUserId, userId));
+        if (message == null) {
+            throw new ServiceException("通知不存在");
+        }
+        if (!"1".equals(message.getIsRead())) {
+            throw new ServiceException("请先标记已读后再删除");
+        }
+        messageMapper.delete(Wrappers.<AppMessage>lambdaQuery()
+            .eq(AppMessage::getMessageId, messageId)
+            .eq(AppMessage::getUserId, userId)
+            .eq(AppMessage::getIsRead, "1"));
+    }
+
+    @Override
+    public void clearReadMessages() {
+        Long userId = LoginHelper.getUserId();
+        messageMapper.delete(Wrappers.<AppMessage>lambdaQuery()
+            .eq(AppMessage::getUserId, userId)
+            .eq(AppMessage::getIsRead, "1"));
+    }
+
+    @Override
+    public Boolean submitDemand(AppDemandSubmitBo bo) {
+        return demandService.submitFromPortal(bo);
+    }
+
+    @Override
+    public TableDataInfo<AppDemandVo> myDemands(PageQuery pageQuery) {
+        return demandService.queryMyPageList(pageQuery);
+    }
+
+    @Override
+    public Boolean deleteMyDemand(Long demandId) {
+        return demandService.deleteOwnById(demandId);
+    }
+
+    private AppCategoryVo toCategoryVo(AppCategory entity) {
+        if (entity == null) {
+            return null;
+        }
+        AppCategoryVo vo = new AppCategoryVo();
+        vo.setCategoryId(entity.getCategoryId());
+        vo.setCategoryName(entity.getCategoryName());
+        vo.setCategoryCode(entity.getCategoryCode());
+        vo.setIcon(entity.getIcon());
+        vo.setOrderNum(entity.getOrderNum());
+        vo.setStatus(entity.getStatus());
+        return vo;
+    }
+
+    private AppMessageVo toMessageVo(AppMessage entity) {
+        if (entity == null) {
+            return null;
+        }
+        AppMessageVo vo = new AppMessageVo();
+        vo.setMessageId(entity.getMessageId());
+        vo.setTitle(entity.getTitle());
+        vo.setContent(entity.getContent());
+        vo.setMsgType(entity.getMsgType());
+        vo.setIsRead(entity.getIsRead());
+        vo.setCreateTime(entity.getCreateTime());
+        return vo;
     }
 }

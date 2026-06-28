@@ -9,9 +9,37 @@ import ParentView from '@/components/ParentView/index.vue';
 import InnerLink from '@/layout/components/InnerLink/index.vue';
 import { ref } from 'vue';
 import { createCustomNameComponent } from '@/utils/createCustomNameComponent';
+import { ADMIN_BASE_PATH } from '@/constants/router';
 
 // 匹配views里面所有的.vue文件
 const modules = import.meta.glob('./../../views/**/*.vue');
+
+const viewAliasMap: Record<string, string> = {
+  'appcenter/application/index': 'admin/appcenter/application/index',
+  'appcenter/category/index': 'admin/appcenter/category/index',
+  'infoservice/resource/index': 'admin/resources/resource/index',
+  'infoservice/resource/category': 'admin/resources/category/index',
+  'infoservice/forum/topic': 'admin/forum/topic/index',
+  'infoservice/forum/board': 'admin/forum/board/index'
+};
+
+const adminViewRoots = ['system', 'monitor', 'tool', 'workflow', 'demo'];
+
+const resolveViewCandidates = (view: any): string[] => {
+  const viewPath = String(view || '');
+  const candidates = [viewPath];
+  const aliasPath = viewAliasMap[viewPath];
+
+  if (aliasPath) {
+    candidates.push(aliasPath);
+  }
+  if (adminViewRoots.some((root) => viewPath === root || viewPath.startsWith(`${root}/`))) {
+    candidates.push(`admin/${viewPath}`);
+  }
+
+  return [...new Set(candidates)];
+};
+
 export const usePermissionStore = defineStore('permission', () => {
   const routes = ref<RouteRecordRaw[]>([]);
   const addRoutes = ref<RouteRecordRaw[]>([]);
@@ -51,9 +79,9 @@ export const usePermissionStore = defineStore('permission', () => {
     const sdata = JSON.parse(JSON.stringify(data));
     const rdata = JSON.parse(JSON.stringify(data));
     const defaultData = JSON.parse(JSON.stringify(data));
-    const sidebarRoutes = filterAsyncRouter(sdata);
-    const rewriteRoutes = filterAsyncRouter(rdata, undefined, true);
-    const defaultRoutes = filterAsyncRouter(defaultData);
+    const sidebarRoutes = withAdminBaseRoutes(filterAsyncRouter(sdata));
+    const rewriteRoutes = withAdminBaseRoutes(filterAsyncRouter(rdata, undefined, true));
+    const defaultRoutes = withAdminBaseRoutes(filterAsyncRouter(defaultData));
     const asyncRoutes = filterDynamicRoutes(dynamicRoutes);
     asyncRoutes.forEach((route) => {
       router.addRoute(route);
@@ -109,6 +137,47 @@ export const usePermissionStore = defineStore('permission', () => {
     });
     return children;
   };
+
+  const withAdminBaseRoutes = (routeList: RouteRecordRaw[]): RouteRecordRaw[] => {
+    return routeList.map((route) => withAdminBaseRoute(route, true));
+  };
+
+  const withAdminBaseRoute = (route: RouteRecordRaw, isTopLevel = false): RouteRecordRaw => {
+    const nextRoute = { ...route };
+    if (isTopLevel) {
+      nextRoute.path = withAdminBasePath(nextRoute.path);
+    }
+    if (typeof nextRoute.redirect === 'string') {
+      nextRoute.redirect = withAdminBaseRedirect(nextRoute.redirect);
+    }
+    if (nextRoute.meta?.activeMenu) {
+      nextRoute.meta = {
+        ...nextRoute.meta,
+        activeMenu: withAdminBasePath(nextRoute.meta.activeMenu as string)
+      };
+    }
+    if (nextRoute.children?.length) {
+      nextRoute.children = nextRoute.children.map((child) => withAdminBaseRoute(child));
+    }
+    return nextRoute;
+  };
+
+  const withAdminBasePath = (path: string): string => {
+    if (!path || path.startsWith(ADMIN_BASE_PATH) || path.startsWith('http')) {
+      return path;
+    }
+    if (path === '/') {
+      return ADMIN_BASE_PATH;
+    }
+    return `${ADMIN_BASE_PATH}/${path.replace(/^\/+/, '')}`;
+  };
+
+  const withAdminBaseRedirect = (redirect: string): string => {
+    if (!redirect || redirect === 'noRedirect' || redirect === 'noredirect' || redirect.startsWith('http')) {
+      return redirect;
+    }
+    return withAdminBasePath(redirect);
+  };
   return {
     routes,
     topbarRouters,
@@ -144,17 +213,16 @@ export const filterDynamicRoutes = (routes: RouteRecordRaw[]) => {
 };
 
 export const loadView = (view: any, name: string) => {
-  let res;
+  const candidates = resolveViewCandidates(view);
+
   for (const path in modules) {
     const viewsIndex = path.indexOf('/views/');
     let dir = path.substring(viewsIndex + 7);
     dir = dir.substring(0, dir.lastIndexOf('.vue'));
-    if (dir === view) {
-      res = createCustomNameComponent(modules[path], { name });
-      return res;
+    if (candidates.includes(dir)) {
+      return createCustomNameComponent(modules[path], { name });
     }
   }
-  return res;
 };
 
 // 非setup

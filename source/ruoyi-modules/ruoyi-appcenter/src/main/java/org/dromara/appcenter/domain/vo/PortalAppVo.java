@@ -19,6 +19,7 @@ public class PortalAppVo implements Serializable {
     private String accessUrl;
     private String isSecurity;
     private Long useCount;
+    private Long favoriteCount;
     private Long recommendCount;
     private Boolean favorited;
     private Boolean recommended;

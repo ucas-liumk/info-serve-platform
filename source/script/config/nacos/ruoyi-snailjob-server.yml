@@ -28,7 +28,7 @@ snail-job:
   # 服务端节点IP(默认按照`NetUtil.getLocalIpStr()`)
   server-host:
   # 服务端netty的端口号
-  server-port: 17888
+  server-port: 8192
   # 合并日志默认保存天数
   merge-Log-days: 1
   # 合并日志默认的条数

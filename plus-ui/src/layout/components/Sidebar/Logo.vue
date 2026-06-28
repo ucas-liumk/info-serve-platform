@@ -1,21 +1,18 @@
 <template>
-  <div
-    class="sidebar-logo-container"
-    :class="{ collapse: collapse }"
-  >
+  <div class="sidebar-logo-container" :class="{ collapse: collapse }">
     <transition :enter-active-class="proxy?.animate.logoAnimate.enter" mode="out-in">
-      <router-link v-if="collapse" key="collapse" class="sidebar-logo-link" to="/">
+      <div v-if="collapse" key="collapse" class="sidebar-logo-link">
         <img v-if="logo" :src="logo" class="sidebar-logo" />
         <h1 v-else class="sidebar-title">
           {{ title }}
         </h1>
-      </router-link>
-      <router-link v-else key="expand" class="sidebar-logo-link" to="/">
+      </div>
+      <div v-else key="expand" class="sidebar-logo-link">
         <img v-if="logo" :src="logo" class="sidebar-logo" />
         <h1 class="sidebar-title">
           {{ title }}
         </h1>
-      </router-link>
+      </div>
     </transition>
   </div>
 </template>
@@ -41,24 +38,24 @@ const sideTheme = computed(() => settingsStore.sideTheme);
 // 获取Logo背景色
 const getLogoBackground = computed(() => {
   if (settingsStore.isDark) {
-    return 'var(--sidebar-bg)'
+    return 'var(--sidebar-bg)';
   }
   if (settingsStore.navType == NavTypeEnum.TOP) {
-    return variables.menuLightBackground
+    return variables.menuLightBackground;
   }
-  return sideTheme.value === 'theme-dark' ? variables.menuBg : variables.menuLightBackground
-})
+  return sideTheme.value === 'theme-dark' ? variables.menuBg : variables.menuLightBackground;
+});
 
 // 获取Logo文字颜色
 const getLogoTextColor = computed(() => {
   if (settingsStore.isDark) {
-    return 'var(--sidebar-text)'
+    return 'var(--sidebar-text)';
   }
   if (settingsStore.navType == NavTypeEnum.TOP) {
-    return variables.logoLightTitleColor
+    return variables.logoLightTitleColor;
   }
-  return sideTheme.value === 'theme-dark' ? variables.logoTitleColor : variables.logoLightTitleColor
-})
+  return sideTheme.value === 'theme-dark' ? variables.logoTitleColor : variables.logoLightTitleColor;
+});
 </script>
 
 <style lang="scss" scoped>
@@ -80,6 +77,7 @@ const getLogoTextColor = computed(() => {
   overflow: hidden;
 
   & .sidebar-logo-link {
+    display: inline-block;
     height: 100%;
     width: 100%;
 
@@ -98,7 +96,12 @@ const getLogoTextColor = computed(() => {
       font-weight: 600;
       line-height: 50px;
       font-size: 14px;
-      font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
+      font-family:
+        Avenir,
+        Helvetica Neue,
+        Arial,
+        Helvetica,
+        sans-serif;
       vertical-align: middle;
     }
   }

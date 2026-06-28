@@ -3,7 +3,7 @@ security:
   # 验证码
   captcha:
     # 是否开启验证码
-    enabled: true
+    enabled: false
     # 验证码类型 math 数组计算 char 字符验证
     type: math
     # 数字验证码位数
@@ -22,7 +22,7 @@ user:
 # 三方授权
 justauth:
   # 前端外网访问地址
-  address: http://localhost:80
+  address: http://localhost:7018
   type:
     maxkey:
       # maxkey 服务器地址

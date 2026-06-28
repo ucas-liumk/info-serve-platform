@@ -1,14 +1,18 @@
 package org.dromara.appcenter.controller.portal;
 
 import lombok.RequiredArgsConstructor;
+import org.dromara.appcenter.domain.bo.AppDemandSubmitBo;
 import org.dromara.appcenter.domain.vo.AppCategoryVo;
+import org.dromara.appcenter.domain.vo.AppDemandVo;
 import org.dromara.appcenter.domain.vo.AppMessageVo;
 import org.dromara.appcenter.domain.vo.PortalAppVo;
 import org.dromara.appcenter.service.IAppPortalService;
 import org.dromara.common.core.domain.R;
+import org.dromara.common.idempotent.annotation.RepeatSubmit;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -81,5 +85,33 @@ public class AppPortalController extends BaseController {
     public R<Void> read(@PathVariable Long id) {
         portalService.readMessage(id);
         return R.ok();
+    }
+
+    @DeleteMapping("/messages/{id}")
+    public R<Void> deleteReadMessage(@PathVariable Long id) {
+        portalService.deleteReadMessage(id);
+        return R.ok();
+    }
+
+    @DeleteMapping("/messages/history/clear")
+    public R<Void> clearReadMessages() {
+        portalService.clearReadMessages();
+        return R.ok();
+    }
+
+    @RepeatSubmit
+    @PostMapping("/demands")
+    public R<Void> submitDemand(@Validated @RequestBody AppDemandSubmitBo bo) {
+        return toAjax(portalService.submitDemand(bo));
+    }
+
+    @GetMapping("/demands/my")
+    public TableDataInfo<AppDemandVo> myDemands(PageQuery pageQuery) {
+        return portalService.myDemands(pageQuery);
+    }
+
+    @DeleteMapping("/demands/{id}")
+    public R<Void> deleteDemand(@PathVariable Long id) {
+        return toAjax(portalService.deleteMyDemand(id));
     }
 }

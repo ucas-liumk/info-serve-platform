@@ -127,7 +127,7 @@ insert into sys_dict_data values(37, '000000', 0,  'iOS',     'ios',         'sy
 insert into sys_dict_data values(38, '000000', 0,  '小程序',     'xcx',      'sys_device_type',  '',   'default', 'N', '0', 103, 1, sysdate, null, null, '小程序');
 
 -- 二级菜单
-insert into sys_menu values('123',  '客户端管理',   '1',   '11', 'client',           'system/client/index',          '', 1, 0, 'C', '0', '0', 'system:client:list',          'international', 103, 1, sysdate, null, null, '客户端管理菜单');
+insert into sys_menu values('123',  '客户端管理',   '1',   '11', 'client',           'admin/system/client/index',          '', 1, 0, 'C', '0', '0', 'system:client:list',          'international', 103, 1, sysdate, null, null, '客户端管理菜单');
 -- 客户端管理按钮
 insert into sys_menu values('1061', '客户端管理查询', '123', '1',  '#', '', '', 1, 0, 'F', '0', '0', 'system:client:query',        '#', 103, 1, sysdate, null, null, '');
 insert into sys_menu values('1062', '客户端管理新增', '123', '2',  '#', '', '', 1, 0, 'F', '0', '0', 'system:client:add',          '#', 103, 1, sysdate, null, null, '');
