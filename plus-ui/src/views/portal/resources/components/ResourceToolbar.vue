@@ -54,25 +54,26 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border: 1px solid #dbe6f2;
+  border: 1px solid #e1e9f6;
   border-radius: 8px;
   padding: 13px 16px;
-  background: rgba(255, 255, 255, 0.96);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
 }
 
 .resource-toolbar p {
   margin: 0 0 4px;
-  color: #6b7b94;
+  color: #53668f;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .resource-toolbar h2 {
   margin: 0;
-  color: #071f4b;
+  color: #0b1833;
   font-size: 20px;
   line-height: 1.2;
-  font-weight: 950;
+  font-weight: 850;
 }
 
 .toolbar-controls {
@@ -87,15 +88,21 @@ const emit = defineEmits<{
   width: 132px;
 }
 
+.toolbar-select :deep(.el-select__wrapper) {
+  min-height: 40px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #dbe5f4 inset;
+}
+
 .mode-switch {
   height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid #d6e1ee;
+  border: 1px solid #dbe5f4;
   border-radius: 8px;
   padding: 3px;
-  background: #f7fbff;
+  background: #f7faff;
 }
 
 .mode-switch button {
@@ -107,13 +114,19 @@ const emit = defineEmits<{
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #60718b;
+  color: #53668f;
   cursor: pointer;
 }
 
 .mode-switch button.active {
-  background: #082b68;
+  background: #1260e8;
   color: #fff;
+  box-shadow: 0 4px 10px rgba(18, 96, 232, 0.18);
+}
+
+.mode-switch button:hover:not(.active) {
+  color: #1260e8;
+  background: #edf4ff;
 }
 
 @media (max-width: 760px) {

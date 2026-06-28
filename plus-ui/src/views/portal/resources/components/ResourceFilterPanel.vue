@@ -93,15 +93,15 @@ const timeOptions = [
 <style scoped>
 .filter-panel {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .filter-block {
-  border: 1px solid #dbe6f2;
+  border: 1px solid #e1e9f6;
   border-radius: 8px;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14px 30px rgba(16, 50, 94, 0.06);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
 }
 
 .filter-title {
@@ -109,9 +109,9 @@ const timeOptions = [
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
-  color: #082b68;
+  color: #0b1833;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .filter-title strong {
@@ -121,9 +121,10 @@ const timeOptions = [
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: #eef5ff;
-  color: #2e6eb8;
+  background: #edf4ff;
+  color: #1260e8;
   font-size: 12px;
+  font-weight: 700;
 }
 
 .filter-row {
@@ -137,9 +138,9 @@ const timeOptions = [
   border-radius: 7px;
   padding: 0 10px;
   background: transparent;
-  color: #31405a;
+  color: #25395f;
   font-size: 13px;
-  font-weight: 760;
+  font-weight: 650;
   text-align: left;
   cursor: pointer;
 }
@@ -149,23 +150,24 @@ const timeOptions = [
 }
 
 .filter-row em {
-  color: #7f8ea5;
+  color: #8a97af;
   font-style: normal;
   font-size: 12px;
 }
 
 .filter-row:hover {
-  background: #f4f8fd;
-  color: #082b68;
+  background: #f7faff;
+  color: #1260e8;
 }
 
 .filter-row.active {
-  background: #e8f2ff;
-  color: #06306e;
+  background: #edf4ff;
+  color: #1260e8;
+  font-weight: 750;
 }
 
 .filter-row.active em {
-  color: #2e6eb8;
+  color: #1260e8;
 }
 
 .icon-row {
@@ -173,6 +175,6 @@ const timeOptions = [
 }
 
 .icon-row .el-icon {
-  color: #2e6eb8;
+  color: #1260e8;
 }
 </style>

@@ -56,7 +56,7 @@ const formatSize = (size?: number) => {
 <style scoped>
 .resource-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .resource-row {
@@ -65,10 +65,11 @@ const formatSize = (size?: number) => {
   grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  border: 1px solid #dbe6f2;
+  border: 1px solid #e1e9f6;
   border-radius: 8px;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.96);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
 }
 
 .row-icon {
@@ -78,8 +79,8 @@ const formatSize = (size?: number) => {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: #eef5ff;
-  color: #1c5aa4;
+  background: #edf4ff;
+  color: #1260e8;
   font-size: 23px;
 }
 
@@ -101,9 +102,9 @@ const formatSize = (size?: number) => {
   border: 0;
   padding: 0;
   background: transparent;
-  color: #071f4b;
+  color: #0b1833;
   font-size: 16px;
-  font-weight: 950;
+  font-weight: 850;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -111,7 +112,7 @@ const formatSize = (size?: number) => {
 }
 
 .row-title button:hover {
-  color: #0f62b6;
+  color: #1260e8;
 }
 
 .row-title span,
@@ -123,23 +124,23 @@ const formatSize = (size?: number) => {
   padding: 0 7px;
   font-size: 12px;
   font-style: normal;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .row-title span {
-  background: #eaf3ff;
-  color: #195aa1;
+  background: #edf4ff;
+  color: #1260e8;
 }
 
 .row-title em {
-  background: #f3f6fa;
-  color: #5a6880;
+  background: #f7faff;
+  color: #53668f;
 }
 
 .row-main p {
   margin: 8px 0 0;
   overflow: hidden;
-  color: #64748b;
+  color: #53668f;
   font-size: 13px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -152,9 +153,9 @@ const formatSize = (size?: number) => {
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 9px;
-  color: #75849b;
+  color: #8a97af;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .row-actions {
@@ -168,18 +169,19 @@ const formatSize = (size?: number) => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #d8e3ef;
-  border-radius: 7px;
+  border: 1px solid #e1e9f6;
+  border-radius: 8px;
   padding: 0 10px;
   background: #fff;
-  color: #203353;
-  font-weight: 850;
+  color: #25395f;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .row-actions button:hover {
-  border-color: #2f74bf;
-  color: #0d579e;
+  border-color: #1260e8;
+  color: #1260e8;
+  background: #edf4ff;
 }
 
 @media (max-width: 760px) {

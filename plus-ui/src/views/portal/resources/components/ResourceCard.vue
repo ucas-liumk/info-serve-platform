@@ -82,11 +82,11 @@ const formatSize = (size?: number) => {
   min-height: 246px;
   display: flex;
   gap: 16px;
-  border: 1px solid #dbe6f2;
+  border: 1px solid #e1e9f6;
   border-radius: 8px;
   padding: 18px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 16px 32px rgba(12, 47, 96, 0.07);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
@@ -94,9 +94,9 @@ const formatSize = (size?: number) => {
 }
 
 .resource-card:hover {
-  border-color: #b7ccec;
-  box-shadow: 0 18px 38px rgba(12, 47, 96, 0.11);
-  transform: translateY(-2px);
+  border-color: #b8cff5;
+  box-shadow: 0 10px 28px rgba(11, 24, 51, 0.08);
+  transform: translateY(-1px);
 }
 
 .file-mark {
@@ -108,10 +108,10 @@ const formatSize = (size?: number) => {
   justify-content: center;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid #cddcee;
+  border: 1px solid #d7e5fb;
   border-radius: 8px;
-  background: #eef5ff;
-  color: #164d92;
+  background: #edf4ff;
+  color: #1260e8;
 }
 
 .file-mark .el-icon {
@@ -122,28 +122,28 @@ const formatSize = (size?: number) => {
   max-width: 60px;
   overflow: hidden;
   font-size: 12px;
-  font-weight: 950;
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .file-mark.pdf {
-  border-color: #f0c9bb;
-  background: #fff1ec;
-  color: #a54d2f;
+  border-color: #ffd8d3;
+  background: #fff2f1;
+  color: #d93026;
 }
 
 .file-mark.image {
-  border-color: #dfd0a5;
-  background: #fff7df;
-  color: #8a640a;
+  border-color: #d7e5fb;
+  background: #edf4ff;
+  color: #1260e8;
 }
 
 .file-mark.video,
 .file-mark.audio {
-  border-color: #c6d6cd;
-  background: #eff9f3;
-  color: #276b49;
+  border-color: #cfe4f7;
+  background: #f0f8ff;
+  color: #155f9c;
 }
 
 .resource-body {
@@ -168,17 +168,17 @@ const formatSize = (size?: number) => {
   border-radius: 6px;
   padding: 0 8px;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .category {
-  background: #eaf3ff;
-  color: #195aa1;
+  background: #edf4ff;
+  color: #1260e8;
 }
 
 .suffix {
-  background: #f3f6fa;
-  color: #5a6880;
+  background: #f7faff;
+  color: #53668f;
 }
 
 .title-button {
@@ -188,10 +188,10 @@ const formatSize = (size?: number) => {
   border: 0;
   padding: 0;
   background: transparent;
-  color: #071f4b;
+  color: #0b1833;
   font-size: 18px;
   line-height: 1.32;
-  font-weight: 950;
+  font-weight: 850;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -199,7 +199,7 @@ const formatSize = (size?: number) => {
 }
 
 .title-button:hover {
-  color: #0f62b6;
+  color: #1260e8;
 }
 
 .resource-card p {
@@ -207,7 +207,7 @@ const formatSize = (size?: number) => {
   margin: 0;
   display: -webkit-box;
   overflow: hidden;
-  color: #5f6e84;
+  color: #53668f;
   font-size: 14px;
   line-height: 1.55;
   font-weight: 650;
@@ -217,9 +217,9 @@ const formatSize = (size?: number) => {
 
 .resource-meta {
   margin-top: 13px;
-  color: #75849b;
+  color: #8a97af;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .resource-actions {
@@ -231,18 +231,19 @@ const formatSize = (size?: number) => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #d8e3ef;
-  border-radius: 7px;
+  border: 1px solid #e1e9f6;
+  border-radius: 8px;
   padding: 0 10px;
   background: #fff;
-  color: #203353;
-  font-weight: 850;
+  color: #25395f;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .resource-actions button:hover {
-  border-color: #2f74bf;
-  color: #0d579e;
+  border-color: #1260e8;
+  color: #1260e8;
+  background: #edf4ff;
 }
 
 @media (max-width: 520px) {

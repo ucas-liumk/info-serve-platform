@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" :title="dialogTitle" width="620px" destroy-on-close>
+  <el-dialog v-model="visible" :title="dialogTitle" width="620px" class="resource-upload-dialog" destroy-on-close>
     <el-form ref="formRef" :model="form" :rules="rules" label-width="86px">
       <el-form-item label="标题" prop="title">
         <el-input v-model="form.title" maxlength="160" placeholder="请输入资料标题" />
@@ -142,27 +142,27 @@ watch(
 .file-field {
   width: 100%;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .current-file {
   display: grid;
   gap: 4px;
-  border: 1px solid #dbe6f2;
+  border: 1px solid #e1e9f6;
   border-radius: 8px;
   padding: 10px 12px;
-  background: #f7fbff;
+  background: #f7faff;
 }
 
 .current-file strong {
-  color: #082b68;
+  color: #1260e8;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .current-file span {
   overflow: hidden;
-  color: #52627a;
+  color: #53668f;
   font-size: 13px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -171,27 +171,84 @@ watch(
 
 .dialog-submit,
 .dialog-cancel {
-  height: 38px;
+  height: 36px;
   border-radius: 8px;
   padding: 0 15px;
-  font-weight: 900;
+  font-weight: 800;
   cursor: pointer;
 }
 
 .dialog-submit {
   border: 0;
-  background: #082b68;
+  background: #1260e8;
   color: #fff;
 }
 
 .dialog-cancel {
-  border: 1px solid #d8e3ef;
+  border: 1px solid #e1e9f6;
   background: #fff;
-  color: #203353;
+  color: #25395f;
+}
+
+.dialog-submit:hover {
+  background: #0f55cf;
+}
+
+.dialog-cancel:hover {
+  border-color: #1260e8;
+  color: #1260e8;
+  background: #edf4ff;
 }
 
 .dialog-submit:disabled {
   opacity: 0.66;
   cursor: default;
+}
+
+.resource-upload-dialog :deep(.el-dialog__header) {
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid #e1e9f6;
+}
+
+.resource-upload-dialog :deep(.el-dialog__title) {
+  color: #0b1833;
+  font-size: 22px;
+  font-weight: 850;
+}
+
+.resource-upload-dialog :deep(.el-dialog__body) {
+  padding: 20px 24px 8px;
+}
+
+.resource-upload-dialog :deep(.el-form-item__label) {
+  color: #25395f;
+  font-weight: 700;
+}
+
+.resource-upload-dialog :deep(.el-input__wrapper),
+.resource-upload-dialog :deep(.el-textarea__inner),
+.resource-upload-dialog :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #dbe5f4 inset;
+}
+
+.resource-upload-dialog :deep(.el-textarea__inner) {
+  min-height: 112px;
+  color: #25395f;
+  font-weight: 650;
+}
+
+.resource-upload-dialog :deep(.el-upload-dragger) {
+  border-color: #dbe5f4;
+  border-radius: 8px;
+  background: #f7faff;
+}
+
+.resource-upload-dialog :deep(.el-upload-dragger:hover) {
+  border-color: #1260e8;
+}
+
+.resource-upload-dialog :deep(.el-icon--upload) {
+  color: #1260e8;
 }
 </style>

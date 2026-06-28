@@ -76,30 +76,30 @@ const formatSize = (size?: number) => {
   padding: 0 9px;
   font-size: 12px;
   font-style: normal;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .detail-head span {
-  background: #eaf3ff;
-  color: #195aa1;
+  background: #edf4ff;
+  color: #1260e8;
 }
 
 .detail-head em {
-  background: #f3f6fa;
-  color: #5a6880;
+  background: #f7faff;
+  color: #53668f;
 }
 
 .detail h2 {
   margin: 18px 0 10px;
-  color: #071f4b;
+  color: #0b1833;
   font-size: 24px;
   line-height: 1.28;
-  font-weight: 950;
+  font-weight: 850;
 }
 
 .detail p {
   margin: 0;
-  color: #5d6b81;
+  color: #53668f;
   line-height: 1.7;
   font-weight: 650;
 }
@@ -112,16 +112,16 @@ const formatSize = (size?: number) => {
 }
 
 .detail dt {
-  color: #7b8798;
-  font-weight: 850;
+  color: #8a97af;
+  font-weight: 700;
 }
 
 .detail dd {
   min-width: 0;
   margin: 0;
-  color: #1f2d43;
+  color: #25395f;
   word-break: break-all;
-  font-weight: 760;
+  font-weight: 650;
 }
 
 .drawer-actions {
@@ -135,15 +135,25 @@ const formatSize = (size?: number) => {
   border: 0;
   border-radius: 8px;
   padding: 0 15px;
-  background: #082b68;
+  background: #1260e8;
   color: #fff;
-  font-weight: 900;
+  font-weight: 800;
   cursor: pointer;
 }
 
 .drawer-actions button.secondary {
-  border: 1px solid #d8e3ef;
+  border: 1px solid #e1e9f6;
   background: #fff;
-  color: #203353;
+  color: #25395f;
+}
+
+.drawer-actions button:hover {
+  background: #0f55cf;
+}
+
+.drawer-actions button.secondary:hover {
+  border-color: #1260e8;
+  background: #edf4ff;
+  color: #1260e8;
 }
 </style>

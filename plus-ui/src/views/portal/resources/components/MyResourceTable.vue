@@ -96,14 +96,25 @@ const formatSize = (size?: number) => {
 
 <style scoped>
 .mine-table {
-  border: 1px solid #dbe6f2;
+  border: 1px solid #e1e9f6;
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
+  box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
 }
 
 .resource-table {
   width: 100%;
+}
+
+.mine-table :deep(.el-table th.el-table__cell) {
+  background: #f7faff;
+  color: #53668f;
+  font-weight: 700;
+}
+
+.mine-table :deep(.el-table td.el-table__cell) {
+  color: #25395f;
 }
 
 .resource-name {
@@ -114,16 +125,16 @@ const formatSize = (size?: number) => {
 
 .resource-name strong {
   overflow: hidden;
-  color: #071f4b;
+  color: #0b1833;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .resource-name span {
   overflow: hidden;
-  color: #6b7b94;
+  color: #53668f;
   font-size: 12px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -136,18 +147,18 @@ const formatSize = (size?: number) => {
   align-items: center;
   border-radius: 6px;
   padding: 0 8px;
-  background: #f3f6fa;
-  color: #5a6880;
+  background: #f7faff;
+  color: #53668f;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .metric {
   display: grid;
   gap: 3px;
-  color: #66758c;
+  color: #8a97af;
   font-size: 12px;
-  font-weight: 760;
+  font-weight: 650;
 }
 
 .table-actions {
@@ -159,23 +170,25 @@ const formatSize = (size?: number) => {
 
 .table-actions button {
   height: 28px;
-  border: 1px solid #d8e3ef;
+  border: 1px solid #e1e9f6;
   border-radius: 6px;
   padding: 0 8px;
   background: #fff;
-  color: #203353;
+  color: #25395f;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .table-actions button:hover {
-  border-color: #2f74bf;
-  color: #0d579e;
+  border-color: #1260e8;
+  color: #1260e8;
+  background: #edf4ff;
 }
 
 .table-actions button.danger:hover {
-  border-color: #dc786f;
-  color: #b33129;
+  border-color: #d93026;
+  color: #d93026;
+  background: #fff2f1;
 }
 </style>

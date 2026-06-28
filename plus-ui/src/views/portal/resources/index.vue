@@ -391,13 +391,47 @@ onMounted(async () => {
 <style scoped>
 .resources {
   min-height: 100vh;
-  background: linear-gradient(180deg, rgba(237, 246, 255, 0.68) 0%, rgba(247, 250, 252, 0) 360px), #f6f8fb;
+  --resource-primary: #1260e8;
+  --resource-primary-soft: #edf4ff;
+  --resource-title: #0b1833;
+  --resource-text: #25395f;
+  --resource-muted: #53668f;
+  --resource-weak: #8a97af;
+  --resource-border: #e1e9f6;
+  --resource-input-border: #dbe5f4;
+  background: linear-gradient(180deg, rgba(237, 244, 255, 0.78) 0%, rgba(247, 250, 255, 0) 360px), #f7faff;
+  color: var(--resource-text);
+  font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 .resources-shell {
-  width: min(1480px, calc(100% - 64px));
+  width: min(1400px, calc(100% - 64px));
   margin: 0 auto;
-  padding: 0 0 34px;
+  padding: 0 0 32px;
+}
+
+.resources :deep(.el-input__wrapper),
+.resources :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--resource-input-border) inset;
+}
+
+.resources :deep(.el-input__wrapper:hover),
+.resources :deep(.el-select__wrapper:hover),
+.resources :deep(.el-input__wrapper.is-focus),
+.resources :deep(.el-select__wrapper.is-focused) {
+  box-shadow: 0 0 0 1px var(--resource-primary) inset;
+}
+
+.resources :deep(.el-input__inner),
+.resources :deep(.el-select__placeholder) {
+  color: var(--resource-text);
+  font-weight: 650;
+}
+
+.resources :deep(.el-input__inner::placeholder) {
+  color: var(--resource-muted);
 }
 
 .resources-command {
@@ -405,17 +439,18 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .view-switch {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #d4e0ee;
+  border: 1px solid var(--resource-border);
   border-radius: 8px;
   padding: 4px;
-  background: rgba(255, 255, 255, 0.92);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
 }
 
 .view-switch button {
@@ -428,7 +463,7 @@ onMounted(async () => {
   border-radius: 7px;
   padding: 0 14px;
   background: transparent;
-  color: #52627a;
+  color: var(--resource-muted);
   text-align: left;
   cursor: pointer;
 }
@@ -436,17 +471,18 @@ onMounted(async () => {
 .view-switch button strong {
   color: inherit;
   font-size: 15px;
-  font-weight: 950;
+  font-weight: 850;
 }
 
 .view-switch button span {
   font-size: 12px;
-  font-weight: 760;
+  font-weight: 650;
 }
 
 .view-switch button.active {
-  background: #082b68;
+  background: var(--resource-primary);
   color: #fff;
+  box-shadow: 0 6px 14px rgba(18, 96, 232, 0.2);
 }
 
 .command-actions {
@@ -465,26 +501,37 @@ onMounted(async () => {
   gap: 7px;
   border-radius: 8px;
   padding: 0 14px;
-  font-weight: 900;
+  font-weight: 800;
   cursor: pointer;
 }
 
 .upload-btn {
   border: 0;
-  background: #c17918;
+  background: var(--resource-primary);
   color: #fff;
+  box-shadow: 0 8px 20px rgba(18, 96, 232, 0.18);
 }
 
 .ghost-btn {
-  border: 1px solid #d6e1ee;
+  border: 1px solid var(--resource-input-border);
   background: #fff;
-  color: #223653;
+  color: var(--resource-text);
+}
+
+.upload-btn:hover {
+  background: #0f55cf;
+}
+
+.ghost-btn:hover {
+  border-color: var(--resource-primary);
+  color: var(--resource-primary);
+  background: var(--resource-primary-soft);
 }
 
 .resource-workspace {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
-  gap: 16px;
+  gap: 20px;
   align-items: start;
 }
 
@@ -492,7 +539,7 @@ onMounted(async () => {
 .mine-workspace {
   min-height: 560px;
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .resource-results {
@@ -502,14 +549,15 @@ onMounted(async () => {
 .resource-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .mine-workspace {
-  border: 1px solid #dbe6f2;
+  border: 1px solid var(--resource-border);
   border-radius: 8px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.96);
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
 }
 
 .mine-head {
@@ -521,17 +569,17 @@ onMounted(async () => {
 
 .mine-head p {
   margin: 0 0 4px;
-  color: #6b7b94;
+  color: var(--resource-muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .mine-head h2 {
   margin: 0;
-  color: #071f4b;
+  color: var(--resource-title);
   font-size: 20px;
   line-height: 1.2;
-  font-weight: 950;
+  font-weight: 850;
 }
 
 .mine-filters {
@@ -549,6 +597,10 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   padding: 22px 0 0;
+}
+
+.resources :deep(.el-pagination.is-background .el-pager li.is-active) {
+  background: var(--resource-primary);
 }
 
 @media (max-width: 1280px) {
