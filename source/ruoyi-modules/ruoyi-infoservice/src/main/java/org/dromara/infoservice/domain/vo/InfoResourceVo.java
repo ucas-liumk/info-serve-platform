@@ -27,5 +27,8 @@ public class InfoResourceVo implements Serializable {
     private Long viewCount;
     private String status;
     private String remark;
+    private Long createBy;
+    private String ownerName;
+    private Boolean canManage;
     private Date createTime;
 }

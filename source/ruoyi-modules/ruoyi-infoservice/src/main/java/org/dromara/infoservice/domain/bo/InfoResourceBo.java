@@ -32,4 +32,9 @@ public class InfoResourceBo extends BaseEntity {
     private String remark;
     private String keyword;
     private String categoryCode;
+    private String scope;
+    private String fileType;
+    private String uploadedWithin;
+    private String sizeRange;
+    private String sort;
 }

@@ -5,19 +5,26 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.idempotent.annotation.RepeatSubmit;
+import org.dromara.common.log.annotation.Log;
+import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.infoservice.domain.bo.InfoResourceBo;
 import org.dromara.infoservice.domain.vo.InfoResourceCategoryVo;
 import org.dromara.infoservice.domain.vo.InfoResourceVo;
+import org.dromara.infoservice.domain.vo.ResourceUploadVo;
 import org.dromara.infoservice.service.IInfoResourceCategoryService;
 import org.dromara.infoservice.service.IInfoResourceService;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
+@Validated
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/portal/resources")
@@ -41,6 +48,39 @@ public class InfoResourcePortalController {
     @GetMapping("/{resourceId}")
     public R<InfoResourceVo> detail(@PathVariable Long resourceId) {
         return R.ok(resourceService.queryPortalDetail(resourceId));
+    }
+
+    @Log(title = "门户资料上传", businessType = BusinessType.INSERT)
+    @PostMapping("/upload")
+    public R<ResourceUploadVo> upload(@RequestPart("file") MultipartFile file) {
+        return R.ok(resourceService.portalUpload(file));
+    }
+
+    @Log(title = "门户资料发布", businessType = BusinessType.INSERT)
+    @RepeatSubmit
+    @PostMapping
+    public R<Void> add(@Validated @RequestBody InfoResourceBo bo) {
+        return Boolean.TRUE.equals(resourceService.insertPortalByBo(bo)) ? R.ok() : R.fail("发布资料失败");
+    }
+
+    @Log(title = "门户资料编辑", businessType = BusinessType.UPDATE)
+    @RepeatSubmit
+    @PutMapping("/{resourceId}")
+    public R<Void> edit(@PathVariable Long resourceId, @Validated @RequestBody InfoResourceBo bo) {
+        bo.setResourceId(resourceId);
+        return Boolean.TRUE.equals(resourceService.updateOwnByBo(bo)) ? R.ok() : R.fail("保存资料失败");
+    }
+
+    @Log(title = "门户资料状态", businessType = BusinessType.UPDATE)
+    @PutMapping("/{resourceId}/status")
+    public R<Void> changeStatus(@PathVariable Long resourceId, @RequestBody InfoResourceBo bo) {
+        return Boolean.TRUE.equals(resourceService.changeOwnStatus(resourceId, bo.getStatus())) ? R.ok() : R.fail("更新状态失败");
+    }
+
+    @Log(title = "门户资料删除", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{resourceId}")
+    public R<Void> remove(@PathVariable Long resourceId) {
+        return Boolean.TRUE.equals(resourceService.deleteOwnById(resourceId)) ? R.ok() : R.fail("删除资料失败");
     }
 
     @GetMapping("/{resourceId}/preview")

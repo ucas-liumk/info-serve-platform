@@ -35,6 +35,10 @@ export interface InfoResource {
   viewCount: number;
   status: string;
   remark?: string;
+  createBy?: number;
+  ownerName?: string;
+  createByName?: string;
+  canManage?: boolean;
   createTime: string;
 }
 
@@ -114,6 +118,33 @@ export interface InfoResourceQuery extends PageQuery {
   categoryId?: number | string;
   categoryCode?: string;
   status?: string;
+}
+
+export interface ResourcePortalQuery extends PageQuery {
+  scope?: 'public' | 'mine';
+  keyword?: string;
+  categoryId?: number | string;
+  categoryCode?: string;
+  previewType?: string;
+  fileType?: string;
+  uploadedWithin?: string;
+  sizeRange?: string;
+  sort?: string;
+  status?: string;
+}
+
+export interface ResourcePortalPayload {
+  title: string;
+  description?: string;
+  categoryId: number | string | undefined;
+  ossId?: number | string | undefined;
+  originalName?: string;
+  fileSuffix?: string;
+  mimeType?: string;
+  fileSize?: number;
+  previewType?: string;
+  status?: string;
+  remark?: string;
 }
 
 export interface ResourceCategoryForm {

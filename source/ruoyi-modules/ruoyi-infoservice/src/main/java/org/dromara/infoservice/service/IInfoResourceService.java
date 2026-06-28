@@ -21,13 +21,23 @@ public interface IInfoResourceService {
 
     ResourceUploadVo upload(MultipartFile file);
 
+    ResourceUploadVo portalUpload(MultipartFile file);
+
     String resolveFileUrl(Long resourceId, boolean download);
 
     Boolean insertByBo(InfoResourceBo bo);
 
+    Boolean insertPortalByBo(InfoResourceBo bo);
+
     Boolean updateByBo(InfoResourceBo bo);
 
+    Boolean updateOwnByBo(InfoResourceBo bo);
+
     Boolean changeStatus(Long resourceId, String status);
+
+    Boolean changeOwnStatus(Long resourceId, String status);
+
+    Boolean deleteOwnById(Long resourceId);
 
     Boolean deleteWithValidByIds(Collection<Long> ids);
 }
