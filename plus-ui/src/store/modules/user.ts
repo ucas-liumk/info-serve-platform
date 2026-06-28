@@ -13,6 +13,7 @@ export const useUserStore = defineStore('user', () => {
   const userId = ref<string | number>('');
   const tenantId = ref<string>('');
   const avatar = ref('');
+  const forcePasswordChange = ref(false);
   const roles = ref<Array<string>>([]); // 用户角色编码集合 → 判断路由权限
   const permissions = ref<Array<string>>([]); // 用户权限编码集合 → 判断按钮权限
 
@@ -27,6 +28,7 @@ export const useUserStore = defineStore('user', () => {
       const data = res.data;
       setToken(data.access_token);
       token.value = data.access_token;
+      forcePasswordChange.value = Boolean(data.force_password_change);
       return Promise.resolve();
     }
     return Promise.reject(err);
@@ -52,6 +54,7 @@ export const useUserStore = defineStore('user', () => {
       avatar.value = profile;
       userId.value = user.userId;
       tenantId.value = user.tenantId;
+      forcePasswordChange.value = String(user.forcePasswordChange || '0').trim() === '1';
       return Promise.resolve();
     }
     return Promise.reject(err);
@@ -61,6 +64,7 @@ export const useUserStore = defineStore('user', () => {
   const logout = async (): Promise<void> => {
     await logoutApi();
     token.value = '';
+    forcePasswordChange.value = false;
     roles.value = [];
     permissions.value = [];
     removeToken();
@@ -70,17 +74,24 @@ export const useUserStore = defineStore('user', () => {
     avatar.value = value;
   };
 
+  const setForcePasswordChange = (value: boolean) => {
+    forcePasswordChange.value = value;
+  };
+
   return {
     userId,
     tenantId,
     token,
+    name,
     nickname,
     avatar,
+    forcePasswordChange,
     roles,
     permissions,
     login,
     getInfo,
     logout,
-    setAvatar
+    setAvatar,
+    setForcePasswordChange
   };
 });

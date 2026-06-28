@@ -24,6 +24,7 @@ import org.dromara.system.domain.bo.SysUserPasswordBo;
 import org.dromara.system.domain.bo.SysUserProfileBo;
 import org.dromara.system.domain.vo.ProfileUserVo;
 import org.dromara.system.domain.vo.SysUserVo;
+import org.dromara.system.service.ISysConfigService;
 import org.dromara.system.service.ISysUserService;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -44,7 +45,10 @@ import java.util.Arrays;
 @RequestMapping("/user/profile")
 public class SysProfileController extends BaseController {
 
+    private static final String USER_INIT_PASSWORD_KEY = "sys.user.initPassword";
+
     private final ISysUserService userService;
+    private final ISysConfigService configService;
 
     @DubboReference
     private RemoteFileService remoteFileService;
@@ -104,7 +108,11 @@ public class SysProfileController extends BaseController {
         if (BCrypt.checkpw(bo.getNewPassword(), password)) {
             return R.fail("新密码不能与旧密码相同");
         }
-        int rows = DataPermissionHelper.ignore(() -> userService.resetUserPwd(user.getUserId(), BCrypt.hashpw(bo.getNewPassword())));
+        String initPassword = configService.selectConfigByKey(USER_INIT_PASSWORD_KEY);
+        if (StringUtils.isNotBlank(initPassword) && StringUtils.equals(bo.getNewPassword(), initPassword)) {
+            return R.fail("新密码不能与系统默认密码相同");
+        }
+        int rows = DataPermissionHelper.ignore(() -> userService.updateUserPwd(user.getUserId(), BCrypt.hashpw(bo.getNewPassword())));
         if (rows > 0) {
             return R.ok();
         }

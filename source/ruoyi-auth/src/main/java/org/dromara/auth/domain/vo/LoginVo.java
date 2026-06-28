@@ -42,6 +42,12 @@ public class LoginVo {
     private String clientId;
 
     /**
+     * 是否需要强制修改密码
+     */
+    @JsonProperty("force_password_change")
+    private Boolean forcePasswordChange;
+
+    /**
      * 令牌权限
      */
     private String scope;

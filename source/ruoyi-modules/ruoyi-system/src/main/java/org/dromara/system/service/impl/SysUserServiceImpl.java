@@ -49,6 +49,9 @@ import java.util.Map;
 @Service
 public class SysUserServiceImpl implements ISysUserService {
 
+    private static final String PASSWORD_CHANGE_REQUIRED = "1";
+    private static final String PASSWORD_CHANGE_NOT_REQUIRED = SystemConstants.NORMAL;
+
     private final SysUserMapper baseMapper;
     private final SysDeptMapper deptMapper;
     private final SysRoleMapper roleMapper;
@@ -309,6 +312,9 @@ public class SysUserServiceImpl implements ISysUserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertUser(SysUserBo user) {
+        if (StringUtils.isBlank(user.getForcePasswordChange())) {
+            user.setForcePasswordChange(PASSWORD_CHANGE_REQUIRED);
+        }
         SysUser sysUser = MapstructUtils.convert(user, SysUser.class);
         // 新增用户信息
         int rows = baseMapper.insert(sysUser);
@@ -430,6 +436,23 @@ public class SysUserServiceImpl implements ISysUserService {
         return baseMapper.update(null,
             new LambdaUpdateWrapper<SysUser>()
                 .set(SysUser::getPassword, password)
+                .set(SysUser::getForcePasswordChange, PASSWORD_CHANGE_REQUIRED)
+                .eq(SysUser::getUserId, userId));
+    }
+
+    /**
+     * 用户自行修改密码
+     *
+     * @param userId   用户ID
+     * @param password 密码
+     * @return 结果
+     */
+    @Override
+    public int updateUserPwd(Long userId, String password) {
+        return baseMapper.update(null,
+            new LambdaUpdateWrapper<SysUser>()
+                .set(SysUser::getPassword, password)
+                .set(SysUser::getForcePasswordChange, PASSWORD_CHANGE_NOT_REQUIRED)
                 .eq(SysUser::getUserId, userId));
     }
 

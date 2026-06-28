@@ -89,6 +89,11 @@ public class SysUserVo implements Serializable {
     private String password;
 
     /**
+     * 是否需要强制修改密码（0否 1是）
+     */
+    private String forcePasswordChange;
+
+    /**
      * 账号状态（0正常 1停用）
      */
     private String status;

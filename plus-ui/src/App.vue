@@ -1,6 +1,7 @@
 <template>
   <el-config-provider :locale="appStore.locale" :size="appStore.size">
     <router-view />
+    <ForcePasswordChangeDialog />
   </el-config-provider>
 </template>
 
@@ -8,6 +9,7 @@
 import { useSettingsStore } from '@/store/modules/settings';
 import { handleThemeStyle } from '@/utils/theme';
 import { useAppStore } from '@/store/modules/app';
+import ForcePasswordChangeDialog from '@/components/ForcePasswordChangeDialog/index.vue';
 
 const appStore = useAppStore();
 

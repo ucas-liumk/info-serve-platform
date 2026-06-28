@@ -38,6 +38,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PasswordAuthStrategy implements IAuthStrategy {
 
+    private static final String PASSWORD_CHANGE_REQUIRED = "1";
+
     private final CaptchaProperties captchaProperties;
 
     private final SysLoginService loginService;
@@ -80,6 +82,7 @@ public class PasswordAuthStrategy implements IAuthStrategy {
         loginVo.setAccessToken(StpUtil.getTokenValue());
         loginVo.setExpireIn(StpUtil.getTokenTimeout());
         loginVo.setClientId(client.getClientId());
+        loginVo.setForcePasswordChange(PASSWORD_CHANGE_REQUIRED.equals(loginUser.getForcePasswordChange()));
         return loginVo;
     }
 

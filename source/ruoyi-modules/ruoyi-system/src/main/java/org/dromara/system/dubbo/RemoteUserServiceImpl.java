@@ -269,6 +269,7 @@ public class RemoteUserServiceImpl implements RemoteUserService {
         loginUser.setUsername(userVo.getUserName());
         loginUser.setNickname(userVo.getNickName());
         loginUser.setPassword(userVo.getPassword());
+        loginUser.setForcePasswordChange(userVo.getForcePasswordChange());
         loginUser.setUserType(userVo.getUserType());
         loginUser.setMenuPermission(permissionService.getMenuPermission(userId));
         loginUser.setRolePermission(permissionService.getRolePermission(userId));

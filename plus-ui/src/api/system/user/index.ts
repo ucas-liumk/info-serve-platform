@@ -161,6 +161,9 @@ export const uploadAvatar = (data: FormData) => {
   return request({
     url: '/system/user/profile/avatar',
     method: 'post',
+    headers: {
+      repeatSubmit: false
+    },
     data: data
   });
 };

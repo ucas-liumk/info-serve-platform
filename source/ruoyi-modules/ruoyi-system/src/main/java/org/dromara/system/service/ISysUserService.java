@@ -203,6 +203,15 @@ public interface ISysUserService {
     int resetUserPwd(Long userId, String password);
 
     /**
+     * 用户自行修改密码
+     *
+     * @param userId   用户ID
+     * @param password 密码
+     * @return 结果
+     */
+    int updateUserPwd(Long userId, String password);
+
+    /**
      * 通过用户ID删除用户
      *
      * @param userId 用户ID

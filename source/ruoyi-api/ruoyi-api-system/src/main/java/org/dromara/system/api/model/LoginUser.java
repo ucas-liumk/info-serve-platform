@@ -111,6 +111,11 @@ public class LoginUser implements Serializable {
     private String password;
 
     /**
+     * 是否需要强制修改密码（0否 1是）
+     */
+    private String forcePasswordChange;
+
+    /**
      * 角色对象
      */
     private List<RoleDTO> roles;
