@@ -29,6 +29,8 @@ public interface IInfoResourceService {
 
     String resolveFileUrl(Long resourceId, boolean download);
 
+    void previewPdf(Long resourceId, HttpServletResponse response) throws IOException;
+
     void writePdfThumbnail(Long resourceId, HttpServletResponse response) throws IOException;
 
     void downloadFile(Long resourceId, HttpServletResponse response) throws IOException;

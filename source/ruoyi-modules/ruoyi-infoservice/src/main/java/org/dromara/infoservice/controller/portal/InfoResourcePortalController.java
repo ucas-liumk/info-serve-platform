@@ -43,6 +43,7 @@ public class InfoResourcePortalController {
     private static final int MINIO_EXTERNAL_PORT = 8160;
     private static final int KKFILEVIEW_EXTERNAL_PORT = 8012;
     private static final String MINIO_INTERNAL_HOST = "minio";
+    private static final String KKFILEVIEW_INTERNAL_HOST = "kkfileview";
     private static final Set<String> OFFICE_SUFFIXES = Set.of("doc", "docx", "xls", "xlsx", "ppt", "pptx", "wps", "et", "dps");
     private static final Pattern OFFICE_IMAGE_PATTERN = Pattern.compile("data-src=\"([^\"]+?\\.jpg)\\s*\"", Pattern.CASE_INSENSITIVE);
 
@@ -51,6 +52,15 @@ public class InfoResourcePortalController {
 
     @Value("${infoservice.kkfileview.base-url:}")
     private String kkFileViewBaseUrl;
+
+    @Value("${infoservice.kkfileview.internal-base-url:}")
+    private String kkFileViewInternalBaseUrl;
+
+    @Value("${infoservice.kkfileview.file-url-mode:internal}")
+    private String kkFileViewFileUrlMode;
+
+    @Value("${infoservice.kkfileview.file-base-url:}")
+    private String kkFileViewFileBaseUrl;
 
     @GetMapping("/categories")
     public R<List<InfoResourceCategoryVo>> categories() {
@@ -105,6 +115,11 @@ public class InfoResourcePortalController {
         response.sendRedirect(toBrowserReachableUrl(resourceService.resolveFileUrl(resourceId, false), request));
     }
 
+    @GetMapping("/{resourceId}/pdf-preview")
+    public void pdfPreview(@PathVariable Long resourceId, HttpServletResponse response) throws IOException {
+        resourceService.previewPdf(resourceId, response);
+    }
+
     @GetMapping("/{resourceId}/thumbnail")
     public void thumbnail(@PathVariable Long resourceId, HttpServletRequest request, HttpServletResponse response) throws IOException {
         InfoResourceVo resource = resourceService.queryPortalReadableDetail(resourceId);
@@ -129,7 +144,7 @@ public class InfoResourcePortalController {
     @GetMapping("/{resourceId}/kk-preview-url")
     public R<String> kkPreviewUrl(@PathVariable Long resourceId, HttpServletRequest request) {
         InfoResourceVo resource = resourceService.queryPortalReadableDetail(resourceId);
-        String fileUrl = toKkFileViewReachableUrl(resourceService.resolveFileUrl(resourceId, false));
+        String fileUrl = resolveKkFileViewFileUrl(resourceService.resolveFileUrl(resourceId, false), request);
         String previewFileUrl = appendFullFileName(
             fileUrl,
             StringUtils.defaultIfBlank(resource.getOriginalName(), resource.getTitle())
@@ -175,13 +190,42 @@ public class InfoResourcePortalController {
         return url;
     }
 
+    private String resolveKkFileViewFileUrl(String url, HttpServletRequest request) {
+        if (StringUtils.isNotBlank(kkFileViewFileBaseUrl)) {
+            return toConfiguredBaseUrl(url, kkFileViewFileBaseUrl);
+        }
+        if ("external".equalsIgnoreCase(StringUtils.defaultString(kkFileViewFileUrlMode))) {
+            return toBrowserReachableUrl(url, request);
+        }
+        return toKkFileViewReachableUrl(url);
+    }
+
+    private String toConfiguredBaseUrl(String url, String baseUrl) {
+        try {
+            URI uri = URI.create(url);
+            URI baseUri = URI.create(trimTrailingSlash(baseUrl));
+            String host = uri.getHost();
+            int port = uri.getPort();
+            boolean minioUrl = MINIO_INTERNAL_HOST.equalsIgnoreCase(host)
+                || port == MINIO_INTERNAL_PORT
+                || port == MINIO_EXTERNAL_PORT;
+            if (!minioUrl || StringUtils.isBlank(baseUri.getScheme()) || StringUtils.isBlank(baseUri.getHost())) {
+                return url;
+            }
+            return rebuildUrl(uri, baseUri.getScheme(), baseUri.getHost(), baseUri.getPort(), baseUri.getRawPath());
+        } catch (Exception ignored) {
+            return url;
+        }
+    }
+
     private String toBrowserReachableKkFileViewUrl(String url, HttpServletRequest request) {
         try {
             URI uri = URI.create(url);
             String host = uri.getHost();
             int port = uri.getPort();
             boolean loopbackHost = "127.0.0.1".equals(host) || "localhost".equalsIgnoreCase(host);
-            if (loopbackHost && (port == KKFILEVIEW_EXTERNAL_PORT || port == -1)) {
+            boolean internalKkFileView = KKFILEVIEW_INTERNAL_HOST.equalsIgnoreCase(host);
+            if ((loopbackHost || internalKkFileView) && (port == KKFILEVIEW_EXTERNAL_PORT || port == -1)) {
                 return rebuildUrl(uri, resolveExternalHost(request), port == -1 ? KKFILEVIEW_EXTERNAL_PORT : port);
             }
         } catch (Exception ignored) {
@@ -191,12 +235,12 @@ public class InfoResourcePortalController {
     }
 
     private String resolveOfficeFirstPageImageUrl(Long resourceId, InfoResourceVo resource, HttpServletRequest request) throws IOException {
-        String fileUrl = toKkFileViewReachableUrl(resourceService.resolveFileUrl(resourceId, false));
+        String fileUrl = resolveKkFileViewFileUrl(resourceService.resolveFileUrl(resourceId, false), request);
         String previewFileUrl = appendFullFileName(
             fileUrl,
             StringUtils.defaultIfBlank(resource.getOriginalName(), resource.getTitle())
         );
-        String previewHtml = fetchText(buildKkPreviewUrl(previewFileUrl, request));
+        String previewHtml = fetchText(buildKkInternalPreviewUrl(previewFileUrl, request));
         Matcher matcher = OFFICE_IMAGE_PATTERN.matcher(previewHtml);
         if (!matcher.find()) {
             return StringUtils.EMPTY;
@@ -205,11 +249,19 @@ public class InfoResourcePortalController {
     }
 
     private String buildKkPreviewUrl(String previewFileUrl, HttpServletRequest request) {
+        return buildKkPreviewUrl(previewFileUrl, resolveKkFileViewBaseUrl(request));
+    }
+
+    private String buildKkInternalPreviewUrl(String previewFileUrl, HttpServletRequest request) {
+        return buildKkPreviewUrl(previewFileUrl, resolveKkFileViewInternalBaseUrl(request));
+    }
+
+    private String buildKkPreviewUrl(String previewFileUrl, String baseUrl) {
         String encodedUrl = URLEncoder.encode(
             Base64.getEncoder().encodeToString(previewFileUrl.getBytes(StandardCharsets.UTF_8)),
             StandardCharsets.UTF_8
         );
-        return resolveKkFileViewBaseUrl(request) + "/onlinePreview?url=" + encodedUrl;
+        return baseUrl + "/onlinePreview?url=" + encodedUrl;
     }
 
     private String fetchText(String url) throws IOException {
@@ -237,14 +289,21 @@ public class InfoResourcePortalController {
     }
 
     private String rebuildUrl(URI uri, String host, int port) {
+        return rebuildUrl(uri, uri.getScheme(), host, port, null);
+    }
+
+    private String rebuildUrl(URI uri, String scheme, String host, int port, String pathPrefix) {
         StringBuilder builder = new StringBuilder();
-        builder.append(uri.getScheme()).append("://");
+        builder.append(scheme).append("://");
         if (StringUtils.isNotBlank(uri.getRawUserInfo())) {
             builder.append(uri.getRawUserInfo()).append('@');
         }
         builder.append(formatHost(host));
         if (port >= 0) {
             builder.append(':').append(port);
+        }
+        if (StringUtils.isNotBlank(pathPrefix)) {
+            builder.append(trimTrailingSlash(pathPrefix));
         }
         builder.append(StringUtils.defaultString(uri.getRawPath()));
         if (StringUtils.isNotBlank(uri.getRawQuery())) {
@@ -271,15 +330,27 @@ public class InfoResourcePortalController {
         return url + separator + "fullfilename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8);
     }
 
+    private String trimTrailingSlash(String value) {
+        String result = StringUtils.defaultString(value);
+        while (result.endsWith("/")) {
+            result = result.substring(0, result.length() - 1);
+        }
+        return result;
+    }
+
     private String resolveKkFileViewBaseUrl(HttpServletRequest request) {
         String baseUrl = kkFileViewBaseUrl;
         if (StringUtils.isBlank(baseUrl)) {
             baseUrl = resolveExternalScheme(request) + "://" + resolveExternalHost(request) + ":" + KKFILEVIEW_EXTERNAL_PORT;
         }
-        while (baseUrl.endsWith("/")) {
-            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        return trimTrailingSlash(baseUrl);
+    }
+
+    private String resolveKkFileViewInternalBaseUrl(HttpServletRequest request) {
+        if (StringUtils.isNotBlank(kkFileViewInternalBaseUrl)) {
+            return trimTrailingSlash(kkFileViewInternalBaseUrl);
         }
-        return baseUrl;
+        return resolveKkFileViewBaseUrl(request);
     }
 
     private String resolveExternalScheme(HttpServletRequest request) {

@@ -28,6 +28,7 @@
     "await-to-js": "3.0.0",
     "axios": "1.13.6",
     "crypto-js": "4.2.0",
+    "docx-preview": "^0.3.7",
     "echarts": "6.0.0",
     "element-plus": "2.13.5",
     "file-saver": "2.0.5",
@@ -36,6 +37,7 @@
     "js-cookie": "3.0.5",
     "jsencrypt": "3.5.4",
     "nprogress": "0.2.0",
+    "pdfjs-dist": "^6.1.200",
     "pinia": "3.0.4",
     "screenfull": "6.0.2",
     "vue": "3.5.30",
@@ -44,7 +46,8 @@
     "vue-json-pretty": "2.6.0",
     "vue-router": "5.0.3",
     "vue-types": "6.0.0",
-    "vxe-table": "4.18.1"
+    "vxe-table": "4.18.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@iconify/json": "^2.2.448",

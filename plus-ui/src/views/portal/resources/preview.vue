@@ -1,97 +1,76 @@
 <template>
   <div class="resource-preview-page">
-    <header class="preview-topbar">
-      <div class="brand-block">
-        <img src="@/assets/portal/module-resource.png" alt="资源共享" />
-        <div>
-          <strong>资源共享</strong>
-          <span>资料预览</span>
-        </div>
-      </div>
-
-      <div class="topbar-actions">
-        <button class="ghost-button" type="button" @click="goResourceList">
-          <el-icon><Back /></el-icon>
-          返回资源
-        </button>
-        <button class="primary-button" type="button" :disabled="!resource" @click="downloadResource">
-          <el-icon><Download /></el-icon>
-          下载资料
-        </button>
-        <button class="icon-button" type="button" title="关闭" @click="closePreview">
-          <el-icon><Close /></el-icon>
-        </button>
-      </div>
-    </header>
-
     <main v-loading="loading" class="preview-shell">
       <section class="preview-stage">
-        <header class="stage-head">
-          <div>
-            <span>{{ resource?.categoryName || '未分类' }}</span>
-            <strong>{{ resource?.title || '资料预览' }}</strong>
-          </div>
-          <em>{{ resource?.fileSuffix || resource?.previewType || 'FILE' }}</em>
-        </header>
-
         <div class="stage-body">
-          <iframe v-if="previewSrc" :src="previewSrc" title="资料预览" @error="handlePreviewFrameError"></iframe>
+          <PdfPreviewer
+            v-if="previewMode === 'pdf' && previewSrc"
+            :src="previewSrc"
+            :title="resource?.title || resource?.originalName || '资料预览'"
+            :file-name="resource?.originalName || resource?.title || '资料预览'"
+            :file-suffix="resource?.fileSuffix || resource?.previewType || 'PDF'"
+            :category-name="resource?.categoryName || '未分类'"
+            :file-size-text="formatSize(resource?.fileSize)"
+            :owner-name="resource?.ownerName || resource?.createByName || '-'"
+            :create-time="resource?.createTime || '-'"
+            :view-count="resource?.viewCount || 0"
+            :download-count="resource?.downloadCount || 0"
+            @error="handlePreviewFrameError"
+            @back="goResourceList"
+            @download="downloadResource"
+            @close="closePreview"
+          />
+          <div v-else-if="previewMode !== 'none' && previewSrc" class="native-preview">
+            <header class="native-preview-toolbar">
+              <div class="native-file-summary">
+                <span>{{ typeLabel }}</span>
+                <div>
+                  <strong>{{ resource?.title || resource?.originalName || '资料预览' }}</strong>
+                  <p>
+                    {{ resource?.categoryName || '未分类' }}
+                    <em>{{ formatSize(resource?.fileSize) }}</em>
+                    <em>{{ resource?.ownerName || resource?.createByName || '-' }}</em>
+                    <em>{{ resource?.createTime || '-' }}</em>
+                  </p>
+                </div>
+              </div>
+              <div class="native-actions">
+                <button class="ghost-button" type="button" @click="goResourceList">
+                  <el-icon><Back /></el-icon>
+                  返回
+                </button>
+                <button class="primary-button" type="button" :disabled="!resource" @click="downloadResource">
+                  <el-icon><Download /></el-icon>
+                  下载
+                </button>
+                <button class="icon-button" type="button" title="关闭" @click="closePreview">
+                  <el-icon><Close /></el-icon>
+                </button>
+              </div>
+            </header>
+            <iframe v-if="previewMode === 'iframe'" :src="previewSrc" title="资料预览" @error="handlePreviewFrameError"></iframe>
+            <img
+              v-else-if="previewMode === 'image'"
+              class="preview-image"
+              :src="previewSrc"
+              :alt="resource?.title || '资料预览'"
+              @error="handlePreviewFrameError"
+            />
+            <video
+              v-else-if="previewMode === 'video'"
+              class="preview-media"
+              :src="previewSrc"
+              controls
+              preload="metadata"
+              @error="handlePreviewFrameError"
+            ></video>
+            <audio v-else-if="previewMode === 'audio'" class="preview-audio" :src="previewSrc" controls preload="metadata" @error="handlePreviewFrameError"></audio>
+          </div>
           <div v-else class="stage-empty">
             <el-empty :image-size="110" :description="previewError || '暂无可预览内容'" />
           </div>
         </div>
       </section>
-
-      <aside class="info-panel">
-        <section class="info-card">
-          <div class="file-mark">{{ typeLabel }}</div>
-          <div class="file-title">
-            <h1>{{ resource?.title || '-' }}</h1>
-            <p>{{ resource?.description || resource?.originalName || '暂无简介' }}</p>
-          </div>
-        </section>
-
-        <section class="meta-card">
-          <h2>资料信息</h2>
-          <dl>
-            <div>
-              <dt>文件名</dt>
-              <dd>{{ resource?.originalName || '-' }}</dd>
-            </div>
-            <div>
-              <dt>分类</dt>
-              <dd>{{ resource?.categoryName || '未分类' }}</dd>
-            </div>
-            <div>
-              <dt>格式</dt>
-              <dd>{{ resource?.fileSuffix || resource?.previewType || '-' }}</dd>
-            </div>
-            <div>
-              <dt>大小</dt>
-              <dd>{{ formatSize(resource?.fileSize) }}</dd>
-            </div>
-            <div>
-              <dt>上传人</dt>
-              <dd>{{ resource?.ownerName || resource?.createByName || '-' }}</dd>
-            </div>
-            <div>
-              <dt>上传时间</dt>
-              <dd>{{ resource?.createTime || '-' }}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section class="metric-card">
-          <div>
-            <strong>{{ resource?.viewCount || 0 }}</strong>
-            <span>浏览</span>
-          </div>
-          <div>
-            <strong>{{ resource?.downloadCount || 0 }}</strong>
-            <span>下载</span>
-          </div>
-        </section>
-      </aside>
     </main>
   </div>
 </template>
@@ -101,26 +80,59 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Back, Close, Download } from '@element-plus/icons-vue';
-import { getToken } from '@/utils/auth';
-import { getResource, getResourceKkPreviewUrl, resourceDownloadUrl } from '@/api/infoservice/portal';
+import { getResource, resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/infoservice/portal';
 import type { InfoResource } from '@/api/infoservice/types';
+import { getToken } from '@/utils/auth';
+import { downloadPortalResource } from './download';
+import PdfPreviewer from './components/PdfPreviewer.vue';
+
+type PreviewMode = 'none' | 'pdf' | 'iframe' | 'image' | 'video' | 'audio';
 
 const route = useRoute();
 const router = useRouter();
 const resource = ref<InfoResource>();
+const previewMode = ref<PreviewMode>('none');
 const previewSrc = ref('');
 const previewError = ref('');
 const loading = ref(false);
 
 const resourceId = computed(() => String(route.params.resourceId || ''));
-
-const withAuth = (url: string) => {
-  const target = new URL(url, window.location.origin);
-  const token = getToken();
-  if (token) target.searchParams.set('Authorization', `Bearer ${token}`);
-  target.searchParams.set('clientid', import.meta.env.VITE_APP_CLIENT_ID);
-  return target.toString();
-};
+const NATIVE_IMAGE_SUFFIXES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+const TEXT_SUFFIXES = ['txt', 'md', 'csv', 'tsv', 'json', 'xml', 'log', 'ini', 'yaml', 'yml'];
+const VIDEO_SUFFIXES = ['mp4', 'webm', 'ogg', 'mov', 'm4v'];
+const AUDIO_SUFFIXES = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'];
+const PDF_CONVERT_PREVIEW_TYPES = ['office'];
+const PDF_CONVERT_SUFFIXES = [
+  'doc',
+  'docx',
+  'docm',
+  'dot',
+  'dotx',
+  'dotm',
+  'xls',
+  'xlsx',
+  'xlsm',
+  'xlt',
+  'xltx',
+  'xltm',
+  'ppt',
+  'pptx',
+  'pptm',
+  'pps',
+  'ppsx',
+  'wps',
+  'wpt',
+  'et',
+  'ett',
+  'dps',
+  'dpt',
+  'odt',
+  'ods',
+  'odp',
+  'rtf',
+  'csv',
+  'tsv'
+];
 
 const unwrapResponseData = <T,>(payload: any): T | undefined => {
   const body = payload?.data !== undefined ? payload.data : payload;
@@ -148,6 +160,66 @@ const normalizePreviewSrc = (url?: string) => {
   }
 };
 
+const withAuthQuery = (url: string) => {
+  const target = new URL(url, window.location.origin);
+  const token = getToken();
+  if (token) {
+    target.searchParams.set('Authorization', `Bearer ${token}`);
+  }
+  target.searchParams.set('clientid', import.meta.env.VITE_APP_CLIENT_ID);
+  return target.toString();
+};
+
+const getSuffix = (item?: InfoResource) =>
+  String(item?.fileSuffix || '')
+    .replace(/^\./, '')
+    .toLowerCase();
+
+const getPreviewType = (item?: InfoResource) => String(item?.previewType || '').toLowerCase();
+
+const getMimeType = (item?: InfoResource) => String(item?.mimeType || '').toLowerCase();
+
+const isPdfResource = (item?: InfoResource) => {
+  const previewType = getPreviewType(item);
+  const suffix = getSuffix(item);
+  const mimeType = getMimeType(item);
+  return previewType === 'pdf' || mimeType.includes('pdf') || suffix === 'pdf';
+};
+
+const resolveNativePreviewMode = (item?: InfoResource): PreviewMode => {
+  const previewType = getPreviewType(item);
+  const suffix = getSuffix(item);
+  const mimeType = getMimeType(item);
+  if (previewType === 'image' || mimeType.startsWith('image/') || NATIVE_IMAGE_SUFFIXES.includes(suffix)) {
+    return 'image';
+  }
+  if (previewType === 'pdf' || mimeType.includes('pdf') || suffix === 'pdf') {
+    return 'iframe';
+  }
+  if (previewType === 'text' || mimeType.startsWith('text/') || TEXT_SUFFIXES.includes(suffix)) {
+    return 'iframe';
+  }
+  if (previewType === 'video' || mimeType.startsWith('video/') || VIDEO_SUFFIXES.includes(suffix)) {
+    return 'video';
+  }
+  if (previewType === 'audio' || mimeType.startsWith('audio/') || AUDIO_SUFFIXES.includes(suffix)) {
+    return 'audio';
+  }
+  return 'none';
+};
+
+const shouldUsePdfPreview = (item?: InfoResource) => {
+  const previewType = getPreviewType(item);
+  const suffix = getSuffix(item);
+  return PDF_CONVERT_PREVIEW_TYPES.includes(previewType) || PDF_CONVERT_SUFFIXES.includes(suffix);
+};
+
+const isOfdResource = (item?: InfoResource) => {
+  const previewType = getPreviewType(item);
+  const suffix = getSuffix(item);
+  return previewType === 'ofd' || suffix === 'ofd';
+};
+
 const typeLabel = computed(() => {
   const suffix = resource.value?.fileSuffix || resource.value?.previewType || 'FILE';
   return suffix.toUpperCase().slice(0, 5);
@@ -160,25 +232,55 @@ const loadResource = async () => {
   }
   loading.value = true;
   previewError.value = '';
+  previewMode.value = 'none';
+  previewSrc.value = '';
   try {
     const resourceRes: any = await getResource(resourceId.value);
-    resource.value = unwrapResponseData<InfoResource>(resourceRes);
+    const currentResource = unwrapResponseData<InfoResource>(resourceRes);
+    resource.value = currentResource;
 
-    const previewRes: any = await getResourceKkPreviewUrl(resourceId.value);
-    previewSrc.value = normalizePreviewSrc(unwrapResponseData<string>(previewRes));
-    if (!previewSrc.value) {
-      previewError.value = '暂未获取到预览地址';
+    const nativeMode = resolveNativePreviewMode(currentResource);
+    if (nativeMode !== 'none') {
+      previewMode.value = isPdfResource(currentResource) ? 'pdf' : nativeMode;
+      const previewUrl = isPdfResource(currentResource) ? resourcePdfPreviewUrl(resourceId.value) : resourcePreviewUrl(resourceId.value);
+      previewSrc.value = normalizePreviewSrc(withAuthQuery(previewUrl));
+      if (!previewSrc.value) {
+        previewError.value = '暂未获取到预览地址';
+      }
+      return;
     }
+
+    if (isOfdResource(currentResource)) {
+      previewError.value = 'OFD 文件暂不支持浏览器预览，请下载后查看';
+      return;
+    }
+
+    if (shouldUsePdfPreview(currentResource)) {
+      previewMode.value = 'pdf';
+      previewSrc.value = normalizePreviewSrc(withAuthQuery(resourcePdfPreviewUrl(resourceId.value)));
+      if (!previewSrc.value) {
+        previewError.value = '暂未获取到 PDF 预览地址';
+      }
+      return;
+    }
+
+    previewError.value = '当前文件暂不支持在线预览，可下载后查看';
   } catch (error) {
+    previewMode.value = 'none';
     previewSrc.value = '';
     previewError.value = '资料暂时无法预览';
     ElMessage.error('资料暂时无法预览');
   } finally {
+    if (!previewSrc.value) {
+      previewMode.value = 'none';
+    }
     loading.value = false;
   }
 };
 
 const handlePreviewFrameError = () => {
+  previewMode.value = 'none';
+  previewSrc.value = '';
   previewError.value = '资料暂时无法预览';
 };
 
@@ -195,9 +297,8 @@ const closePreview = () => {
 };
 
 const downloadResource = () => {
-  const id = resource.value?.resourceId || resourceId.value;
-  if (!id) return;
-  window.open(withAuth(resourceDownloadUrl(id)), '_blank');
+  if (!resource.value) return;
+  downloadPortalResource(resource.value);
 };
 
 const formatSize = (size?: number) => {
@@ -212,19 +313,18 @@ onMounted(loadResource);
 
 <style scoped>
 .resource-preview-page {
-  min-height: 100vh;
-  --resource-primary: #1260e8;
-  --resource-primary-soft: #edf4ff;
-  --resource-title: #0b1833;
-  --resource-text: #25395f;
-  --resource-muted: #53668f;
-  --resource-weak: #8a97af;
-  --resource-border: #e1e9f6;
+  height: 100vh;
+  --resource-primary: #245f8f;
+  --resource-primary-soft: #eaf2f8;
+  --resource-title: #14243a;
+  --resource-text: #32445c;
+  --resource-muted: #68788c;
+  --resource-weak: #96a1af;
+  --resource-border: #dce5ed;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 16px;
-  padding: 18px 28px 28px;
-  background: linear-gradient(180deg, rgba(237, 244, 255, 0.9) 0%, rgba(247, 250, 255, 0.72) 320px), #f7faff;
+  grid-template-rows: minmax(0, 1fr);
+  padding: 10px;
+  background: #edf2f7;
   color: var(--resource-text);
   font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
@@ -237,7 +337,7 @@ onMounted(loadResource);
   border: 1px solid var(--resource-border);
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 14px 34px rgba(35, 83, 151, 0.07);
+  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.07);
 }
 
 .preview-topbar {
@@ -304,7 +404,7 @@ onMounted(loadResource);
 
 .ghost-button,
 .icon-button {
-  border: 1px solid #dbe5f4;
+  border: 1px solid #d3dee8;
   background: #fff;
   color: var(--resource-text);
 }
@@ -333,21 +433,21 @@ onMounted(loadResource);
 }
 
 .primary-button:hover:not(:disabled) {
-  background: #0f55cf;
+  background: #183f63;
 }
 
 .preview-shell {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 
 .preview-stage {
   min-width: 0;
-  min-height: calc(100vh - 134px);
+  min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -396,6 +496,9 @@ onMounted(loadResource);
 
 .stage-body {
   min-height: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
   background: #f2f6fc;
 }
 
@@ -407,12 +510,109 @@ onMounted(loadResource);
 }
 
 .stage-body iframe {
+  flex: 1 1 auto;
+  align-self: stretch;
   width: 100%;
   height: 100%;
   min-height: 620px;
   display: block;
   border: 0;
   background: #fff;
+}
+
+.native-preview {
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: #f4f7fc;
+}
+
+.native-preview-toolbar {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--resource-border);
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.native-file-summary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.native-file-summary > span {
+  flex: 0 0 auto;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--resource-primary-soft);
+  color: var(--resource-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.native-file-summary div {
+  min-width: 0;
+}
+
+.native-file-summary strong {
+  display: block;
+  overflow: hidden;
+  color: var(--resource-title);
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.native-file-summary p {
+  margin: 6px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  color: var(--resource-muted);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.native-file-summary em {
+  font-style: normal;
+}
+
+.native-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-image {
+  max-width: calc(100% - 48px);
+  max-height: calc(100vh - 230px);
+  display: block;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 16px 34px rgba(20, 36, 67, 0.12);
+}
+
+.preview-media {
+  width: min(980px, calc(100% - 48px));
+  max-height: calc(100vh - 230px);
+  border-radius: 8px;
+  background: #14243a;
+  box-shadow: 0 16px 34px rgba(20, 36, 67, 0.12);
+}
+
+.preview-audio {
+  width: min(720px, calc(100% - 48px));
 }
 
 .info-panel {
@@ -515,7 +715,7 @@ onMounted(loadResource);
 .metric-card div {
   border-radius: 8px;
   padding: 14px 10px;
-  background: #f7faff;
+  background: #f5f7fa;
   text-align: center;
 }
 
@@ -541,27 +741,18 @@ onMounted(loadResource);
   }
 
   .preview-stage {
-    min-height: 680px;
+    min-height: 0;
   }
 }
 
 @media (max-width: 760px) {
   .resource-preview-page {
-    padding: 14px;
+    padding: 8px;
   }
 
-  .preview-topbar {
+  .native-preview-toolbar {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .topbar-actions {
-    width: 100%;
-  }
-
-  .ghost-button,
-  .primary-button {
-    flex: 1;
   }
 }
 </style>

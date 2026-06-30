@@ -29,6 +29,7 @@ import org.dromara.infoservice.mapper.InfoResourceMapper;
 import org.dromara.infoservice.service.IInfoResourceService;
 import org.dromara.resource.api.RemoteFileService;
 import org.dromara.resource.api.domain.RemoteFile;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,12 +40,15 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -53,12 +57,28 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
 
     private static final String SCOPE_MINE = "mine";
     private static final long ONE_MB = 1024L * 1024L;
+    private static final Set<String> PDF_CONVERTIBLE_SUFFIXES = Set.of(
+        "doc", "docx", "docm", "dot", "dotx", "dotm",
+        "xls", "xlsx", "xlsm", "xlt", "xltx", "xltm", "csv", "tsv",
+        "ppt", "pptx", "pptm", "pps", "ppsx",
+        "wps", "wpt", "et", "ett", "dps", "dpt",
+        "odt", "ods", "odp", "rtf"
+    );
 
     private final InfoResourceMapper baseMapper;
     private final InfoResourceCategoryMapper categoryMapper;
 
     @DubboReference
     private RemoteFileService remoteFileService;
+
+    @Value("${infoservice.preview-cache.dir:/ruoyi/infoservice/preview-cache}")
+    private String previewCacheDir;
+
+    @Value("${infoservice.preview-cache.soffice:soffice}")
+    private String sofficeCommand;
+
+    @Value("${infoservice.preview-cache.timeout-seconds:120}")
+    private long sofficeTimeoutSeconds;
 
     private LambdaQueryWrapper<InfoResource> buildWrapper(InfoResourceBo bo, boolean portal) {
         LambdaQueryWrapper<InfoResource> w = Wrappers.lambdaQuery();
@@ -203,16 +223,40 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     }
 
     @Override
+    public void previewPdf(Long resourceId, HttpServletResponse response) throws IOException {
+        InfoResource resource = getPortalReadableResource(resourceId);
+        RemoteFile remoteFile = resolveRemoteFile(resource);
+        String suffix = resolveFileSuffix(resource, remoteFile);
+        if ("ofd".equals(suffix) || "ofd".equals(StringUtils.defaultString(resource.getPreviewType()).toLowerCase())) {
+            throw new ServiceException("OFD 文件暂不支持在线预览，请下载后查看");
+        }
+
+        if ("pdf".equals(suffix) || "pdf".equals(StringUtils.defaultString(resource.getPreviewType()).toLowerCase())) {
+            Path tempFile = downloadRemoteFile(remoteFile);
+            try {
+                writePdfResponse(tempFile, resolvePreviewPdfName(resource, remoteFile), response);
+            } finally {
+                Files.deleteIfExists(tempFile);
+            }
+            return;
+        }
+
+        if (!PDF_CONVERTIBLE_SUFFIXES.contains(suffix)) {
+            throw new ServiceException("当前文件暂不支持在线预览，请下载后查看");
+        }
+
+        Path pdfFile = ensurePdfPreviewFile(resource, remoteFile, suffix);
+        writePdfResponse(pdfFile, resolvePreviewPdfName(resource, remoteFile), response);
+    }
+
+    @Override
     public void writePdfThumbnail(Long resourceId, HttpServletResponse response) throws IOException {
         InfoResource resource = getPortalReadableResource(resourceId);
         if (!"pdf".equals(resource.getPreviewType())) {
             throw new ServiceException("当前文件暂不支持生成缩略图");
         }
         RemoteFile remoteFile = resolveRemoteFile(resource);
-        OssClient storage = StringUtils.isBlank(remoteFile.getService())
-            ? OssFactory.instance()
-            : OssFactory.instance(remoteFile.getService());
-        Path tempFile = storage.fileDownload(remoteFile.getName());
+        Path tempFile = downloadRemoteFile(remoteFile);
         try (PDDocument document = PDDocument.load(tempFile.toFile())) {
             if (document.getNumberOfPages() == 0) {
                 throw new ServiceException("PDF文件没有可渲染页面");
@@ -231,7 +275,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     public void downloadFile(Long resourceId, HttpServletResponse response) throws IOException {
         InfoResource resource = getPortalReadableResource(resourceId);
         RemoteFile remoteFile = resolveRemoteFile(resource);
-        String fileName = StringUtils.defaultIfBlank(resource.getOriginalName(), remoteFile.getOriginalName());
+        String fileName = resolveDownloadFileName(resource, remoteFile);
         FileUtils.setAttachmentResponseHeader(response, fileName);
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE + "; charset=UTF-8");
         OssClient storage = StringUtils.isBlank(remoteFile.getService())
@@ -347,6 +391,180 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
             throw new ServiceException("文件不存在或暂不可访问");
         }
         return files.get(0);
+    }
+
+    private String resolveDownloadFileName(InfoResource resource, RemoteFile remoteFile) {
+        String fileName = StringUtils.defaultIfBlank(resource.getOriginalName(), remoteFile.getOriginalName());
+        fileName = StringUtils.defaultIfBlank(fileName, resource.getTitle());
+        if (StringUtils.isBlank(fileName)) {
+            return "资料下载";
+        }
+        String suffix = StringUtils.defaultIfBlank(resource.getFileSuffix(), remoteFile.getFileSuffix());
+        if (StringUtils.isNotBlank(suffix) && !fileName.contains(".")) {
+            return fileName + "." + suffix.replaceFirst("^\\.", "");
+        }
+        return fileName;
+    }
+
+    private String resolvePreviewPdfName(InfoResource resource, RemoteFile remoteFile) {
+        String fileName = resolveDownloadFileName(resource, remoteFile);
+        if (fileName.toLowerCase().endsWith(".pdf")) {
+            return fileName;
+        }
+        int extensionIndex = fileName.lastIndexOf('.');
+        if (extensionIndex > 0) {
+            return fileName.substring(0, extensionIndex) + ".pdf";
+        }
+        return fileName + ".pdf";
+    }
+
+    private String resolveFileSuffix(InfoResource resource, RemoteFile remoteFile) {
+        String suffix = StringUtils.defaultIfBlank(resource.getFileSuffix(), remoteFile.getFileSuffix());
+        if (StringUtils.isBlank(suffix)) {
+            String fileName = StringUtils.defaultIfBlank(resource.getOriginalName(), remoteFile.getOriginalName());
+            suffix = StrUtil.subAfter(StringUtils.defaultString(fileName), ".", true);
+        }
+        return StringUtils.defaultString(suffix).replaceFirst("^\\.", "").toLowerCase();
+    }
+
+    private OssClient resolveStorage(RemoteFile remoteFile) {
+        return StringUtils.isBlank(remoteFile.getService())
+            ? OssFactory.instance()
+            : OssFactory.instance(remoteFile.getService());
+    }
+
+    private Path downloadRemoteFile(RemoteFile remoteFile) {
+        return resolveStorage(remoteFile).fileDownload(remoteFile.getName());
+    }
+
+    private Path ensurePdfPreviewFile(InfoResource resource, RemoteFile remoteFile, String suffix) throws IOException {
+        Path cacheDir = Path.of(previewCacheDir);
+        Files.createDirectories(cacheDir);
+        Path targetFile = cacheDir.resolve(buildPdfCacheFileName(resource, remoteFile));
+        if (Files.exists(targetFile) && Files.size(targetFile) > 0) {
+            return targetFile;
+        }
+
+        Path downloadedFile = null;
+        Path workDir = Files.createTempDirectory(cacheDir, "convert-");
+        try {
+            downloadedFile = downloadRemoteFile(remoteFile);
+            Path sourceFile = workDir.resolve("source." + suffix);
+            Files.copy(downloadedFile, sourceFile, StandardCopyOption.REPLACE_EXISTING);
+            Path convertedFile = convertOfficeToPdf(sourceFile, workDir);
+            Path tempTarget = Files.createTempFile(cacheDir, targetFile.getFileName().toString(), ".tmp");
+            Files.move(convertedFile, tempTarget, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(tempTarget, targetFile, StandardCopyOption.REPLACE_EXISTING);
+            return targetFile;
+        } finally {
+            if (downloadedFile != null) {
+                Files.deleteIfExists(downloadedFile);
+            }
+            FileUtils.del(workDir.toFile());
+        }
+    }
+
+    private Path convertOfficeToPdf(Path sourceFile, Path outputDir) throws IOException {
+        Files.createDirectories(outputDir.resolve("home"));
+        Path logFile = outputDir.resolve("soffice.log");
+        ProcessBuilder processBuilder = new ProcessBuilder(
+            sofficeCommand,
+            "--headless",
+            "--nologo",
+            "--nofirststartwizard",
+            "--convert-to",
+            "pdf",
+            "--outdir",
+            outputDir.toString(),
+            sourceFile.toString()
+        );
+        processBuilder.environment().put("HOME", outputDir.resolve("home").toString());
+        processBuilder.redirectErrorStream(true);
+        processBuilder.redirectOutput(logFile.toFile());
+
+        Process process;
+        try {
+            process = processBuilder.start();
+        } catch (IOException e) {
+            throw new ServiceException("未找到 LibreOffice 转换程序，请检查 soffice 配置");
+        }
+
+        boolean finished;
+        try {
+            finished = process.waitFor(Math.max(30, sofficeTimeoutSeconds), TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            process.destroyForcibly();
+            throw new ServiceException("PDF 转换被中断，请下载后查看");
+        }
+        if (!finished) {
+            process.destroyForcibly();
+            throw new ServiceException("PDF 转换超时，请下载后查看");
+        }
+        if (process.exitValue() != 0) {
+            throw new ServiceException("PDF 转换失败，请下载后查看");
+        }
+
+        Path expectedFile = outputDir.resolve("source.pdf");
+        if (Files.exists(expectedFile) && Files.size(expectedFile) > 0) {
+            return expectedFile;
+        }
+        try (var files = Files.list(outputDir)) {
+            return files
+                .filter(file -> file.getFileName().toString().toLowerCase().endsWith(".pdf"))
+                .filter(file -> {
+                    try {
+                        return Files.size(file) > 0;
+                    } catch (IOException e) {
+                        return false;
+                    }
+                })
+                .findFirst()
+                .orElseThrow(() -> new ServiceException("PDF 转换未生成有效文件，请下载后查看"));
+        }
+    }
+
+    private String buildPdfCacheFileName(InfoResource resource, RemoteFile remoteFile) {
+        long updatedAt = resource.getUpdateTime() != null
+            ? resource.getUpdateTime().getTime()
+            : resource.getCreateTime() == null ? 0L : resource.getCreateTime().getTime();
+        return "%s-%s-%s-%s.pdf".formatted(
+            resource.getResourceId(),
+            StringUtils.defaultString(String.valueOf(remoteFile.getOssId())),
+            StringUtils.defaultString(String.valueOf(resource.getFileSize())),
+            updatedAt
+        );
+    }
+
+    private void writePdfResponse(Path pdfFile, String fileName, HttpServletResponse response) throws IOException {
+        response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+        response.setContentLengthLong(Files.size(pdfFile));
+        response.setHeader("Cache-Control", "private, max-age=3600");
+        response.setHeader("Content-Disposition", buildInlineContentDisposition(fileName));
+        Files.copy(pdfFile, response.getOutputStream());
+    }
+
+    private String buildInlineContentDisposition(String fileName) {
+        String safeFileName = StringUtils.defaultIfBlank(fileName, "preview.pdf");
+        String percentEncodedFileName = FileUtils.percentEncode(safeFileName);
+        String asciiFileName = toAsciiFallbackFileName(safeFileName);
+        return "inline; filename=\"%s\"; filename*=UTF-8''%s".formatted(asciiFileName, percentEncodedFileName);
+    }
+
+    private String toAsciiFallbackFileName(String fileName) {
+        StringBuilder builder = new StringBuilder(fileName.length());
+        for (int i = 0; i < fileName.length(); i++) {
+            char ch = fileName.charAt(i);
+            if (ch == '"' || ch == '\\' || ch == '\r' || ch == '\n') {
+                builder.append('_');
+            } else if (ch >= 0x20 && ch <= 0x7E) {
+                builder.append(ch);
+            } else {
+                builder.append('_');
+            }
+        }
+        String fallback = builder.toString().trim();
+        return fallback.isEmpty() ? "preview.pdf" : fallback;
     }
 
     private InfoResource assertOwnedResource(Long resourceId) {

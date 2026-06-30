@@ -1,5 +1,6 @@
 import request from '@/utils/request';
-import { AxiosPromise } from 'axios';
+import axios, { AxiosPromise, AxiosResponse } from 'axios';
+import { globalHeaders } from '@/utils/request';
 import {
   ForumBoard,
   ForumReply,
@@ -92,10 +93,23 @@ export function resourcePreviewUrl(resourceId: ResourceId) {
   return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/preview`;
 }
 
+export function resourcePdfPreviewUrl(resourceId: ResourceId) {
+  return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/pdf-preview`;
+}
+
 export function resourceThumbnailUrl(resourceId: ResourceId) {
   return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/thumbnail`;
 }
 
 export function resourceDownloadUrl(resourceId: ResourceId) {
   return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/download`;
+}
+
+export function downloadResourceBlob(resourceId: ResourceId): Promise<AxiosResponse<Blob>> {
+  return axios({
+    method: 'get',
+    url: resourceDownloadUrl(resourceId),
+    responseType: 'blob',
+    headers: globalHeaders()
+  });
 }

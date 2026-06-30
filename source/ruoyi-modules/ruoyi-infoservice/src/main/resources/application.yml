@@ -9,6 +9,23 @@ spring:
   profiles:
     active: @profiles.active@
 
+# 资源共享预览配置
+# base-url 是返回给浏览器 iframe 使用的访问地址；为空时会按当前访问主机拼出 http://<host>:8012。
+# internal-base-url 是 infoservice 服务端访问 kkFileView 使用的地址；Docker Compose 内建议使用 http://kkfileview:8012。
+# file-url-mode=internal 适合 kkFileView 与 MinIO 同在 Docker 网络，文件地址使用 http://minio:9000。
+# file-url-mode=external 适合 kkFileView 手动部署在宿主机或其他机器，文件地址使用 http://<host>:8160。
+# file-base-url 优先级最高，可显式指定 kkFileView 能访问的 MinIO 外部地址，例如 http://192.168.8.4:8160。
+infoservice:
+  preview-cache:
+    dir: ${INFOSERVICE_PREVIEW_CACHE_DIR:/ruoyi/infoservice/preview-cache}
+    soffice: ${INFOSERVICE_PREVIEW_CACHE_SOFFICE:soffice}
+    timeout-seconds: ${INFOSERVICE_PREVIEW_CACHE_TIMEOUT_SECONDS:120}
+  kkfileview:
+    base-url:
+    internal-base-url:
+    file-url-mode: internal
+    file-base-url:
+
 --- # nacos 配置
 spring:
   cloud:
