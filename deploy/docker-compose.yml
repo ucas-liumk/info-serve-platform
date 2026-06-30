@@ -160,19 +160,6 @@ services:
     networks:
       - infosys-ruoyi-cloud-plus
 
-  kkfileview:
-    image: ${KKFILEVIEW_IMAGE}
-    container_name: infosys-ruoyi-cloud-plus-kkfileview
-    restart: unless-stopped
-    environment:
-      TZ: Asia/Shanghai
-    ports:
-      - "0.0.0.0:8012:8012"
-    depends_on:
-      - minio
-    networks:
-      - infosys-ruoyi-cloud-plus
-
   nacos:
     image: ${NACOS_IMAGE}
     container_name: infosys-ruoyi-cloud-plus-nacos
@@ -323,8 +310,12 @@ services:
     environment:
       <<: *ruoyi-env
       SERVER_PORT: 8107
+      INFOSERVICE_PREVIEW_CACHE_DIR: ${INFOSERVICE_PREVIEW_CACHE_DIR:-/ruoyi/infoservice/preview-cache}
+      INFOSERVICE_PREVIEW_CACHE_SOFFICE: ${INFOSERVICE_PREVIEW_CACHE_SOFFICE:-soffice}
+      INFOSERVICE_PREVIEW_CACHE_TIMEOUT_SECONDS: ${INFOSERVICE_PREVIEW_CACHE_TIMEOUT_SECONDS:-120}
     volumes:
       - ../logs/infoservice:/ruoyi/infoservice/logs
+      - ../data/preview-cache:/ruoyi/infoservice/preview-cache
     depends_on:
       nacos:
         condition: service_healthy

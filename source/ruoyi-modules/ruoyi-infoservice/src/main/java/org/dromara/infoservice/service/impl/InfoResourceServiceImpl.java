@@ -6,9 +6,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.ImageType;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
@@ -35,8 +32,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -208,18 +203,15 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     }
 
     @Override
-    public String resolveFileUrl(Long resourceId, boolean download) {
+    public void previewFile(Long resourceId, HttpServletResponse response) throws IOException {
         InfoResource resource = getPortalReadableResource(resourceId);
-        String url = remoteFileService.selectUrlByIds(String.valueOf(resource.getOssId()));
-        if (StringUtils.isBlank(url)) {
-            throw new ServiceException("文件不存在或暂不可访问");
-        }
-        if (download) {
-            baseMapper.update(null, Wrappers.<InfoResource>lambdaUpdate()
-                .setSql("download_count = download_count + 1")
-                .eq(InfoResource::getResourceId, resourceId));
-        }
-        return url;
+        RemoteFile remoteFile = resolveRemoteFile(resource);
+        String fileName = resolveDownloadFileName(resource, remoteFile);
+        response.setContentType(resolveInlineContentType(resource, remoteFile));
+        response.setHeader("Cache-Control", "private, max-age=3600");
+        response.setHeader("Content-Disposition", buildInlineContentDisposition(fileName));
+        response.addHeader("Access-Control-Expose-Headers", "Content-Disposition");
+        resolveStorage(remoteFile).download(remoteFile.getName(), response.getOutputStream(), response::setContentLengthLong);
     }
 
     @Override
@@ -247,28 +239,6 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
 
         Path pdfFile = ensurePdfPreviewFile(resource, remoteFile, suffix);
         writePdfResponse(pdfFile, resolvePreviewPdfName(resource, remoteFile), response);
-    }
-
-    @Override
-    public void writePdfThumbnail(Long resourceId, HttpServletResponse response) throws IOException {
-        InfoResource resource = getPortalReadableResource(resourceId);
-        if (!"pdf".equals(resource.getPreviewType())) {
-            throw new ServiceException("当前文件暂不支持生成缩略图");
-        }
-        RemoteFile remoteFile = resolveRemoteFile(resource);
-        Path tempFile = downloadRemoteFile(remoteFile);
-        try (PDDocument document = PDDocument.load(tempFile.toFile())) {
-            if (document.getNumberOfPages() == 0) {
-                throw new ServiceException("PDF文件没有可渲染页面");
-            }
-            PDFRenderer renderer = new PDFRenderer(document);
-            BufferedImage image = renderer.renderImageWithDPI(0, 120, ImageType.RGB);
-            response.setContentType(MediaType.IMAGE_JPEG_VALUE);
-            response.setHeader("Cache-Control", "public, max-age=86400");
-            ImageIO.write(image, "jpg", response.getOutputStream());
-        } finally {
-            Files.deleteIfExists(tempFile);
-        }
     }
 
     @Override
@@ -425,6 +395,25 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
             suffix = StrUtil.subAfter(StringUtils.defaultString(fileName), ".", true);
         }
         return StringUtils.defaultString(suffix).replaceFirst("^\\.", "").toLowerCase();
+    }
+
+    private String resolveInlineContentType(InfoResource resource, RemoteFile remoteFile) {
+        if (StringUtils.isNotBlank(resource.getMimeType())) {
+            return resource.getMimeType();
+        }
+        return switch (resolveFileSuffix(resource, remoteFile)) {
+            case "pdf" -> MediaType.APPLICATION_PDF_VALUE;
+            case "txt", "log", "md", "csv" -> MediaType.TEXT_PLAIN_VALUE + "; charset=UTF-8";
+            case "html", "htm" -> MediaType.TEXT_HTML_VALUE + "; charset=UTF-8";
+            case "jpg", "jpeg" -> MediaType.IMAGE_JPEG_VALUE;
+            case "png" -> MediaType.IMAGE_PNG_VALUE;
+            case "gif" -> MediaType.IMAGE_GIF_VALUE;
+            case "svg" -> "image/svg+xml";
+            case "webp" -> "image/webp";
+            case "mp4" -> "video/mp4";
+            case "mp3" -> "audio/mpeg";
+            default -> MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        };
     }
 
     private OssClient resolveStorage(RemoteFile remoteFile) {

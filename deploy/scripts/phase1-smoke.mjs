@@ -219,13 +219,14 @@ async function main() {
   const resourceDetail = expectR(await request('GET', `/infoservice/portal/resources/${resource.resourceId}`, { token }), 'RESOURCE-DETAIL');
   assert(resourceDetail?.resourceId === resource.resourceId, 'RESOURCE-DETAIL-SHAPE', `resourceId=${resourceDetail?.resourceId ?? ''}`);
   const preview = await request('GET', `/infoservice/portal/resources/${resource.resourceId}/preview`, { token });
-  assert(preview.status >= 300 && preview.status < 400 && Boolean(preview.headers?.location), 'RESOURCE-PREVIEW-REDIRECT', `HTTP ${preview.status}`);
-  const previewTarget = await requestAbsolute('GET', preview.headers.location);
-  assert(previewTarget.status === 200, 'RESOURCE-PREVIEW-TARGET', `HTTP ${previewTarget.status}`);
+  assert(preview.status === 200, 'RESOURCE-PREVIEW-HTTP', `HTTP ${preview.status}`);
+  assert(String(preview.headers?.['content-disposition'] || '').includes('inline'), 'RESOURCE-PREVIEW-INLINE', String(preview.headers?.['content-disposition'] || ''));
+  assert(preview.raw.includes('Phase 1 resource smoke file'), 'RESOURCE-PREVIEW-CONTENT', `${preview.raw.length} bytes`);
   const download = await request('GET', `/infoservice/portal/resources/${resource.resourceId}/download`, { token });
-  assert(download.status >= 300 && download.status < 400 && Boolean(download.headers?.location), 'RESOURCE-DOWNLOAD-REDIRECT', `HTTP ${download.status}`);
-  const downloadTarget = await requestAbsolute('GET', download.headers.location);
-  assert(downloadTarget.status === 200, 'RESOURCE-DOWNLOAD-TARGET', `HTTP ${downloadTarget.status}`);
+  assert(download.status === 200, 'RESOURCE-DOWNLOAD-HTTP', `HTTP ${download.status}`);
+  assert(String(download.headers?.['content-disposition'] || '').includes('attachment'), 'RESOURCE-DOWNLOAD-ATTACHMENT', String(download.headers?.['content-disposition'] || ''));
+  assert(String(download.headers?.['content-disposition'] || '').includes('phase1-smoke-resource.txt'), 'RESOURCE-DOWNLOAD-FILENAME', String(download.headers?.['content-disposition'] || ''));
+  assert(download.raw.includes('Phase 1 resource smoke file'), 'RESOURCE-DOWNLOAD-CONTENT', `${download.raw.length} bytes`);
   expectR(await request('DELETE', `/infoservice/resource/${resource.resourceId}`, { token }), 'RESOURCE-CLEANUP');
 
   const boards = expectR(await request('GET', '/infoservice/portal/forum/boards', { token }), 'FORUM-BOARDS');

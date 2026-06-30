@@ -32,10 +32,6 @@ export function getResource(resourceId: ResourceId): AxiosPromise<InfoResource> 
   return request({ url: `/infoservice/portal/resources/${resourceId}`, method: 'get' });
 }
 
-export function getResourceKkPreviewUrl(resourceId: ResourceId): AxiosPromise<string> {
-  return request({ url: `/infoservice/portal/resources/${resourceId}/kk-preview-url`, method: 'get' });
-}
-
 export function uploadPortalResourceFile(data: FormData): AxiosPromise<ResourceUploadResult> {
   return request({
     url: '/infoservice/portal/resources/upload',
@@ -95,10 +91,6 @@ export function resourcePreviewUrl(resourceId: ResourceId) {
 
 export function resourcePdfPreviewUrl(resourceId: ResourceId) {
   return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/pdf-preview`;
-}
-
-export function resourceThumbnailUrl(resourceId: ResourceId) {
-  return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/thumbnail`;
 }
 
 export function resourceDownloadUrl(resourceId: ResourceId) {

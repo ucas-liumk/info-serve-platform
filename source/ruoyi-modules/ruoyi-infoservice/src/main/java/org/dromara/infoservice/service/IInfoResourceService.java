@@ -27,11 +27,9 @@ public interface IInfoResourceService {
 
     ResourceUploadVo portalUpload(MultipartFile file);
 
-    String resolveFileUrl(Long resourceId, boolean download);
+    void previewFile(Long resourceId, HttpServletResponse response) throws IOException;
 
     void previewPdf(Long resourceId, HttpServletResponse response) throws IOException;
-
-    void writePdfThumbnail(Long resourceId, HttpServletResponse response) throws IOException;
 
     void downloadFile(Long resourceId, HttpServletResponse response) throws IOException;
 

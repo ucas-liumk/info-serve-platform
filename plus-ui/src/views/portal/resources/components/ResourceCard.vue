@@ -1,11 +1,10 @@
 <template>
   <article class="resource-card" @click="emit('preview', resource)">
     <div class="preview-stack" aria-hidden="true">
-      <div :class="['preview-sheet', 'sheet-back', typeClass]"></div>
-      <div :class="['preview-sheet', 'sheet-mid', typeClass]"></div>
       <div :class="['preview-sheet', 'sheet-front', typeClass]">
-        <img v-if="thumbnailUrl" :src="thumbnailUrl" :alt="resource.title" @error="thumbnailBroken = true" />
-        <template v-else>
+        <canvas v-if="pdfThumbnailUrl" v-show="pdfThumbnailReady" ref="thumbnailCanvasRef" class="thumbnail-canvas"></canvas>
+        <img v-else-if="imageThumbnailUrl" :src="imageThumbnailUrl" :alt="resource.title" @error="imageThumbnailBroken = true" />
+        <template v-if="showFallbackCover">
           <span class="cover-ribbon">{{ resource.categoryName || '资源共享' }}</span>
           <strong>{{ typeLabel }}</strong>
           <em>{{ coverTitle }}</em>
@@ -17,28 +16,37 @@
       <button class="title-button" type="button" @click.stop="emit('preview', resource)">
         {{ resource.title }}
       </button>
-      <p>简介：{{ resource.description || resource.originalName || '暂无简介' }}</p>
       <div class="resource-meta">
         <span>大小：{{ formatSize(resource.fileSize) }}</span>
         <i></i>
         <span>浏览：{{ resource.viewCount || 0 }}次</span>
+        <i></i>
+        <span>下载：{{ resource.downloadCount || 0 }}次</span>
       </div>
-      <div class="rating-row">
-        <span>星级：</span>
-        <span class="stars">
-          <el-icon v-for="item in 5" :key="item" :class="{ active: item <= rating }"><StarFilled /></el-icon>
-        </span>
+      <div class="card-actions">
+        <button class="action-button primary" type="button" @click.stop="emit('preview', resource)">
+          <el-icon><View /></el-icon>
+          <span>预览</span>
+        </button>
+        <button class="action-button" type="button" @click.stop="emit('download', resource)">
+          <el-icon><Download /></el-icon>
+          <span>下载</span>
+        </button>
       </div>
     </div>
   </article>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { StarFilled } from '@element-plus/icons-vue';
-import { resourceThumbnailUrl } from '@/api/infoservice/portal';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { Download, View } from '@element-plus/icons-vue';
+import { resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/infoservice/portal';
 import type { InfoResource } from '@/api/infoservice/types';
 import { getToken } from '@/utils/auth';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
+
+GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 const props = defineProps<{
   resource: InfoResource;
@@ -49,9 +57,65 @@ const emit = defineEmits<{
   (e: 'download', resource: InfoResource): void;
 }>();
 
-const thumbnailBroken = ref(false);
+const IMAGE_SUFFIXES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+const PDF_SUFFIXES = ['pdf'];
+const OFFICE_SUFFIXES = [
+  'doc',
+  'docx',
+  'docm',
+  'dot',
+  'dotx',
+  'dotm',
+  'xls',
+  'xlsx',
+  'xlsm',
+  'xlt',
+  'xltx',
+  'xltm',
+  'csv',
+  'tsv',
+  'ppt',
+  'pptx',
+  'pptm',
+  'pps',
+  'ppsx',
+  'wps',
+  'wpt',
+  'et',
+  'ett',
+  'dps',
+  'dpt',
+  'odt',
+  'ods',
+  'odp',
+  'rtf'
+];
+
+const imageThumbnailBroken = ref(false);
+const pdfThumbnailReady = ref(false);
+const thumbnailCanvasRef = ref<HTMLCanvasElement>();
+let renderToken = 0;
+let loadingTask: ReturnType<typeof getDocument> | null = null;
 
 const typeClass = computed(() => props.resource.previewType || 'file');
+const normalizedPreviewType = computed(() => String(props.resource.previewType || '').toLowerCase());
+const normalizedSuffix = computed(() => String(props.resource.fileSuffix || '').replace(/^\./, '').toLowerCase());
+
+const isImageResource = computed(() => {
+  const mimeType = String(props.resource.mimeType || '').toLowerCase();
+  return normalizedPreviewType.value === 'image' || mimeType.startsWith('image/') || IMAGE_SUFFIXES.includes(normalizedSuffix.value);
+});
+
+const canRenderPdfThumbnail = computed(() => {
+  const mimeType = String(props.resource.mimeType || '').toLowerCase();
+  return (
+    normalizedPreviewType.value === 'pdf' ||
+    normalizedPreviewType.value === 'office' ||
+    mimeType.includes('pdf') ||
+    PDF_SUFFIXES.includes(normalizedSuffix.value) ||
+    OFFICE_SUFFIXES.includes(normalizedSuffix.value)
+  );
+});
 
 const typeLabel = computed(() => {
   const suffix = props.resource.fileSuffix || props.resource.previewType || 'FILE';
@@ -63,34 +127,118 @@ const coverTitle = computed(() => {
   return title.length > 9 ? `${title.slice(0, 9)}...` : title;
 });
 
-const thumbnailUrl = computed(() => {
-  if (thumbnailBroken.value) {
-    return '';
-  }
-  const target = new URL(resourceThumbnailUrl(props.resource.resourceId), window.location.origin);
+const buildAuthedUrl = (url: string) => {
+  const target = new URL(url, window.location.origin);
   const token = getToken();
   if (token) {
     target.searchParams.set('Authorization', `Bearer ${token}`);
   }
   target.searchParams.set('clientid', import.meta.env.VITE_APP_CLIENT_ID);
   return target.toString();
+};
+
+const imageThumbnailUrl = computed(() => {
+  if (!isImageResource.value || imageThumbnailBroken.value) {
+    return '';
+  }
+  return buildAuthedUrl(resourcePreviewUrl(props.resource.resourceId));
 });
 
-const rating = computed(() => {
-  const hotScore = (props.resource.viewCount || 0) + (props.resource.downloadCount || 0) * 3;
-  if (hotScore >= 1000) return 5;
-  if (hotScore >= 300) return 4;
-  if (hotScore >= 80) return 3;
-  if (hotScore > 0) return 2;
-  return 1;
+const pdfThumbnailUrl = computed(() => {
+  if (!canRenderPdfThumbnail.value || isImageResource.value) {
+    return '';
+  }
+  return buildAuthedUrl(resourcePdfPreviewUrl(props.resource.resourceId));
 });
+
+const showFallbackCover = computed(() => !imageThumbnailUrl.value && !pdfThumbnailReady.value);
+
+const clearCanvas = () => {
+  const canvas = thumbnailCanvasRef.value;
+  if (!canvas) return;
+  const context = canvas.getContext('2d');
+  context?.clearRect(0, 0, canvas.width, canvas.height);
+};
+
+const cleanupDocument = async (doc: unknown) => {
+  await (doc as { cleanup?: () => void | Promise<void> }).cleanup?.();
+};
+
+const renderPdfThumbnail = async () => {
+  const url = pdfThumbnailUrl.value;
+  renderToken += 1;
+  const token = renderToken;
+  pdfThumbnailReady.value = false;
+  await loadingTask?.destroy();
+  loadingTask = null;
+  clearCanvas();
+  if (!url) return;
+
+  await nextTick();
+  const canvas = thumbnailCanvasRef.value;
+  if (!canvas || token !== renderToken) return;
+
+  try {
+    loadingTask = getDocument({
+      url,
+      withCredentials: false,
+      disableAutoFetch: true
+    });
+    const doc = await loadingTask.promise;
+    if (token !== renderToken) {
+      await cleanupDocument(doc);
+      return;
+    }
+    const page = await doc.getPage(1);
+    const targetWidth = 224;
+    const targetHeight = 284;
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(targetWidth / baseViewport.width, targetHeight / baseViewport.height);
+    const viewport = page.getViewport({ scale });
+    const context = canvas.getContext('2d');
+    if (!context) {
+      await cleanupDocument(doc);
+      return;
+    }
+
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, targetWidth, targetHeight);
+    context.save();
+    context.translate((targetWidth - viewport.width) / 2, (targetHeight - viewport.height) / 2);
+    await page.render({ canvasContext: context, viewport }).promise;
+    context.restore();
+    if (token === renderToken) {
+      pdfThumbnailReady.value = true;
+    }
+    await cleanupDocument(doc);
+  } catch (error) {
+    if (token === renderToken) {
+      pdfThumbnailReady.value = false;
+    }
+    console.warn('Resource thumbnail render failed', error);
+  } finally {
+    if (token === renderToken) {
+      loadingTask = null;
+    }
+  }
+};
 
 watch(
-  () => props.resource.resourceId,
+  () => [props.resource.resourceId, props.resource.previewType, props.resource.fileSuffix, props.resource.mimeType],
   () => {
-    thumbnailBroken.value = false;
-  }
+    imageThumbnailBroken.value = false;
+    void renderPdfThumbnail();
+  },
+  { immediate: true }
 );
+
+onBeforeUnmount(() => {
+  renderToken += 1;
+  void loadingTask?.destroy();
+  loadingTask = null;
+});
 
 const formatSize = (size?: number) => {
   if (!size) return '-';
@@ -104,12 +252,12 @@ const formatSize = (size?: number) => {
 .resource-card {
   min-height: 188px;
   display: grid;
-  grid-template-columns: 126px minmax(0, 1fr);
+  grid-template-columns: 112px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   border: 1px solid #e3e8f0;
   border-radius: 8px;
-  padding: 14px;
+  padding: 14px 16px;
   background: #fff;
   box-shadow: 0 8px 22px rgba(20, 36, 67, 0.04);
   cursor: pointer;
@@ -120,19 +268,20 @@ const formatSize = (size?: number) => {
 }
 
 .resource-card:hover {
-  border-color: #c5d5f2;
+  border-color: rgba(47, 138, 122, 0.32);
   box-shadow: 0 14px 30px rgba(20, 36, 67, 0.08);
   transform: translateY(-1px);
 }
 
 .preview-stack {
   position: relative;
-  width: 126px;
+  width: 112px;
   height: 142px;
 }
 
 .preview-sheet {
   position: absolute;
+  inset: 0;
   overflow: hidden;
   border: 1px solid #dfe5ee;
   border-radius: 7px;
@@ -170,38 +319,20 @@ const formatSize = (size?: number) => {
   background: linear-gradient(135deg, #e6edf7 0%, #aebbd0 48%, #64748b 100%);
 }
 
-.sheet-back {
-  left: 0;
-  top: 34px;
-  width: 82px;
-  height: 82px;
-  opacity: 0.68;
-}
-
-.sheet-mid {
-  left: 16px;
-  top: 20px;
-  width: 94px;
-  height: 104px;
-  opacity: 0.84;
-}
-
 .sheet-front {
-  left: 32px;
-  top: 0;
-  width: 94px;
-  height: 132px;
   display: grid;
   grid-template-rows: 1fr auto auto 1fr;
   justify-items: center;
   color: #10223f;
 }
 
-.sheet-front img {
+.sheet-front img,
+.thumbnail-canvas {
   position: relative;
   z-index: 2;
   width: 100%;
   height: 100%;
+  background: #fff;
   object-fit: cover;
 }
 
@@ -219,8 +350,8 @@ const formatSize = (size?: number) => {
   overflow: hidden;
   border-radius: 999px;
   padding: 3px 8px;
-  background: rgba(255, 255, 255, 0.82);
-  color: #405273;
+  background: var(--resource-accent-soft, #e7f4f0);
+  color: var(--resource-accent, #2f8a7a);
   font-size: 10px;
   font-weight: 800;
   text-align: center;
@@ -251,11 +382,14 @@ const formatSize = (size?: number) => {
 
 .resource-body {
   min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .title-button {
   width: 100%;
-  overflow: hidden;
   border: 0;
   padding: 0;
   background: transparent;
@@ -265,35 +399,22 @@ const formatSize = (size?: number) => {
   font-weight: 700;
   letter-spacing: 0;
   text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 
 .title-button:hover {
-  color: #1260e8;
-}
-
-.resource-card p {
-  min-height: 40px;
-  margin: 8px 0 0;
-  display: -webkit-box;
-  overflow: hidden;
-  color: #344762;
-  font-size: 13px;
-  line-height: 1.55;
-  font-weight: 400;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  color: var(--resource-primary, #245f8f);
 }
 
 .resource-meta {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  color: #8a97af;
+  color: var(--resource-weak, #96a1af);
   font-size: 12px;
   font-weight: 400;
 }
@@ -304,53 +425,81 @@ const formatSize = (size?: number) => {
   background: #b6c0cf;
 }
 
-.rating-row {
-  margin-top: 8px;
+.card-actions {
+  margin-top: 14px;
+  padding-top: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: #8a97af;
-  font-size: 12px;
+  gap: 8px;
 }
 
-.stars {
+.action-button {
+  height: 32px;
+  min-width: 78px;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  color: #dfe3e8;
-  font-size: 15px;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--resource-input-border, #d3dee8);
+  border-radius: 6px;
+  padding: 0 12px;
+  background: #f8fafc;
+  color: var(--resource-text, #32445c);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
-.stars .active {
-  color: #ff9800;
+.action-button:hover {
+  border-color: var(--resource-primary, #245f8f);
+  background: var(--resource-primary-soft, #eaf2f8);
+  color: var(--resource-primary, #245f8f);
+}
+
+.action-button.primary {
+  border-color: var(--resource-primary, #245f8f);
+  background: var(--resource-primary, #245f8f);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(36, 95, 143, 0.18);
+}
+
+.action-button.primary:hover {
+  border-color: var(--resource-primary-deep, #183f63);
+  background: var(--resource-primary-deep, #183f63);
+  color: #fff;
 }
 
 @media (max-width: 1540px) {
   .resource-card {
     min-height: 180px;
-    grid-template-columns: 112px minmax(0, 1fr);
+    grid-template-columns: 104px minmax(0, 1fr);
     gap: 10px;
     padding: 12px;
   }
 
   .preview-stack {
-    transform: scale(0.88);
-    transform-origin: left center;
+    width: 104px;
+    height: 132px;
   }
 
   .title-button {
     font-size: 15px;
   }
-
-  .resource-card p {
-    font-size: 12px;
-  }
 }
 
 @media (max-width: 620px) {
   .resource-card {
-    grid-template-columns: 126px minmax(0, 1fr);
+    grid-template-columns: 104px minmax(0, 1fr);
     padding: 14px;
+  }
+
+  .card-actions {
+    flex-wrap: wrap;
   }
 }
 </style>
