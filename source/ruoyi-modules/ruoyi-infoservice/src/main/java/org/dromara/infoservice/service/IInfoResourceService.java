@@ -1,5 +1,6 @@
 package org.dromara.infoservice.service;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.infoservice.domain.bo.InfoResourceBo;
@@ -7,6 +8,7 @@ import org.dromara.infoservice.domain.vo.InfoResourceVo;
 import org.dromara.infoservice.domain.vo.ResourceUploadVo;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Collection;
 
 public interface IInfoResourceService {
@@ -19,11 +21,15 @@ public interface IInfoResourceService {
 
     InfoResourceVo queryPortalDetail(Long resourceId);
 
+    InfoResourceVo queryPortalReadableDetail(Long resourceId);
+
     ResourceUploadVo upload(MultipartFile file);
 
     ResourceUploadVo portalUpload(MultipartFile file);
 
     String resolveFileUrl(Long resourceId, boolean download);
+
+    void downloadFile(Long resourceId, HttpServletResponse response) throws IOException;
 
     Boolean insertByBo(InfoResourceBo bo);
 

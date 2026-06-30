@@ -27,6 +27,15 @@ export default defineConfig(({ mode, command }) => {
           target: 'http://localhost:8180',
           changeOrigin: true,
           ws: true,
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq, req) => {
+              if (req.headers.host) {
+                proxyReq.setHeader('X-External-Host', req.headers.host);
+                proxyReq.setHeader('X-Forwarded-Host', req.headers.host);
+              }
+              proxyReq.setHeader('X-Forwarded-Proto', (req.socket as any).encrypted ? 'https' : 'http');
+            });
+          },
           rewrite: (path) => path.replace(new RegExp('^' + env.VITE_APP_BASE_API), '')
         }
       }

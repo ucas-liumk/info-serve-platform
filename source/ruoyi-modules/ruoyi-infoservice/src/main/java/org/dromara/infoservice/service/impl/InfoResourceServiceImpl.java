@@ -4,13 +4,17 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.core.utils.file.FileUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.oss.core.OssClient;
+import org.dromara.common.oss.factory.OssFactory;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.infoservice.domain.InfoResource;
 import org.dromara.infoservice.domain.InfoResourceCategory;
@@ -22,10 +26,12 @@ import org.dromara.infoservice.mapper.InfoResourceMapper;
 import org.dromara.infoservice.service.IInfoResourceService;
 import org.dromara.resource.api.RemoteFileService;
 import org.dromara.resource.api.domain.RemoteFile;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -130,6 +136,15 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         baseMapper.update(null, Wrappers.<InfoResource>lambdaUpdate()
             .setSql("view_count = view_count + 1")
             .eq(InfoResource::getResourceId, resourceId));
+        return convertPortalResource(resource);
+    }
+
+    @Override
+    public InfoResourceVo queryPortalReadableDetail(Long resourceId) {
+        return convertPortalResource(getPortalReadableResource(resourceId));
+    }
+
+    private InfoResourceVo convertPortalResource(InfoResource resource) {
         InfoResourceVo vo = MapstructUtils.convert(resource, InfoResourceVo.class);
         fillResourceExt(List.of(vo));
         return vo;
@@ -178,6 +193,22 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
                 .eq(InfoResource::getResourceId, resourceId));
         }
         return url;
+    }
+
+    @Override
+    public void downloadFile(Long resourceId, HttpServletResponse response) throws IOException {
+        InfoResource resource = getPortalReadableResource(resourceId);
+        RemoteFile remoteFile = resolveRemoteFile(resource);
+        String fileName = StringUtils.defaultIfBlank(resource.getOriginalName(), remoteFile.getOriginalName());
+        FileUtils.setAttachmentResponseHeader(response, fileName);
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE + "; charset=UTF-8");
+        OssClient storage = StringUtils.isBlank(remoteFile.getService())
+            ? OssFactory.instance()
+            : OssFactory.instance(remoteFile.getService());
+        storage.download(remoteFile.getName(), response.getOutputStream(), response::setContentLengthLong);
+        baseMapper.update(null, Wrappers.<InfoResource>lambdaUpdate()
+            .setSql("download_count = download_count + 1")
+            .eq(InfoResource::getResourceId, resourceId));
     }
 
     @Override
@@ -273,6 +304,17 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
             return resource;
         }
         throw new ServiceException("资料不存在或已下架");
+    }
+
+    private RemoteFile resolveRemoteFile(InfoResource resource) {
+        if (resource.getOssId() == null) {
+            throw new ServiceException("文件不存在或暂不可访问");
+        }
+        List<RemoteFile> files = remoteFileService.selectByIds(String.valueOf(resource.getOssId()));
+        if (files == null || files.isEmpty() || StringUtils.isBlank(files.get(0).getName())) {
+            throw new ServiceException("文件不存在或暂不可访问");
+        }
+        return files.get(0);
     }
 
     private InfoResource assertOwnedResource(Long resourceId) {
@@ -376,6 +418,18 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         }
         if (lowerType.contains("pdf") || "pdf".equals(suffix)) {
             return "pdf";
+        }
+        if ("ofd".equals(suffix)) {
+            return "ofd";
+        }
+        if (List.of(
+            "doc", "docx", "docm", "dot", "dotx", "dotm",
+            "xls", "xlsx", "xlsm", "xlt", "xltx", "xltm", "csv", "tsv",
+            "ppt", "pptx", "pptm", "pps", "ppsx",
+            "wps", "wpt", "et", "ett", "dps", "dpt",
+            "odt", "ods", "odp", "rtf"
+        ).contains(suffix)) {
+            return "office";
         }
         if (lowerType.startsWith("text/") || List.of("txt", "md", "csv", "json", "xml").contains(suffix)) {
             return "text";

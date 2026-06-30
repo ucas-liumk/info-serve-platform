@@ -2,7 +2,7 @@
   <el-dialog v-model="visible" :title="dialogTitle" width="620px" class="resource-upload-dialog" destroy-on-close>
     <el-form ref="formRef" :model="form" :rules="rules" label-width="86px">
       <el-form-item label="标题" prop="title">
-        <el-input v-model="form.title" maxlength="160" placeholder="请输入资料标题" />
+        <el-input v-model="form.title" maxlength="160" :placeholder="titlePlaceholder" />
       </el-form-item>
       <el-form-item label="分类" prop="categoryId">
         <el-select v-model="form.categoryId" placeholder="请选择分类" class="full">
@@ -18,10 +18,23 @@
             <strong>当前文件</strong>
             <span>{{ resource.originalName }}</span>
           </div>
-          <el-upload class="full" drag :auto-upload="false" :limit="1" :file-list="fileList" :on-change="onFileChange" :on-remove="onFileRemove">
-            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-            <div class="el-upload__text">{{ isEdit ? '拖入新文件或点击选择，留空则不替换文件' : '拖入文件或点击选择' }}</div>
-          </el-upload>
+          <div :class="['native-upload', { selected: selectedFiles.length > 0 }]" @dragover.prevent @drop.prevent="onDropFile">
+            <label class="file-picker">
+              <input ref="fileInputRef" class="native-file-input" type="file" :multiple="!isEdit" @change="onFileInputChange" />
+              <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+              <strong>{{ uploadTitle }}</strong>
+              <span>{{ selectedFiles.length ? selectedSummary : uploadHelpText }}</span>
+            </label>
+            <ul v-if="selectedFiles.length" class="selected-files">
+              <li v-for="(file, index) in selectedFiles" :key="`${file.name}-${file.lastModified}-${index}`">
+                <span>
+                  <strong>{{ file.name }}</strong>
+                  <em>{{ formatSize(file.size) }}</em>
+                </span>
+                <button type="button" @click="removeSelectedFile(index)">移除</button>
+              </li>
+            </ul>
+          </div>
         </div>
       </el-form-item>
     </el-form>
@@ -36,7 +49,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import type { FormInstance, FormRules, UploadFile, UploadUserFile } from 'element-plus';
+import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
 import type { InfoResource, ResourceCategory } from '@/api/infoservice/types';
@@ -57,12 +70,12 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
-  (e: 'submit', payload: { title: string; categoryId: number | string | undefined; description: string; file?: File }): void;
+  (e: 'submit', payload: { title: string; categoryId: number | string | undefined; description: string; files?: File[] }): void;
 }>();
 
 const formRef = ref<FormInstance>();
-const selectedFile = ref<UploadFile>();
-const fileList = ref<UploadUserFile[]>([]);
+const fileInputRef = ref<HTMLInputElement>();
+const selectedFiles = ref<File[]>([]);
 const form = reactive({
   title: '',
   categoryId: undefined as number | string | undefined,
@@ -77,9 +90,24 @@ const visible = computed({
 
 const isEdit = computed(() => props.mode === 'edit' && Boolean(props.resource?.resourceId));
 const dialogTitle = computed(() => (isEdit.value ? '编辑资料' : '上传资料'));
+const titlePlaceholder = computed(() => (isEdit.value ? '请输入资料标题' : '单文件可自定义标题，多文件默认使用文件名'));
+const uploadHelpText = computed(() => (isEdit.value ? '点击选择或拖入新文件，留空则不替换文件' : '点击选择或拖入一个或多个文件'));
+const uploadTitle = computed(() => {
+  if (selectedFiles.value.length === 0) {
+    return isEdit.value ? '选择新文件' : '选择文件';
+  }
+  if (selectedFiles.value.length === 1) {
+    return selectedFiles.value[0].name;
+  }
+  return `已选择 ${selectedFiles.value.length} 个文件`;
+});
+const selectedSummary = computed(() => {
+  const totalSize = selectedFiles.value.reduce((sum, file) => sum + file.size, 0);
+  return `${selectedFiles.value.length} 个文件 · ${formatSize(totalSize)}`;
+});
 
 const rules = computed<FormRules>(() => ({
-  title: [{ required: true, message: '请输入资料标题', trigger: 'blur' }],
+  title: isEdit.value ? [{ required: true, message: '请输入资料标题', trigger: 'blur' }] : [],
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
   file: isEdit.value ? [] : [{ required: true, message: '请选择文件', trigger: 'change' }]
 }));
@@ -89,30 +117,55 @@ const resetForm = () => {
   form.categoryId = props.resource?.categoryId || props.categories[0]?.categoryId;
   form.description = props.resource?.description || '';
   form.file = '';
-  selectedFile.value = undefined;
-  fileList.value = [];
+  selectedFiles.value = [];
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
   nextTick(() => formRef.value?.clearValidate());
 };
 
-const onFileChange = (file: UploadFile) => {
-  selectedFile.value = file;
-  fileList.value = [file];
-  form.file = file.name;
-  if (!form.title) {
-    form.title = file.name.replace(/\.[^.]+$/, '');
+const setSelectedFiles = (files?: FileList | File[]) => {
+  const nextFiles = Array.from(files || []);
+  if (nextFiles.length === 0) {
+    return;
+  }
+  selectedFiles.value = isEdit.value ? nextFiles.slice(0, 1) : nextFiles;
+  form.file = selectedFiles.value.map((file) => file.name).join('; ');
+  if (!form.title && selectedFiles.value.length === 1) {
+    form.title = selectedFiles.value[0].name.replace(/\.[^.]+$/, '');
   }
   formRef.value?.validateField('file');
 };
 
-const onFileRemove = () => {
-  selectedFile.value = undefined;
-  fileList.value = [];
-  form.file = '';
+const onFileInputChange = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  setSelectedFiles(input.files || undefined);
+  input.value = '';
+};
+
+const onDropFile = (event: DragEvent) => {
+  setSelectedFiles(event.dataTransfer?.files || undefined);
+};
+
+const removeSelectedFile = (index: number) => {
+  selectedFiles.value.splice(index, 1);
+  form.file = selectedFiles.value.map((file) => file.name).join('; ');
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
+  formRef.value?.validateField('file');
+};
+
+const formatSize = (size?: number) => {
+  if (!size) return '-';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
 };
 
 const submit = async () => {
   await formRef.value?.validate();
-  if (!isEdit.value && !selectedFile.value?.raw) {
+  if (!isEdit.value && selectedFiles.value.length === 0) {
     ElMessage.warning('请选择文件');
     return;
   }
@@ -120,7 +173,7 @@ const submit = async () => {
     title: form.title,
     categoryId: form.categoryId,
     description: form.description,
-    file: selectedFile.value?.raw
+    files: [...selectedFiles.value]
   });
 };
 
@@ -167,6 +220,133 @@ watch(
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.native-upload {
+  position: relative;
+  display: grid;
+  gap: 10px;
+}
+
+.native-file-input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-picker {
+  position: relative;
+  width: 100%;
+  min-height: 148px;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  border: 1px dashed #dbe5f4;
+  border-radius: 8px;
+  padding: 24px 16px;
+  background: #f7faff;
+  color: #53668f;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.file-picker:hover,
+.file-picker:focus-within,
+.native-upload.selected .file-picker {
+  border-color: #1260e8;
+  background: #edf4ff;
+}
+
+.file-picker .el-icon {
+  color: #1260e8;
+  font-size: 42px;
+}
+
+.file-picker strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #0b1833;
+  font-size: 15px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-picker span {
+  color: #53668f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.selected-files {
+  max-height: 170px;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  overflow: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.selected-files li {
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e1e9f6;
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: #fff;
+}
+
+.selected-files li span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.selected-files li strong,
+.selected-files li em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-files li strong {
+  color: #0b1833;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.selected-files li em {
+  color: #8a97af;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.selected-files li button {
+  height: 28px;
+  border: 1px solid #e1e9f6;
+  border-radius: 7px;
+  padding: 0 9px;
+  background: #fff;
+  color: #25395f;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.selected-files li button:hover {
+  border-color: #d93026;
+  background: #fff2f1;
+  color: #d93026;
 }
 
 .dialog-submit,
@@ -236,16 +416,6 @@ watch(
   min-height: 112px;
   color: #25395f;
   font-weight: 650;
-}
-
-.resource-upload-dialog :deep(.el-upload-dragger) {
-  border-color: #dbe5f4;
-  border-radius: 8px;
-  background: #f7faff;
-}
-
-.resource-upload-dialog :deep(.el-upload-dragger:hover) {
-  border-color: #1260e8;
 }
 
 .resource-upload-dialog :deep(.el-icon--upload) {

@@ -20,12 +20,12 @@ export interface ResourceCategory {
 }
 
 export interface InfoResource {
-  resourceId: number;
+  resourceId: number | string;
   title: string;
   description: string;
   categoryId: number;
   categoryName: string;
-  ossId: number;
+  ossId: number | string;
   originalName: string;
   fileSuffix: string;
   mimeType: string;
@@ -35,7 +35,7 @@ export interface InfoResource {
   viewCount: number;
   status: string;
   remark?: string;
-  createBy?: number;
+  createBy?: number | string;
   ownerName?: string;
   createByName?: string;
   canManage?: boolean;
@@ -43,7 +43,7 @@ export interface InfoResource {
 }
 
 export interface ResourceUploadResult {
-  ossId: number;
+  ossId: number | string;
   url: string;
   fileName: string;
   originalName: string;

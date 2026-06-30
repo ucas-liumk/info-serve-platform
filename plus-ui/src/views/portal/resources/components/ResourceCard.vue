@@ -1,5 +1,5 @@
 <template>
-  <article class="resource-card">
+  <article class="resource-card" @click="emit('preview', resource)">
     <div :class="['file-mark', typeClass]">
       <el-icon><component :is="typeIcon" /></el-icon>
       <span>{{ typeLabel }}</span>
@@ -9,7 +9,7 @@
         <span class="category">{{ resource.categoryName || '未分类' }}</span>
         <span class="suffix">{{ resource.fileSuffix || resource.previewType || 'file' }}</span>
       </div>
-      <button class="title-button" type="button" @click="emit('detail', resource)">
+      <button class="title-button" type="button" @click.stop="emit('preview', resource)">
         {{ resource.title }}
       </button>
       <p>{{ resource.description || resource.originalName || '暂无简介' }}</p>
@@ -19,11 +19,11 @@
         <span>下载 {{ resource.downloadCount || 0 }}</span>
       </div>
       <div class="resource-actions">
-        <button type="button" @click="emit('detail', resource)">
+        <button type="button" @click.stop="emit('preview', resource)">
           <el-icon><View /></el-icon>
-          查看
+          预览
         </button>
-        <button type="button" @click="emit('download', resource)">
+        <button type="button" @click.stop="emit('download', resource)">
           <el-icon><Download /></el-icon>
           下载
         </button>
@@ -42,7 +42,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'detail', resource: InfoResource): void;
+  (e: 'preview', resource: InfoResource): void;
   (e: 'download', resource: InfoResource): void;
 }>();
 
@@ -62,6 +62,8 @@ const typeIcon = computed(() => {
     case 'audio':
       return Headset;
     case 'pdf':
+    case 'office':
+    case 'ofd':
     case 'text':
       return Document;
     default:

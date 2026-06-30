@@ -46,4 +46,9 @@ public class RemoteFile implements Serializable {
      */
     private String ext1;
 
+    /**
+     * 服务商
+     */
+    private String service;
+
 }

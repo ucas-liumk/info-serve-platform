@@ -39,7 +39,11 @@ services:
       - ../data/mysql:/var/lib/mysql
       - ./initdb-mysql:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent",
+        ]
       interval: 10s
       timeout: 5s
       retries: 40
@@ -75,13 +79,20 @@ services:
     environment:
       TZ: Asia/Shanghai
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--requirepass",
+        "${REDIS_PASSWORD}",
+      ]
     ports:
       - "127.0.0.1:8179:6379"
     volumes:
       - ../data/redis:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      test: ["CMD-SHELL", 'redis-cli -a "$${REDIS_PASSWORD}" ping | grep PONG']
       interval: 10s
       timeout: 5s
       retries: 20
@@ -146,6 +157,19 @@ services:
         done;
         mc mb -p local/ruoyi;
         mc anonymous set download local/ruoyi;
+    networks:
+      - infosys-ruoyi-cloud-plus
+
+  kkfileview:
+    image: ${KKFILEVIEW_IMAGE}
+    container_name: infosys-ruoyi-cloud-plus-kkfileview
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "0.0.0.0:8012:8012"
+    depends_on:
+      - minio
     networks:
       - infosys-ruoyi-cloud-plus
 

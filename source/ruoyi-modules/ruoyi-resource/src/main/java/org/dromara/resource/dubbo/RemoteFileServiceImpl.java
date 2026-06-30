@@ -64,6 +64,7 @@ public class RemoteFileServiceImpl implements RemoteFileService {
             sysFile.setOriginalName(originalFilename);
             sysFile.setFileSuffix(suffix);
             sysFile.setExt1(extStr);
+            sysFile.setService(storage.getConfigKey());
             return sysFile;
         } catch (Exception e) {
             log.error("上传文件失败", e);

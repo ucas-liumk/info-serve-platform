@@ -46,6 +46,12 @@ export const constantRoutes: RouteRecordRaw[] = [
     children: [
       { path: '', name: 'InfoPortalHome', component: () => import('@/views/portal/home/index.vue'), meta: { title: '服务概览' } },
       { path: 'resources', name: 'InfoResources', component: () => import('@/views/portal/resources/index.vue'), meta: { title: '资料共享' } },
+      {
+        path: 'resources/preview/:resourceId',
+        name: 'InfoResourcePreview',
+        component: () => import('@/views/portal/resources/preview.vue'),
+        meta: { title: '资料预览' }
+      },
       { path: 'tools', name: 'InfoTools', component: () => import('@/views/portal/tools/index.vue'), meta: { title: '工具即用' } },
       { path: 'forum', name: 'InfoForum', component: () => import('@/views/portal/forum/index.vue'), meta: { title: '服务论坛' } }
     ]

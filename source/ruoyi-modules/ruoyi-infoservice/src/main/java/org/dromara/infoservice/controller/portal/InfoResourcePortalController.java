@@ -16,12 +16,16 @@ import org.dromara.infoservice.domain.vo.InfoResourceVo;
 import org.dromara.infoservice.domain.vo.ResourceUploadVo;
 import org.dromara.infoservice.service.IInfoResourceCategoryService;
 import org.dromara.infoservice.service.IInfoResourceService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 
 @Validated
@@ -30,10 +34,15 @@ import java.util.List;
 @RequestMapping("/portal/resources")
 public class InfoResourcePortalController {
 
-    private static final int MINIO_EXTERNAL_PORT = 19000;
+    private static final int MINIO_INTERNAL_PORT = 9000;
+    private static final int MINIO_EXTERNAL_PORT = 8160;
+    private static final int KKFILEVIEW_EXTERNAL_PORT = 8012;
 
     private final IInfoResourceCategoryService categoryService;
     private final IInfoResourceService resourceService;
+
+    @Value("${infoservice.kkfileview.base-url:}")
+    private String kkFileViewBaseUrl;
 
     @GetMapping("/categories")
     public R<List<InfoResourceCategoryVo>> categories() {
@@ -88,22 +97,40 @@ public class InfoResourcePortalController {
         response.sendRedirect(toBrowserReachableUrl(resourceService.resolveFileUrl(resourceId, false), request));
     }
 
+    @GetMapping("/{resourceId}/kk-preview-url")
+    public R<String> kkPreviewUrl(@PathVariable Long resourceId, HttpServletRequest request) {
+        InfoResourceVo resource = resourceService.queryPortalReadableDetail(resourceId);
+        String fileUrl = toBrowserReachableUrl(resourceService.resolveFileUrl(resourceId, false), request);
+        String previewFileUrl = appendFullFileName(
+            fileUrl,
+            StringUtils.defaultIfBlank(resource.getOriginalName(), resource.getTitle())
+        );
+        String encodedUrl = URLEncoder.encode(
+            Base64.getEncoder().encodeToString(previewFileUrl.getBytes(StandardCharsets.UTF_8)),
+            StandardCharsets.UTF_8
+        );
+        return R.ok(resolveKkFileViewBaseUrl(request) + "/onlinePreview?url=" + encodedUrl);
+    }
+
     @GetMapping("/{resourceId}/download")
-    public void download(@PathVariable Long resourceId, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.sendRedirect(toBrowserReachableUrl(resourceService.resolveFileUrl(resourceId, true), request));
+    public void download(@PathVariable Long resourceId, HttpServletResponse response) throws IOException {
+        resourceService.downloadFile(resourceId, response);
     }
 
     private String toBrowserReachableUrl(String url, HttpServletRequest request) {
         try {
             URI uri = URI.create(url);
             String host = uri.getHost();
-            boolean internalMinio = "minio".equalsIgnoreCase(host) || ("127.0.0.1".equals(host) && uri.getPort() == 9000);
-            if (internalMinio) {
+            int port = uri.getPort();
+            boolean loopbackHost = "127.0.0.1".equals(host) || "localhost".equalsIgnoreCase(host);
+            boolean internalMinio = "minio".equalsIgnoreCase(host) || (loopbackHost && port == MINIO_INTERNAL_PORT);
+            boolean mappedLocalMinio = loopbackHost && port == MINIO_EXTERNAL_PORT;
+            if (internalMinio || mappedLocalMinio) {
                 return new URI(
                     uri.getScheme(),
                     uri.getUserInfo(),
                     resolveExternalHost(request),
-                    MINIO_EXTERNAL_PORT,
+                    mappedLocalMinio ? port : MINIO_EXTERNAL_PORT,
                     uri.getPath(),
                     uri.getQuery(),
                     uri.getFragment()
@@ -113,6 +140,34 @@ public class InfoResourcePortalController {
             return url;
         }
         return url;
+    }
+
+    private String appendFullFileName(String url, String fileName) {
+        if (StringUtils.isBlank(fileName)) {
+            return url;
+        }
+        String separator = url.contains("?") ? "&" : "?";
+        return url + separator + "fullfilename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8);
+    }
+
+    private String resolveKkFileViewBaseUrl(HttpServletRequest request) {
+        String baseUrl = kkFileViewBaseUrl;
+        if (StringUtils.isBlank(baseUrl)) {
+            baseUrl = resolveExternalScheme(request) + "://" + resolveExternalHost(request) + ":" + KKFILEVIEW_EXTERNAL_PORT;
+        }
+        while (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return baseUrl;
+    }
+
+    private String resolveExternalScheme(HttpServletRequest request) {
+        String scheme = StringUtils.defaultIfBlank(request.getHeader("X-Forwarded-Proto"), request.getHeader("X-Forwarded-Protocol"));
+        scheme = StringUtils.defaultIfBlank(scheme, request.getHeader("X-Url-Scheme"));
+        if (StringUtils.isBlank(scheme)) {
+            return request.getScheme();
+        }
+        return scheme.split(",")[0].trim();
     }
 
     private String resolveExternalHost(HttpServletRequest request) {

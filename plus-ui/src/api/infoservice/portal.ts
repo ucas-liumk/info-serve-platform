@@ -13,6 +13,8 @@ import {
   ResourceUploadResult
 } from './types';
 
+type ResourceId = number | string;
+
 export function getPortalStats(): AxiosPromise<PortalStats> {
   return request({ url: '/infoservice/portal/stats', method: 'get' });
 }
@@ -25,8 +27,12 @@ export function listResources(query: ResourcePortalQuery): AxiosPromise<InfoReso
   return request({ url: '/infoservice/portal/resources', method: 'get', params: query });
 }
 
-export function getResource(resourceId: number): AxiosPromise<InfoResource> {
+export function getResource(resourceId: ResourceId): AxiosPromise<InfoResource> {
   return request({ url: `/infoservice/portal/resources/${resourceId}`, method: 'get' });
+}
+
+export function getResourceKkPreviewUrl(resourceId: ResourceId): AxiosPromise<string> {
+  return request({ url: `/infoservice/portal/resources/${resourceId}/kk-preview-url`, method: 'get' });
 }
 
 export function uploadPortalResourceFile(data: FormData): AxiosPromise<ResourceUploadResult> {
@@ -42,15 +48,15 @@ export function createPortalResource(data: ResourcePortalPayload) {
   return request({ url: '/infoservice/portal/resources', method: 'post', data });
 }
 
-export function updatePortalResource(resourceId: number, data: ResourcePortalPayload) {
+export function updatePortalResource(resourceId: ResourceId, data: ResourcePortalPayload) {
   return request({ url: `/infoservice/portal/resources/${resourceId}`, method: 'put', data });
 }
 
-export function changePortalResourceStatus(resourceId: number, status: string) {
+export function changePortalResourceStatus(resourceId: ResourceId, status: string) {
   return request({ url: `/infoservice/portal/resources/${resourceId}/status`, method: 'put', data: { status } });
 }
 
-export function deletePortalResource(resourceId: number) {
+export function deletePortalResource(resourceId: ResourceId) {
   return request({ url: `/infoservice/portal/resources/${resourceId}`, method: 'delete' });
 }
 
@@ -82,10 +88,10 @@ export function unlikeForumTopic(topicId: number) {
   return request({ url: `/infoservice/portal/forum/topics/${topicId}/like`, method: 'delete' });
 }
 
-export function resourcePreviewUrl(resourceId: number) {
+export function resourcePreviewUrl(resourceId: ResourceId) {
   return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/preview`;
 }
 
-export function resourceDownloadUrl(resourceId: number) {
+export function resourceDownloadUrl(resourceId: ResourceId) {
   return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/download`;
 }

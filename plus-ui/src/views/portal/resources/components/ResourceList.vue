@@ -1,12 +1,12 @@
 <template>
   <div class="resource-list">
-    <article v-for="item in resources" :key="item.resourceId" class="resource-row">
+    <article v-for="item in resources" :key="item.resourceId" class="resource-row" @click="emit('preview', item)">
       <div class="row-icon">
         <el-icon><Document /></el-icon>
       </div>
       <div class="row-main">
         <div class="row-title">
-          <button type="button" @click="emit('detail', item)">{{ item.title }}</button>
+          <button type="button" @click.stop="emit('preview', item)">{{ item.title }}</button>
           <span>{{ item.categoryName || '未分类' }}</span>
           <em>{{ item.fileSuffix || item.previewType || 'file' }}</em>
         </div>
@@ -19,11 +19,11 @@
         </div>
       </div>
       <div class="row-actions">
-        <button type="button" @click="emit('detail', item)">
+        <button type="button" @click.stop="emit('preview', item)">
           <el-icon><View /></el-icon>
-          查看
+          预览
         </button>
-        <button type="button" @click="emit('download', item)">
+        <button type="button" @click.stop="emit('download', item)">
           <el-icon><Download /></el-icon>
           下载
         </button>
@@ -41,7 +41,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'detail', resource: InfoResource): void;
+  (e: 'preview', resource: InfoResource): void;
   (e: 'download', resource: InfoResource): void;
 }>();
 
@@ -70,6 +70,12 @@ const formatSize = (size?: number) => {
   padding: 14px;
   background: #fff;
   box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
+  cursor: pointer;
+}
+
+.resource-row:hover {
+  border-color: #bdd2f5;
+  background: #fbfdff;
 }
 
 .row-icon {
