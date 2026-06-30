@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
@@ -47,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
+@Slf4j
 @Service
 public class InfoResourceServiceImpl implements IInfoResourceService {
 
@@ -192,6 +194,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
+            log.error("上传资料文件失败", e);
             throw new ServiceException("上传文件失败");
         }
     }
