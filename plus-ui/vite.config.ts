@@ -27,8 +27,12 @@ export default defineConfig(({ mode, command }) => {
           target: 'http://localhost:8180',
           changeOrigin: true,
           ws: true,
+          headers: {
+            Connection: 'keep-alive'
+          },
           configure: (proxy) => {
             proxy.on('proxyReq', (proxyReq, req) => {
+              proxyReq.setHeader('Connection', 'keep-alive');
               if (req.headers.host) {
                 proxyReq.setHeader('X-External-Host', req.headers.host);
                 proxyReq.setHeader('X-Forwarded-Host', req.headers.host);

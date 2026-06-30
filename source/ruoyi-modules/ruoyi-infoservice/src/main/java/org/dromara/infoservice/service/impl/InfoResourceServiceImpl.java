@@ -6,6 +6,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
@@ -31,7 +34,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -193,6 +200,31 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
                 .eq(InfoResource::getResourceId, resourceId));
         }
         return url;
+    }
+
+    @Override
+    public void writePdfThumbnail(Long resourceId, HttpServletResponse response) throws IOException {
+        InfoResource resource = getPortalReadableResource(resourceId);
+        if (!"pdf".equals(resource.getPreviewType())) {
+            throw new ServiceException("当前文件暂不支持生成缩略图");
+        }
+        RemoteFile remoteFile = resolveRemoteFile(resource);
+        OssClient storage = StringUtils.isBlank(remoteFile.getService())
+            ? OssFactory.instance()
+            : OssFactory.instance(remoteFile.getService());
+        Path tempFile = storage.fileDownload(remoteFile.getName());
+        try (PDDocument document = PDDocument.load(tempFile.toFile())) {
+            if (document.getNumberOfPages() == 0) {
+                throw new ServiceException("PDF文件没有可渲染页面");
+            }
+            PDFRenderer renderer = new PDFRenderer(document);
+            BufferedImage image = renderer.renderImageWithDPI(0, 120, ImageType.RGB);
+            response.setContentType(MediaType.IMAGE_JPEG_VALUE);
+            response.setHeader("Cache-Control", "public, max-age=86400");
+            ImageIO.write(image, "jpg", response.getOutputStream());
+        } finally {
+            Files.deleteIfExists(tempFile);
+        }
     }
 
     @Override

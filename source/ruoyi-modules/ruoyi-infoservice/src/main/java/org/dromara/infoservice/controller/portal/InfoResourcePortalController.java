@@ -22,11 +22,16 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Validated
 @RequiredArgsConstructor
@@ -37,6 +42,9 @@ public class InfoResourcePortalController {
     private static final int MINIO_INTERNAL_PORT = 9000;
     private static final int MINIO_EXTERNAL_PORT = 8160;
     private static final int KKFILEVIEW_EXTERNAL_PORT = 8012;
+    private static final String MINIO_INTERNAL_HOST = "minio";
+    private static final Set<String> OFFICE_SUFFIXES = Set.of("doc", "docx", "xls", "xlsx", "ppt", "pptx", "wps", "et", "dps");
+    private static final Pattern OFFICE_IMAGE_PATTERN = Pattern.compile("data-src=\"([^\"]+?\\.jpg)\\s*\"", Pattern.CASE_INSENSITIVE);
 
     private final IInfoResourceCategoryService categoryService;
     private final IInfoResourceService resourceService;
@@ -97,19 +105,36 @@ public class InfoResourcePortalController {
         response.sendRedirect(toBrowserReachableUrl(resourceService.resolveFileUrl(resourceId, false), request));
     }
 
+    @GetMapping("/{resourceId}/thumbnail")
+    public void thumbnail(@PathVariable Long resourceId, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        InfoResourceVo resource = resourceService.queryPortalReadableDetail(resourceId);
+        if ("image".equals(resource.getPreviewType())) {
+            response.sendRedirect(toBrowserReachableUrl(resourceService.resolveFileUrl(resourceId, false), request));
+            return;
+        }
+        if ("pdf".equals(resource.getPreviewType())) {
+            resourceService.writePdfThumbnail(resourceId, response);
+            return;
+        }
+        if (isOfficeResource(resource)) {
+            String firstPageImageUrl = resolveOfficeFirstPageImageUrl(resourceId, resource, request);
+            if (StringUtils.isNotBlank(firstPageImageUrl)) {
+                response.sendRedirect(firstPageImageUrl);
+                return;
+            }
+        }
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+    }
+
     @GetMapping("/{resourceId}/kk-preview-url")
     public R<String> kkPreviewUrl(@PathVariable Long resourceId, HttpServletRequest request) {
         InfoResourceVo resource = resourceService.queryPortalReadableDetail(resourceId);
-        String fileUrl = toBrowserReachableUrl(resourceService.resolveFileUrl(resourceId, false), request);
+        String fileUrl = toKkFileViewReachableUrl(resourceService.resolveFileUrl(resourceId, false));
         String previewFileUrl = appendFullFileName(
             fileUrl,
             StringUtils.defaultIfBlank(resource.getOriginalName(), resource.getTitle())
         );
-        String encodedUrl = URLEncoder.encode(
-            Base64.getEncoder().encodeToString(previewFileUrl.getBytes(StandardCharsets.UTF_8)),
-            StandardCharsets.UTF_8
-        );
-        return R.ok(resolveKkFileViewBaseUrl(request) + "/onlinePreview?url=" + encodedUrl);
+        return R.ok(buildKkPreviewUrl(previewFileUrl, request));
     }
 
     @GetMapping("/{resourceId}/download")
@@ -123,23 +148,119 @@ public class InfoResourcePortalController {
             String host = uri.getHost();
             int port = uri.getPort();
             boolean loopbackHost = "127.0.0.1".equals(host) || "localhost".equalsIgnoreCase(host);
-            boolean internalMinio = "minio".equalsIgnoreCase(host) || (loopbackHost && port == MINIO_INTERNAL_PORT);
+            boolean internalMinio = MINIO_INTERNAL_HOST.equalsIgnoreCase(host) || (loopbackHost && port == MINIO_INTERNAL_PORT);
             boolean mappedLocalMinio = loopbackHost && port == MINIO_EXTERNAL_PORT;
             if (internalMinio || mappedLocalMinio) {
-                return new URI(
-                    uri.getScheme(),
-                    uri.getUserInfo(),
-                    resolveExternalHost(request),
-                    mappedLocalMinio ? port : MINIO_EXTERNAL_PORT,
-                    uri.getPath(),
-                    uri.getQuery(),
-                    uri.getFragment()
-                ).toString();
+                return rebuildUrl(uri, resolveExternalHost(request), mappedLocalMinio ? port : MINIO_EXTERNAL_PORT);
             }
         } catch (Exception ignored) {
             return url;
         }
         return url;
+    }
+
+    private String toKkFileViewReachableUrl(String url) {
+        try {
+            URI uri = URI.create(url);
+            int port = uri.getPort();
+            boolean minioUrl = MINIO_INTERNAL_HOST.equalsIgnoreCase(uri.getHost())
+                || port == MINIO_INTERNAL_PORT
+                || port == MINIO_EXTERNAL_PORT;
+            if (minioUrl) {
+                return rebuildUrl(uri, MINIO_INTERNAL_HOST, MINIO_INTERNAL_PORT);
+            }
+        } catch (Exception ignored) {
+            return url;
+        }
+        return url;
+    }
+
+    private String toBrowserReachableKkFileViewUrl(String url, HttpServletRequest request) {
+        try {
+            URI uri = URI.create(url);
+            String host = uri.getHost();
+            int port = uri.getPort();
+            boolean loopbackHost = "127.0.0.1".equals(host) || "localhost".equalsIgnoreCase(host);
+            if (loopbackHost && (port == KKFILEVIEW_EXTERNAL_PORT || port == -1)) {
+                return rebuildUrl(uri, resolveExternalHost(request), port == -1 ? KKFILEVIEW_EXTERNAL_PORT : port);
+            }
+        } catch (Exception ignored) {
+            return url;
+        }
+        return url;
+    }
+
+    private String resolveOfficeFirstPageImageUrl(Long resourceId, InfoResourceVo resource, HttpServletRequest request) throws IOException {
+        String fileUrl = toKkFileViewReachableUrl(resourceService.resolveFileUrl(resourceId, false));
+        String previewFileUrl = appendFullFileName(
+            fileUrl,
+            StringUtils.defaultIfBlank(resource.getOriginalName(), resource.getTitle())
+        );
+        String previewHtml = fetchText(buildKkPreviewUrl(previewFileUrl, request));
+        Matcher matcher = OFFICE_IMAGE_PATTERN.matcher(previewHtml);
+        if (!matcher.find()) {
+            return StringUtils.EMPTY;
+        }
+        return toBrowserReachableKkFileViewUrl(matcher.group(1).trim(), request);
+    }
+
+    private String buildKkPreviewUrl(String previewFileUrl, HttpServletRequest request) {
+        String encodedUrl = URLEncoder.encode(
+            Base64.getEncoder().encodeToString(previewFileUrl.getBytes(StandardCharsets.UTF_8)),
+            StandardCharsets.UTF_8
+        );
+        return resolveKkFileViewBaseUrl(request) + "/onlinePreview?url=" + encodedUrl;
+    }
+
+    private String fetchText(String url) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
+        connection.setConnectTimeout(10_000);
+        connection.setReadTimeout(120_000);
+        connection.setRequestProperty("Accept", "text/html,*/*");
+        int status = connection.getResponseCode();
+        if (status >= HttpServletResponse.SC_BAD_REQUEST) {
+            connection.disconnect();
+            return StringUtils.EMPTY;
+        }
+        try (InputStream inputStream = connection.getInputStream()) {
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private boolean isOfficeResource(InfoResourceVo resource) {
+        if ("office".equals(resource.getPreviewType())) {
+            return true;
+        }
+        return OFFICE_SUFFIXES.contains(StringUtils.defaultString(resource.getFileSuffix()).toLowerCase());
+    }
+
+    private String rebuildUrl(URI uri, String host, int port) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(uri.getScheme()).append("://");
+        if (StringUtils.isNotBlank(uri.getRawUserInfo())) {
+            builder.append(uri.getRawUserInfo()).append('@');
+        }
+        builder.append(formatHost(host));
+        if (port >= 0) {
+            builder.append(':').append(port);
+        }
+        builder.append(StringUtils.defaultString(uri.getRawPath()));
+        if (StringUtils.isNotBlank(uri.getRawQuery())) {
+            builder.append('?').append(uri.getRawQuery());
+        }
+        if (StringUtils.isNotBlank(uri.getRawFragment())) {
+            builder.append('#').append(uri.getRawFragment());
+        }
+        return builder.toString();
+    }
+
+    private String formatHost(String host) {
+        if (StringUtils.isBlank(host) || host.startsWith("[") || !host.contains(":")) {
+            return host;
+        }
+        return "[" + host + "]";
     }
 
     private String appendFullFileName(String url, String fileName) {

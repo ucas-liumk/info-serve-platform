@@ -92,6 +92,10 @@ export function resourcePreviewUrl(resourceId: ResourceId) {
   return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/preview`;
 }
 
+export function resourceThumbnailUrl(resourceId: ResourceId) {
+  return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/thumbnail`;
+}
+
 export function resourceDownloadUrl(resourceId: ResourceId) {
   return `${import.meta.env.VITE_APP_BASE_API}/infoservice/portal/resources/${resourceId}/download`;
 }

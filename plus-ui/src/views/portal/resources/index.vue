@@ -677,8 +677,8 @@ onMounted(async () => {
 
 .resource-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .pager {
@@ -698,7 +698,7 @@ onMounted(async () => {
   }
 
   .resource-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .resource-topbar {
@@ -723,6 +723,10 @@ onMounted(async () => {
 
   .resource-sidebar :deep(.filter-panel) {
     max-height: none;
+  }
+
+  .resource-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

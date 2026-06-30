@@ -1,41 +1,44 @@
 <template>
   <article class="resource-card" @click="emit('preview', resource)">
-    <div :class="['file-mark', typeClass]">
-      <el-icon><component :is="typeIcon" /></el-icon>
-      <span>{{ typeLabel }}</span>
-    </div>
-    <div class="resource-body">
-      <div class="resource-head">
-        <span class="category">{{ resource.categoryName || '未分类' }}</span>
-        <span class="suffix">{{ resource.fileSuffix || resource.previewType || 'file' }}</span>
+    <div class="preview-stack" aria-hidden="true">
+      <div :class="['preview-sheet', 'sheet-back', typeClass]"></div>
+      <div :class="['preview-sheet', 'sheet-mid', typeClass]"></div>
+      <div :class="['preview-sheet', 'sheet-front', typeClass]">
+        <img v-if="thumbnailUrl" :src="thumbnailUrl" :alt="resource.title" @error="thumbnailBroken = true" />
+        <template v-else>
+          <span class="cover-ribbon">{{ resource.categoryName || '资源共享' }}</span>
+          <strong>{{ typeLabel }}</strong>
+          <em>{{ coverTitle }}</em>
+        </template>
       </div>
+    </div>
+
+    <div class="resource-body">
       <button class="title-button" type="button" @click.stop="emit('preview', resource)">
         {{ resource.title }}
       </button>
-      <p>{{ resource.description || resource.originalName || '暂无简介' }}</p>
+      <p>简介：{{ resource.description || resource.originalName || '暂无简介' }}</p>
       <div class="resource-meta">
-        <span>{{ formatSize(resource.fileSize) }}</span>
-        <span>浏览 {{ resource.viewCount || 0 }}</span>
-        <span>下载 {{ resource.downloadCount || 0 }}</span>
+        <span>大小：{{ formatSize(resource.fileSize) }}</span>
+        <i></i>
+        <span>浏览：{{ resource.viewCount || 0 }}次</span>
       </div>
-      <div class="resource-actions">
-        <button type="button" @click.stop="emit('preview', resource)">
-          <el-icon><View /></el-icon>
-          预览
-        </button>
-        <button type="button" @click.stop="emit('download', resource)">
-          <el-icon><Download /></el-icon>
-          下载
-        </button>
+      <div class="rating-row">
+        <span>星级：</span>
+        <span class="stars">
+          <el-icon v-for="item in 5" :key="item" :class="{ active: item <= rating }"><StarFilled /></el-icon>
+        </span>
       </div>
     </div>
   </article>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Document, Download, Files, Headset, Picture, VideoCamera, View } from '@element-plus/icons-vue';
+import { computed, ref, watch } from 'vue';
+import { StarFilled } from '@element-plus/icons-vue';
+import { resourceThumbnailUrl } from '@/api/infoservice/portal';
 import type { InfoResource } from '@/api/infoservice/types';
+import { getToken } from '@/utils/auth';
 
 const props = defineProps<{
   resource: InfoResource;
@@ -46,6 +49,8 @@ const emit = defineEmits<{
   (e: 'download', resource: InfoResource): void;
 }>();
 
+const thumbnailBroken = ref(false);
+
 const typeClass = computed(() => props.resource.previewType || 'file');
 
 const typeLabel = computed(() => {
@@ -53,23 +58,39 @@ const typeLabel = computed(() => {
   return suffix.toUpperCase().slice(0, 5);
 });
 
-const typeIcon = computed(() => {
-  switch (props.resource.previewType) {
-    case 'image':
-      return Picture;
-    case 'video':
-      return VideoCamera;
-    case 'audio':
-      return Headset;
-    case 'pdf':
-    case 'office':
-    case 'ofd':
-    case 'text':
-      return Document;
-    default:
-      return Files;
-  }
+const coverTitle = computed(() => {
+  const title = props.resource.title || props.resource.originalName || '资料预览';
+  return title.length > 9 ? `${title.slice(0, 9)}...` : title;
 });
+
+const thumbnailUrl = computed(() => {
+  if (thumbnailBroken.value) {
+    return '';
+  }
+  const target = new URL(resourceThumbnailUrl(props.resource.resourceId), window.location.origin);
+  const token = getToken();
+  if (token) {
+    target.searchParams.set('Authorization', `Bearer ${token}`);
+  }
+  target.searchParams.set('clientid', import.meta.env.VITE_APP_CLIENT_ID);
+  return target.toString();
+});
+
+const rating = computed(() => {
+  const hotScore = (props.resource.viewCount || 0) + (props.resource.downloadCount || 0) * 3;
+  if (hotScore >= 1000) return 5;
+  if (hotScore >= 300) return 4;
+  if (hotScore >= 80) return 3;
+  if (hotScore > 0) return 2;
+  return 1;
+});
+
+watch(
+  () => props.resource.resourceId,
+  () => {
+    thumbnailBroken.value = false;
+  }
+);
 
 const formatSize = (size?: number) => {
   if (!size) return '-';
@@ -81,14 +102,17 @@ const formatSize = (size?: number) => {
 
 <style scoped>
 .resource-card {
-  min-height: 246px;
-  display: flex;
-  gap: 16px;
-  border: 1px solid #e1e9f6;
+  min-height: 188px;
+  display: grid;
+  grid-template-columns: 126px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #e3e8f0;
   border-radius: 8px;
-  padding: 18px;
+  padding: 14px;
   background: #fff;
-  box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
+  box-shadow: 0 8px 22px rgba(20, 36, 67, 0.04);
+  cursor: pointer;
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
@@ -96,104 +120,150 @@ const formatSize = (size?: number) => {
 }
 
 .resource-card:hover {
-  border-color: #b8cff5;
-  box-shadow: 0 10px 28px rgba(11, 24, 51, 0.08);
+  border-color: #c5d5f2;
+  box-shadow: 0 14px 30px rgba(20, 36, 67, 0.08);
   transform: translateY(-1px);
 }
 
-.file-mark {
-  width: 74px;
-  height: 94px;
-  flex: 0 0 74px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 8px;
-  border: 1px solid #d7e5fb;
-  border-radius: 8px;
-  background: #edf4ff;
-  color: #1260e8;
+.preview-stack {
+  position: relative;
+  width: 126px;
+  height: 142px;
 }
 
-.file-mark .el-icon {
-  font-size: 26px;
-}
-
-.file-mark span {
-  max-width: 60px;
+.preview-sheet {
+  position: absolute;
   overflow: hidden;
-  font-size: 12px;
+  border: 1px solid #dfe5ee;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(20, 36, 67, 0.12);
+}
+
+.preview-sheet::before {
+  content: '';
+  position: absolute;
+  inset: 41% 0 auto;
+  height: 38px;
+  background: linear-gradient(135deg, #f6d34a 0%, #f4a812 46%, #f75f3a 100%);
+}
+
+.preview-sheet.office::before {
+  background: linear-gradient(135deg, #ffdf56 0%, #ff9d2d 44%, #ff5c57 100%);
+}
+
+.preview-sheet.pdf::before,
+.preview-sheet.ofd::before {
+  background: linear-gradient(135deg, #fff1bd 0%, #ff5a4f 48%, #b51027 100%);
+}
+
+.preview-sheet.image::before {
+  background: linear-gradient(135deg, #6ad6ff 0%, #2f8df5 48%, #2651d6 100%);
+}
+
+.preview-sheet.video::before,
+.preview-sheet.audio::before {
+  background: linear-gradient(135deg, #9ae6c5 0%, #2fb981 48%, #1680a8 100%);
+}
+
+.preview-sheet.text::before {
+  background: linear-gradient(135deg, #e6edf7 0%, #aebbd0 48%, #64748b 100%);
+}
+
+.sheet-back {
+  left: 0;
+  top: 34px;
+  width: 82px;
+  height: 82px;
+  opacity: 0.68;
+}
+
+.sheet-mid {
+  left: 16px;
+  top: 20px;
+  width: 94px;
+  height: 104px;
+  opacity: 0.84;
+}
+
+.sheet-front {
+  left: 32px;
+  top: 0;
+  width: 94px;
+  height: 132px;
+  display: grid;
+  grid-template-rows: 1fr auto auto 1fr;
+  justify-items: center;
+  color: #10223f;
+}
+
+.sheet-front img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-ribbon,
+.sheet-front strong,
+.sheet-front em {
+  position: relative;
+  z-index: 1;
+}
+
+.cover-ribbon {
+  grid-row: 2;
+  min-width: 66px;
+  max-width: 78px;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #405273;
+  font-size: 10px;
   font-weight: 800;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.file-mark.pdf {
-  border-color: #ffd8d3;
-  background: #fff2f1;
-  color: #d93026;
+.sheet-front strong {
+  grid-row: 3;
+  margin-top: 6px;
+  color: #10223f;
+  font-size: 17px;
+  font-weight: 950;
+  letter-spacing: 0;
 }
 
-.file-mark.image {
-  border-color: #d7e5fb;
-  background: #edf4ff;
-  color: #1260e8;
-}
-
-.file-mark.video,
-.file-mark.audio {
-  border-color: #cfe4f7;
-  background: #f0f8ff;
-  color: #155f9c;
+.sheet-front em {
+  max-width: 76px;
+  margin-top: 5px;
+  overflow: hidden;
+  color: #56657e;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .resource-body {
   min-width: 0;
-  flex: 1;
-}
-
-.resource-head,
-.resource-meta,
-.resource-actions {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  flex-wrap: wrap;
-}
-
-.category,
-.suffix {
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 6px;
-  padding: 0 8px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.category {
-  background: #edf4ff;
-  color: #1260e8;
-}
-
-.suffix {
-  background: #f7faff;
-  color: #53668f;
 }
 
 .title-button {
   width: 100%;
-  margin: 12px 0 8px;
   overflow: hidden;
   border: 0;
   padding: 0;
   background: transparent;
-  color: #0b1833;
-  font-size: 18px;
-  line-height: 1.32;
-  font-weight: 850;
+  color: #10223f;
+  font-size: 16px;
+  line-height: 1.34;
+  font-weight: 700;
+  letter-spacing: 0;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -205,60 +275,82 @@ const formatSize = (size?: number) => {
 }
 
 .resource-card p {
-  min-height: 44px;
-  margin: 0;
+  min-height: 40px;
+  margin: 8px 0 0;
   display: -webkit-box;
   overflow: hidden;
-  color: #53668f;
-  font-size: 14px;
+  color: #344762;
+  font-size: 13px;
   line-height: 1.55;
-  font-weight: 650;
+  font-weight: 400;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
 .resource-meta {
-  margin-top: 13px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   color: #8a97af;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 400;
 }
 
-.resource-actions {
-  margin-top: 15px;
+.resource-meta i {
+  width: 1px;
+  height: 13px;
+  background: #b6c0cf;
 }
 
-.resource-actions button {
-  height: 32px;
-  display: inline-flex;
+.rating-row {
+  margin-top: 8px;
+  display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #e1e9f6;
-  border-radius: 8px;
-  padding: 0 10px;
-  background: #fff;
-  color: #25395f;
-  font-weight: 700;
-  cursor: pointer;
+  color: #8a97af;
+  font-size: 12px;
 }
 
-.resource-actions button:hover {
-  border-color: #1260e8;
-  color: #1260e8;
-  background: #edf4ff;
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #dfe3e8;
+  font-size: 15px;
 }
 
-@media (max-width: 520px) {
+.stars .active {
+  color: #ff9800;
+}
+
+@media (max-width: 1540px) {
   .resource-card {
-    align-items: stretch;
-    flex-direction: column;
+    min-height: 180px;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
   }
 
-  .file-mark {
-    width: 100%;
-    height: 70px;
-    flex-basis: 70px;
-    flex-direction: row;
+  .preview-stack {
+    transform: scale(0.88);
+    transform-origin: left center;
+  }
+
+  .title-button {
+    font-size: 15px;
+  }
+
+  .resource-card p {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 620px) {
+  .resource-card {
+    grid-template-columns: 126px minmax(0, 1fr);
+    padding: 14px;
   }
 }
 </style>
