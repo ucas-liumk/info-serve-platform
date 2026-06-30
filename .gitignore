@@ -12,13 +12,18 @@ output/
 screenshots/
 # local release bundles; publish binary packages outside the source repo
 releases/
+release/
 # root-level visual scratch files
 /*.png
+pics/1782179392709.jpg
+pics/resurces.png
 # generated initdb (regenerate via deploy/scripts/generate-initdb.py)
 deploy/initdb-mysql/
 deploy/initdb-postgres/
 # SDD scratch ledger
 .superpowers/
+# local editor settings
+.vscode/
 # misc
 .DS_Store
 *.class

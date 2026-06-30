@@ -1,6 +1,6 @@
 # 项目启动操作手册
 
-更新时间：2026-06-27
+更新时间：2026-06-30
 
 ## 1. 当前项目路径
 
@@ -256,15 +256,15 @@ JDK 17
 
 | 服务 | 启动类 | 默认端口 |
 |---|---|---|
-| 网关 | `org.dromara.gateway.RuoYiGatewayApplication` | `8080`，Docker 暴露为 `19080` |
-| 认证 | `org.dromara.auth.RuoYiAuthApplication` | `9210` |
-| 系统 | `org.dromara.system.RuoYiSystemApplication` | `9201` |
-| 资源 | `org.dromara.resource.RuoYiResourceApplication` | `9204` |
-| 应用中心 | `org.dromara.appcenter.RuoYiAppCenterApplication` | `9206` |
-| 信息服务 | `org.dromara.infoservice.RuoYiInfoServiceApplication` | `9207` |
-| 代码生成 | `org.dromara.gen.RuoYiGenApplication` | `9202` |
-| 工作流 | `org.dromara.workflow.RuoYiWorkflowApplication` | `9205` |
-| 定时任务 | `org.dromara.job.RuoYiJobApplication` | `9203` |
+| 网关 | `org.dromara.gateway.RuoYiGatewayApplication` | `8180` |
+| 认证 | `org.dromara.auth.RuoYiAuthApplication` | `8110` |
+| 系统 | `org.dromara.system.RuoYiSystemApplication` | `8101` |
+| 资源 | `org.dromara.resource.RuoYiResourceApplication` | `8114` |
+| 应用中心 | `org.dromara.appcenter.RuoYiAppCenterApplication` | `8106` |
+| 信息服务 | `org.dromara.infoservice.RuoYiInfoServiceApplication` | `8107` |
+| 代码生成 | `org.dromara.gen.RuoYiGenApplication` | `8102` |
+| 工作流 | `org.dromara.workflow.RuoYiWorkflowApplication` | `8105` |
+| 定时任务 | `org.dromara.job.RuoYiJobApplication` | `8113` |
 
 日常开发不一定全部启动。建议优先启动：
 
@@ -278,6 +278,61 @@ ruoyi-infoservice
 ```
 
 如果 Docker Compose 已经把这些服务作为容器启动了，IDEA 中只启动你正在修改的那个服务即可。否则会端口冲突。
+
+### 开发阶段推荐启动方式
+
+开发阶段不需要每次 `package` 打 jar，也不需要重新部署。推荐用 Maven 从源码启动服务：
+
+```powershell
+cd E:\gallant-dev\active\info-serve\source
+```
+
+只检查某个服务和它依赖的模块能否编译：
+
+```powershell
+mvn -pl ruoyi-modules/ruoyi-infoservice -am -DskipTests -Pdev compile
+```
+
+第一次在新机器上用 Maven 源码启动服务前，先把本项目内部依赖安装到本机 Maven 仓库：
+
+```powershell
+mvn -DskipTests -Pdev "-Dspring-boot.repackage.skip=true" install
+```
+
+这个命令是给本机开发环境准备内部依赖，不是部署到服务器。执行过一次后，平时只改业务服务代码，不需要每次都执行。
+
+从源码启动某个服务时，进入对应模块目录，再运行 Spring Boot Maven 插件。每个服务建议单独开一个终端窗口：
+
+```powershell
+cd E:\gallant-dev\active\info-serve\source\ruoyi-gateway
+mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
+
+cd E:\gallant-dev\active\info-serve\source\ruoyi-auth
+mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
+
+cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-system
+mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
+
+cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-resource
+mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
+
+cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-appcenter
+mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
+
+cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-infoservice
+mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
+```
+
+日常修改建议：
+
+```text
+只改前端：不用重启后端。
+只改某个后端业务服务：重新运行这个服务的 spring-boot:run。
+改公共模块或 API 模块：先执行一次上面的 install，再重启相关业务服务。
+准备离线发布或正式部署：再执行 package。
+```
+
+注意：`application.yml` 中使用了 `@profiles.active@`、`@nacos.server@` 这类 Maven 占位符。直接运行 Java 主类时可能读不到替换后的配置；用 Maven Spring Boot 插件启动更稳。
 
 ## 10. Maven 注意事项
 
