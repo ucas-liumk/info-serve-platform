@@ -1,4 +1,4 @@
-﻿-- info-serve v0.3.3 resource sharing fixes
+-- info-serve v0.3.3 resource sharing fixes
 -- Run against PostgreSQL database: ry-cloud.
 -- The config_info block is safe to run only where the Nacos config table exists.
 
