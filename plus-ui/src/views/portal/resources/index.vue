@@ -20,8 +20,8 @@
     <main class="resource-main">
       <header class="resource-topbar">
         <div class="title-block">
-          <h1>资源共享</h1>
-          <p>聚合制度、模板、文档与多媒体资料</p>
+          <h1>{{ resourcePageTitle }}</h1>
+          <p>{{ resourcePageSubtitle }}</p>
         </div>
 
         <div class="top-actions">
@@ -42,6 +42,7 @@
             <button class="search-button" type="button" @click="reloadFirst">搜索</button>
           </div>
 
+          <PortalNotificationBell />
           <button class="upload-button" type="button" @click="openCreateDialog">
             <el-icon><UploadFilled /></el-icon>
             <span>上传资料</span>
@@ -125,17 +126,18 @@ import { House, Search, UploadFilled, User } from '@element-plus/icons-vue';
 import { PORTAL_HOME_PATH } from '@/constants/router';
 import { useUserStore } from '@/store/modules/user';
 import { getToken } from '@/utils/auth';
+import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
 import {
   changePortalResourceStatus,
   createPortalResource,
   deletePortalResource,
   listResourceCategories,
   listResources,
-  resourceDownloadUrl,
   updatePortalResource,
   uploadPortalResourceFile
 } from '@/api/infoservice/portal';
 import type { InfoResource, ResourceCategory, ResourcePortalPayload, ResourceUploadResult } from '@/api/infoservice/types';
+import { downloadPortalResource } from './download';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
 import ResourceCard from './components/ResourceCard.vue';
 import ResourceFilterPanel from './components/ResourceFilterPanel.vue';
@@ -180,6 +182,9 @@ const uploading = ref(false);
 
 const isLoggedIn = computed(() => Boolean(userStore.token || getToken()));
 const categoryTotal = computed(() => categories.value.reduce((sum, item) => sum + (item.resourceCount || 0), 0));
+const activeCategory = computed(() => categories.value.find((item) => item.categoryCode === categoryCode.value));
+const resourcePageTitle = computed(() => (categoryCode.value === 'all' ? '全部资源' : activeCategory.value?.categoryName || '当前分类'));
+const resourcePageSubtitle = computed(() => `当前筛选共 ${total.value} 条资料`);
 
 const ensureLogin = () => {
   if (isLoggedIn.value) {
@@ -293,21 +298,13 @@ const onPage = (page: number) => {
   reload();
 };
 
-const withAuth = (url: string) => {
-  const target = new URL(url, window.location.origin);
-  const token = getToken();
-  if (token) target.searchParams.set('Authorization', `Bearer ${token}`);
-  target.searchParams.set('clientid', import.meta.env.VITE_APP_CLIENT_ID);
-  return target.toString();
-};
-
 const openPreview = (resource: InfoResource) => {
   const route = router.resolve({ name: 'InfoResourcePreview', params: { resourceId: resource.resourceId } });
   window.open(route.href, '_blank');
 };
 
 const openDownload = (resource: InfoResource) => {
-  window.open(withAuth(resourceDownloadUrl(resource.resourceId)), '_blank');
+  downloadPortalResource(resource);
 };
 
 const openCreateDialog = () => {
@@ -436,20 +433,22 @@ onMounted(async () => {
 <style scoped>
 .resources-app {
   min-height: 100vh;
-  --resource-primary: #1260e8;
-  --resource-primary-deep: #0f55cf;
-  --resource-primary-soft: #edf4ff;
-  --resource-title: #0b1833;
-  --resource-text: #25395f;
-  --resource-muted: #53668f;
-  --resource-weak: #8a97af;
-  --resource-border: #e1e9f6;
-  --resource-input-border: #dbe5f4;
+  --resource-primary: #245f8f;
+  --resource-primary-deep: #183f63;
+  --resource-primary-soft: #eaf2f8;
+  --resource-accent: #2f8a7a;
+  --resource-accent-soft: #e7f4f0;
+  --resource-title: #14243a;
+  --resource-text: #32445c;
+  --resource-muted: #68788c;
+  --resource-weak: #96a1af;
+  --resource-border: #dce5ed;
+  --resource-input-border: #d3dee8;
   display: grid;
   grid-template-columns: 276px minmax(0, 1fr);
   gap: 22px;
   padding: 18px 28px 44px;
-  background: linear-gradient(180deg, rgba(237, 244, 255, 0.9) 0%, rgba(247, 250, 255, 0.72) 320px), #f7faff;
+  background: linear-gradient(180deg, rgba(241, 244, 248, 0.95) 0%, rgba(247, 249, 252, 0.82) 320px), #f5f7fa;
   color: var(--resource-text);
   font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
@@ -495,24 +494,45 @@ onMounted(async () => {
 }
 
 .side-brand {
-  min-height: 82px;
+  position: relative;
+  height: 86px;
+  min-height: 86px;
   display: flex;
   align-items: center;
   gap: 13px;
+  box-sizing: border-box;
   border: 1px solid var(--resource-border);
   border-radius: 8px;
   padding: 16px;
-  background: #fff;
-  box-shadow: 0 14px 34px rgba(35, 83, 151, 0.07);
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(47, 138, 122, 0.12), transparent 42%), linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+}
+
+.side-brand::after {
+  content: '';
+  position: absolute;
+  right: -24px;
+  bottom: -34px;
+  width: 110px;
+  height: 72px;
+  border: 1px solid rgba(47, 138, 122, 0.2);
+  border-radius: 8px;
+  transform: rotate(-14deg);
+  pointer-events: none;
 }
 
 .side-brand img {
+  position: relative;
+  z-index: 1;
   width: 42px;
   height: 42px;
   object-fit: contain;
 }
 
 .side-brand div {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   display: grid;
   gap: 4px;
@@ -529,6 +549,7 @@ onMounted(async () => {
   color: var(--resource-muted);
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .home-button,
@@ -541,13 +562,17 @@ onMounted(async () => {
   justify-content: center;
   gap: 7px;
   border-radius: 8px;
+  font-size: 14px;
+  line-height: 1;
   font-weight: 850;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     border-color 0.18s ease,
     background 0.18s ease,
     color 0.18s ease,
-    box-shadow 0.18s ease;
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .home-button {
@@ -561,6 +586,7 @@ onMounted(async () => {
   border-color: var(--resource-primary);
   background: var(--resource-primary-soft);
   color: var(--resource-primary);
+  transform: translateY(-1px);
 }
 
 .resource-main {
@@ -571,26 +597,40 @@ onMounted(async () => {
 }
 
 .resource-topbar {
-  min-height: 74px;
+  position: relative;
+  min-height: 86px;
   display: grid;
-  grid-template-columns: minmax(220px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 390px) minmax(0, 1fr);
   align-items: center;
   gap: 18px;
+  box-sizing: border-box;
   border: 1px solid var(--resource-border);
   border-radius: 8px;
   padding: 14px 16px 14px 20px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 14px 34px rgba(35, 83, 151, 0.07);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+}
+
+.resource-topbar::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--resource-accent);
+  pointer-events: none;
 }
 
 .title-block {
+  position: relative;
+  z-index: 1;
   min-width: 0;
 }
 
 .title-block h1 {
   margin: 0;
   color: var(--resource-title);
-  font-size: 27px;
+  font-size: 28px;
   line-height: 1.15;
   font-weight: 900;
 }
@@ -606,6 +646,8 @@ onMounted(async () => {
 }
 
 .top-actions {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -624,6 +666,16 @@ onMounted(async () => {
 
 .resource-search {
   min-width: 0;
+  --el-input-height: 40px;
+}
+
+:deep(.resource-search .el-input__wrapper) {
+  padding: 0 14px;
+  border-radius: 8px;
+}
+
+:deep(.resource-search .el-input__inner) {
+  font-size: 14px;
 }
 
 .search-button {
@@ -636,7 +688,8 @@ onMounted(async () => {
 .search-button:hover,
 .upload-button:hover {
   background: var(--resource-primary-deep);
-  box-shadow: 0 8px 20px rgba(18, 96, 232, 0.18);
+  box-shadow: 0 8px 20px rgba(36, 95, 143, 0.18);
+  transform: translateY(-1px);
 }
 
 .upload-button {
@@ -659,6 +712,8 @@ onMounted(async () => {
   border-color: var(--resource-primary);
   background: var(--resource-primary-soft);
   color: var(--resource-primary);
+  box-shadow: 0 8px 20px rgba(36, 95, 143, 0.1);
+  transform: translateY(-1px);
 }
 
 .resource-content {
@@ -666,8 +721,8 @@ onMounted(async () => {
   border: 1px solid var(--resource-border);
   border-radius: 8px;
   overflow: hidden;
-  background: #fff;
-  box-shadow: 0 14px 34px rgba(35, 83, 151, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
 }
 
 .resource-results {

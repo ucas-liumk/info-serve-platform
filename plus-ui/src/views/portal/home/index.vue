@@ -25,6 +25,8 @@
               <em>晴</em>
             </span>
             <span class="divider" aria-hidden="true"></span>
+            <PortalNotificationBell />
+            <span class="divider" aria-hidden="true"></span>
             <el-dropdown trigger="click" @command="handleUserCommand">
               <button class="user-pill" type="button">
                 <span class="avatar">
@@ -175,6 +177,7 @@ import { getUserProfile, updateUserProfile, updateUserPwd } from '@/api/system/u
 import type { UserForm } from '@/api/system/user/types';
 import { PORTAL_HOME_PATH } from '@/constants/router';
 import { useUserStore } from '@/store/modules/user';
+import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
 import UserAvatar from '@/views/admin/system/user/profile/userAvatar.vue';
 import logoUrl from '@/assets/portal/home-logo.png';
 import moduleResource from '@/assets/portal/module-resource.png';
@@ -542,7 +545,7 @@ onBeforeUnmount(() => {
 }
 
 .status-panel {
-  width: 352px;
+  width: 390px;
   padding: 14px 18px;
   border: 1px solid rgba(255, 255, 255, 0.74);
   border-radius: 20px;
@@ -577,7 +580,7 @@ onBeforeUnmount(() => {
 
 .user-row {
   justify-content: center;
-  gap: 20px;
+  gap: 14px;
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid rgba(52, 100, 151, 0.16);

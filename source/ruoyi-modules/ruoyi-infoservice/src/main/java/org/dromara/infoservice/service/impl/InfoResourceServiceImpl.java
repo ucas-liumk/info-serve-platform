@@ -24,6 +24,7 @@ import org.dromara.infoservice.domain.vo.InfoResourceVo;
 import org.dromara.infoservice.domain.vo.ResourceUploadVo;
 import org.dromara.infoservice.mapper.InfoResourceCategoryMapper;
 import org.dromara.infoservice.mapper.InfoResourceMapper;
+import org.dromara.infoservice.service.IInfoPortalNotificationService;
 import org.dromara.infoservice.service.IInfoResourceService;
 import org.dromara.resource.api.RemoteFileService;
 import org.dromara.resource.api.domain.RemoteFile;
@@ -64,6 +65,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
 
     private final InfoResourceMapper baseMapper;
     private final InfoResourceCategoryMapper categoryMapper;
+    private final IInfoPortalNotificationService notificationService;
 
     @DubboReference
     private RemoteFileService remoteFileService;
@@ -276,7 +278,11 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         fillResourceDefaults(add);
         assertStatusUsable(add.getStatus());
         add.setStatus(StringUtils.defaultIfBlank(add.getStatus(), "0"));
-        return baseMapper.insert(add) > 0;
+        boolean inserted = baseMapper.insert(add) > 0;
+        if (inserted && "0".equals(add.getStatus())) {
+            sendResourceCreatedNotification(add);
+        }
+        return inserted;
     }
 
     @Override
@@ -604,6 +610,19 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         }
         resource.setDownloadCount(0L);
         resource.setViewCount(0L);
+    }
+
+    private void sendResourceCreatedNotification(InfoResource resource) {
+        if (resource == null || StringUtils.isBlank(resource.getTitle())) {
+            return;
+        }
+        String uploader = StringUtils.defaultIfBlank(LoginHelper.getUsername(), "用户");
+        String fileName = StringUtils.defaultIfBlank(resource.getOriginalName(), resource.getTitle());
+        notificationService.sendToAllUsers(
+            "新增资源：" + resource.getTitle(),
+            uploader + " 上传了新资源“" + resource.getTitle() + "”（" + fileName + "），可前往资料共享中查看。",
+            "resource"
+        );
     }
 
     private boolean isActiveFilter(String value) {

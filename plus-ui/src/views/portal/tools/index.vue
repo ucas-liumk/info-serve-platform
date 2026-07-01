@@ -3,7 +3,10 @@
     <aside class="tools-sidebar">
       <div class="side-brand">
         <img :src="logoUrl" alt="工具即用" />
-        <strong>工具即用</strong>
+        <div>
+          <strong>工具即用</strong>
+          <span>即开即用 · 提升效率</span>
+        </div>
       </div>
 
       <button class="home-link" type="button" @click="goHome">
@@ -12,6 +15,10 @@
       </button>
 
       <nav class="side-nav" aria-label="工具即用导航">
+        <div class="nav-title">
+          <span>工具导航</span>
+          <em>{{ navItems.length }} 项</em>
+        </div>
         <button
           v-for="item in navItems"
           :key="item.key"
@@ -19,15 +26,12 @@
           type="button"
           @click="switchMode(item.key)"
         >
-          <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ item.label }}</span>
+          <span class="nav-icon">
+            <el-icon><component :is="item.icon" /></el-icon>
+          </span>
+          <strong>{{ item.label }}</strong>
         </button>
       </nav>
-
-      <div class="side-visual" aria-hidden="true">
-        <img :src="logoUrl" alt="" />
-        <span></span>
-      </div>
     </aside>
 
     <main class="market-main">
@@ -38,100 +42,28 @@
         </div>
 
         <div class="top-actions">
-          <el-input
-            v-model="searchDraft"
-            class="market-search"
-            clearable
-            placeholder="搜索工具名称、描述或标签"
-            @keyup.enter="onSearch"
-            @clear="onSearch"
-          >
-            <template #suffix>
-              <button class="search-trigger" type="button" title="搜索" @click="onSearch">
+          <div class="search-box">
+            <el-input
+              v-model="searchDraft"
+              class="market-search"
+              clearable
+              placeholder="搜索工具名称、描述或标签"
+              @keyup.enter="onSearch"
+              @clear="onSearch"
+            >
+              <template #prefix>
                 <el-icon><Search /></el-icon>
-              </button>
-            </template>
-          </el-input>
+              </template>
+            </el-input>
+            <button class="search-button" type="button" @click="onSearch">搜索</button>
+          </div>
 
           <button class="demand-btn" type="button" @click="openDemandDialog">
             <el-icon><DocumentAdd /></el-icon>
             <span>需求反馈</span>
           </button>
 
-          <el-popover
-            v-model:visible="notificationVisible"
-            placement="bottom-end"
-            :width="480"
-            trigger="click"
-            popper-class="tool-notification-popper"
-            @show="loadNotifications"
-          >
-            <template #reference>
-              <button class="notification-btn" type="button" title="通知">
-                <el-icon><Bell /></el-icon>
-                <span v-if="unread" class="notification-badge">{{ unread }}</span>
-              </button>
-            </template>
-
-            <div class="notice-popover">
-              <header class="notice-head">
-                <div>
-                  <strong>通知</strong>
-                  <span>上线通知、应用更新、反馈回复</span>
-                </div>
-                <div class="notice-head-actions">
-                  <button
-                    v-if="notificationTab === 'history' && notificationTotal > 0"
-                    class="notice-clear"
-                    type="button"
-                    @click="clearHistoryMessages"
-                  >
-                    <el-icon><Delete /></el-icon>
-                    <span>清空历史</span>
-                  </button>
-                  <button class="notice-refresh" type="button" @click="loadNotifications">
-                    <el-icon><Refresh /></el-icon>
-                    <span>刷新</span>
-                  </button>
-                </div>
-              </header>
-
-              <el-tabs v-model="notificationTab" class="notice-tabs" @tab-change="onNotificationTabChange">
-                <el-tab-pane label="未读" name="unread" />
-                <el-tab-pane label="历史" name="history" />
-              </el-tabs>
-
-              <div v-loading="notificationLoading" class="notice-list">
-                <article v-for="message in messages" :key="message.messageId" :class="['notice-item', { unread: message.isRead !== '1' }]">
-                  <div class="notice-main">
-                    <strong>{{ message.title }}</strong>
-                    <p>{{ message.content }}</p>
-                    <time>{{ message.createTime }}</time>
-                  </div>
-                  <div class="notice-actions">
-                    <button v-if="message.isRead !== '1'" type="button" @click="markMessageRead(message)">已读</button>
-                    <button v-else class="notice-delete" type="button" @click="removeReadMessage(message)">
-                      <el-icon><Delete /></el-icon>
-                      <span>删除</span>
-                    </button>
-                  </div>
-                </article>
-                <el-empty v-if="!notificationLoading && messages.length === 0" :image-size="82" :description="notificationEmptyText" />
-              </div>
-
-              <el-pagination
-                v-if="notificationTotal > notificationPageSize"
-                class="notice-pager"
-                small
-                background
-                layout="prev, pager, next"
-                :total="notificationTotal"
-                :page-size="notificationPageSize"
-                :current-page="notificationPageNum"
-                @current-change="onNotificationPage"
-              />
-            </div>
-          </el-popover>
+          <PortalNotificationBell />
         </div>
       </header>
 
@@ -309,10 +241,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
-import { Bell, Delete, DocumentAdd, Grid, House, Refresh, Search, Star } from '@element-plus/icons-vue';
+import { Delete, DocumentAdd, Grid, House, Refresh, Search, Star } from '@element-plus/icons-vue';
 import CategoryTabs from './components/CategoryTabs.vue';
 import AppCard from './components/AppCard.vue';
 import {
@@ -320,22 +252,16 @@ import {
   listCategories,
   listFavorites,
   listMyDemands,
-  listMessages,
-  clearReadMessages,
-  deleteReadMessage,
-  readMessage,
   deleteMyDemand,
   submitDemand,
-  unreadCount
 } from '@/api/appcenter/portal';
-import { PortalApp, PortalCategory, PortalDemandForm, PortalDemandItem, PortalMessage } from '@/api/appcenter/types';
+import { PortalApp, PortalCategory, PortalDemandForm, PortalDemandItem } from '@/api/appcenter/types';
+import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
 import logoUrl from '@/assets/portal/home-logo.png';
 
 type ViewMode = 'market' | 'favorites';
-type NotificationTab = 'unread' | 'history';
 
 const apps = ref<PortalApp[]>([]);
-const messages = ref<PortalMessage[]>([]);
 const categories = ref<PortalCategory[]>([]);
 const viewMode = ref<ViewMode>('market');
 const categoryCode = ref('all');
@@ -346,14 +272,7 @@ const pageNum = ref(1);
 const pageSize = ref(15);
 const total = ref(0);
 const favoriteTotal = ref(0);
-const unread = ref(0);
 const loading = ref(false);
-const notificationVisible = ref(false);
-const notificationLoading = ref(false);
-const notificationTab = ref<NotificationTab>('unread');
-const notificationPageNum = ref(1);
-const notificationPageSize = ref(6);
-const notificationTotal = ref(0);
 const demandDialogVisible = ref(false);
 const demandActiveTab = ref<'submit' | 'mine'>('submit');
 const demandSubmitting = ref(false);
@@ -366,7 +285,6 @@ const myDemandPageNum = ref(1);
 const myDemandPageSize = ref(5);
 const myDemandTotal = ref(0);
 const router = useRouter();
-let unreadTimer: number | undefined;
 let suggestionAppSearchSeq = 0;
 
 const createDemandForm = (): PortalDemandForm => ({
@@ -415,14 +333,18 @@ const navItems = computed(() => [
   { key: 'favorites' as const, label: '收藏应用', icon: Star }
 ]);
 
+const currentToolTotal = computed(() => (viewMode.value === 'market' ? total.value : favoriteTotal.value));
+const activeToolCategory = computed(() => categories.value.find((item) => item.categoryCode === categoryCode.value));
+const activeToolCategoryName = computed(() => (categoryCode.value === 'all' ? '全部工具' : activeToolCategory.value?.categoryName || '当前分类'));
+
 const pageTitle = computed(() => {
   if (viewMode.value === 'favorites') return '收藏应用';
   return '应用中心';
 });
 
 const pageSubtitle = computed(() => {
-  if (viewMode.value === 'favorites') return '快速访问你收藏的高频应用';
-  return '精选应用 · 安全可控 · 即点即用';
+  if (viewMode.value === 'favorites') return `${activeToolCategoryName.value} · 共 ${currentToolTotal.value} 个收藏应用`;
+  return `${activeToolCategoryName.value} · 共 ${currentToolTotal.value} 个工具`;
 });
 
 const demandAppNameLabel = computed(() => (demandForm.value.demandType === 'new_app' ? '应用名称' : '相关应用'));
@@ -456,17 +378,6 @@ const getDemandStatusTag = (status: PortalDemandItem['status']) => {
 
 const hasDemandReply = (item: PortalDemandItem) => Boolean(item.handleRemark?.trim());
 
-const notificationEmptyText = computed(() => (notificationTab.value === 'unread' ? '暂无未读通知' : '暂无历史通知'));
-
-const loadUnread = async () => {
-  try {
-    const res: any = await unreadCount();
-    unread.value = Number(res.data || 0);
-  } catch {
-    unread.value = 0;
-  }
-};
-
 const reloadApps = async () => {
   const query = {
     categoryCode: categoryCode.value,
@@ -490,22 +401,6 @@ const reload = async () => {
     await reloadApps();
   } finally {
     loading.value = false;
-  }
-};
-
-const loadNotifications = async () => {
-  notificationLoading.value = true;
-  try {
-    const res: any = await listMessages({
-      pageNum: notificationPageNum.value,
-      pageSize: notificationPageSize.value,
-      isRead: notificationTab.value === 'unread' ? '0' : '1'
-    });
-    messages.value = res.rows || res.data || [];
-    notificationTotal.value = res.total || 0;
-    await loadUnread();
-  } finally {
-    notificationLoading.value = false;
   }
 };
 
@@ -577,16 +472,6 @@ const onSearch = () => {
 const onPage = (page: number) => {
   pageNum.value = page;
   reload();
-};
-
-const onNotificationTabChange = () => {
-  notificationPageNum.value = 1;
-  loadNotifications();
-};
-
-const onNotificationPage = (page: number) => {
-  notificationPageNum.value = page;
-  loadNotifications();
 };
 
 const switchMode = (mode: ViewMode) => {
@@ -681,50 +566,6 @@ const removeMyDemand = async (item: PortalDemandItem) => {
   }
 };
 
-const markMessageRead = async (message: PortalMessage) => {
-  if (message.isRead !== '1') {
-    await readMessage(message.messageId);
-    if (messages.value.length === 1 && notificationPageNum.value > 1) {
-      notificationPageNum.value -= 1;
-    }
-    await loadNotifications();
-  }
-};
-
-const removeReadMessage = async (message: PortalMessage) => {
-  try {
-    await ElMessageBox.confirm(`确认删除“${message.title}”这条历史通知吗？`, '删除通知', {
-      type: 'warning',
-      confirmButtonText: '删 除',
-      cancelButtonText: '取 消'
-    });
-    await deleteReadMessage(message.messageId);
-    ElMessage.success('通知已删除');
-    if (messages.value.length === 1 && notificationPageNum.value > 1) {
-      notificationPageNum.value -= 1;
-    }
-    await loadNotifications();
-  } catch {
-    // 用户取消删除时不提示
-  }
-};
-
-const clearHistoryMessages = async () => {
-  try {
-    await ElMessageBox.confirm('确认清空全部历史通知吗？清空后不可恢复。', '清空历史通知', {
-      type: 'warning',
-      confirmButtonText: '清 空',
-      cancelButtonText: '取 消'
-    });
-    await clearReadMessages();
-    ElMessage.success('历史通知已清空');
-    notificationPageNum.value = 1;
-    await loadNotifications();
-  } catch {
-    // 用户取消清空时不提示
-  }
-};
-
 watch([categoryCode, sort], () => {
   pageNum.value = 1;
   reload();
@@ -733,295 +574,403 @@ watch([categoryCode, sort], () => {
 onMounted(async () => {
   const res: any = await listCategories();
   categories.value = res.data || [];
-  await Promise.all([reload(), loadUnread()]);
-  unreadTimer = window.setInterval(loadUnread, 60000);
-});
-
-onBeforeUnmount(() => {
-  if (unreadTimer) {
-    window.clearInterval(unreadTimer);
-  }
+  await reload();
 });
 </script>
 
 <style scoped>
 .tools-market {
   min-height: 100vh;
-  display: flex;
-  background: #f7faff;
-  color: #0f1f3d;
+  --tool-primary: #245f8f;
+  --tool-primary-deep: #183f63;
+  --tool-primary-soft: #eaf2f8;
+  --tool-accent: #b7791f;
+  --tool-accent-soft: #fff3dc;
+  --tool-title: #14243a;
+  --tool-text: #32445c;
+  --tool-muted: #68788c;
+  --tool-weak: #96a1af;
+  --tool-border: #dce5ed;
+  --tool-input-border: #d3dee8;
+  display: grid;
+  grid-template-columns: 276px minmax(0, 1fr);
+  gap: 22px;
+  padding: 18px 28px 44px;
+  background: linear-gradient(180deg, rgba(241, 244, 248, 0.95) 0%, rgba(247, 249, 252, 0.82) 320px), #f5f7fa;
+  color: var(--tool-text);
   font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 .tools-sidebar {
   position: sticky;
-  top: 0;
-  align-self: flex-start;
-  width: 296px;
-  flex: 0 0 296px;
-  height: 100vh;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  top: 18px;
+  align-self: start;
+  max-height: calc(100vh - 36px);
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 14px;
   overflow: hidden;
-  border-right: 1px solid #e1e9f5;
-  background: linear-gradient(180deg, #fff 0%, #f7fbff 100%);
-  box-shadow: 12px 0 34px rgba(31, 84, 156, 0.04);
 }
 
 .side-brand {
-  height: 112px;
+  position: relative;
+  height: 86px;
+  min-height: 86px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 0 32px;
+  gap: 13px;
+  box-sizing: border-box;
+  border: 1px solid var(--tool-border);
+  border-radius: 8px;
+  padding: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(183, 121, 31, 0.13), transparent 42%), linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+}
+
+.side-brand::after {
+  content: '';
+  position: absolute;
+  right: -24px;
+  bottom: -34px;
+  width: 110px;
+  height: 72px;
+  border: 1px solid rgba(183, 121, 31, 0.22);
+  border-radius: 8px;
+  transform: rotate(-14deg);
+  pointer-events: none;
 }
 
 .side-brand img {
-  width: 46px;
-  height: 46px;
+  position: relative;
+  z-index: 1;
+  width: 42px;
+  height: 42px;
   object-fit: contain;
 }
 
+.side-brand div {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
 .side-brand strong {
-  color: #0a1f44;
-  font-size: 26px;
-  line-height: 1;
-  font-weight: 800;
+  color: var(--tool-title);
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.side-brand span {
+  color: var(--tool-muted);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .home-link {
-  height: 44px;
+  width: 100%;
+  height: 40px;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 20px 10px;
-  border: 1px solid #d9e5f6;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--tool-border);
   border-radius: 8px;
-  padding: 0 18px;
-  background: rgba(255, 255, 255, 0.82);
-  color: #49618c;
-  font-size: 15px;
+  padding: 0 14px;
+  background: #fff;
+  color: var(--tool-text);
   line-height: 1;
-  font-weight: 750;
+  font-weight: 850;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(31, 84, 156, 0.04);
   transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    color 0.16s ease,
-    box-shadow 0.16s ease;
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 .home-link .el-icon {
-  color: #49618c;
+  color: var(--tool-muted);
   font-size: 18px;
 }
 
 .home-link:hover {
-  border-color: #b8cff4;
-  background: #f5f9ff;
-  color: #1260e8;
-  box-shadow: 0 12px 28px rgba(18, 96, 232, 0.08);
+  border-color: var(--tool-primary);
+  background: var(--tool-primary-soft);
+  color: var(--tool-primary);
+  transform: translateY(-1px);
 }
 
 .home-link:hover .el-icon {
-  color: #1260e8;
+  color: var(--tool-primary);
 }
 
 .side-nav {
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 14px 20px 24px;
+  gap: 10px;
+  border: 1px solid var(--tool-border);
+  border-radius: 8px;
+  padding: 14px;
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+}
+
+.nav-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 6px;
+}
+
+.nav-title span {
+  color: var(--tool-title);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.nav-title em {
+  color: var(--tool-muted);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
 }
 
 .side-link {
   position: relative;
-  height: 60px;
-  display: flex;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
   align-items: center;
-  gap: 18px;
-  border: 0;
+  gap: 10px;
+  border: 1px solid transparent;
   border-radius: 8px;
-  padding: 0 22px;
-  background: transparent;
-  color: #35476d;
-  font-size: 17px;
-  font-weight: 750;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.98)), #f8fafc;
+  color: var(--tool-text);
+  font-size: 15px;
+  font-weight: 850;
   text-align: left;
   cursor: pointer;
   transition:
-    background 0.16s ease,
-    color 0.16s ease;
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
-.side-link .el-icon {
-  width: 22px;
-  height: 22px;
-  color: #436294;
-  font-size: 22px;
+.nav-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--tool-accent);
+  box-shadow: 0 0 0 1px var(--tool-input-border) inset;
+}
+
+.side-link strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--tool-title);
+  line-height: 1.2;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.side-link:hover {
+  border-color: #b8c9d9;
+  background: #f8fafc;
+  transform: translateX(2px);
 }
 
 .side-link.active {
-  background: #edf4ff;
-  color: #1260e8;
+  border-color: #b8c9d9;
+  background: var(--tool-accent-soft);
+  box-shadow: inset 3px 0 0 var(--tool-accent);
 }
 
-.side-link.active .el-icon {
-  color: #1260e8;
-}
-
-.side-visual {
-  position: relative;
-  min-height: 284px;
-  margin-top: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.side-visual img {
-  position: relative;
-  z-index: 1;
-  width: 128px;
-  height: 128px;
-  object-fit: contain;
-  opacity: 0.82;
-  filter: drop-shadow(0 22px 34px rgba(54, 116, 219, 0.22));
-}
-
-.side-visual span {
-  position: absolute;
-  left: 42px;
-  right: 42px;
-  bottom: 46px;
-  height: 92px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, rgba(226, 239, 255, 0.8), rgba(240, 246, 255, 0.2));
-  box-shadow: 0 22px 46px rgba(54, 116, 219, 0.13);
+.side-link.active .nav-icon {
+  background: var(--tool-accent);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(183, 121, 31, 0.2);
 }
 
 .market-main {
-  flex: 1;
   min-width: 0;
-  padding: 34px 46px 30px;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 0;
 }
 
 .market-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 32px;
-  margin-bottom: 28px;
+  position: relative;
+  min-height: 86px;
+  display: grid;
+  grid-template-columns: minmax(220px, 390px) minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  box-sizing: border-box;
+  border: 1px solid var(--tool-border);
+  border-radius: 8px;
+  padding: 14px 16px 14px 20px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+}
+
+.market-top::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--tool-accent);
+  pointer-events: none;
+}
+
+.title-block {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
 }
 
 .title-block h1 {
   margin: 0;
-  color: #0b1833;
-  font-size: 34px;
+  color: var(--tool-title);
+  font-size: 28px;
   line-height: 1.15;
-  font-weight: 850;
+  font-weight: 900;
 }
 
 .title-block p {
-  margin: 12px 0 0;
-  color: #49618c;
-  font-size: 17px;
-  line-height: 1.2;
-  font-weight: 650;
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: var(--tool-muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .top-actions {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 36px;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.search-box {
+  min-width: 300px;
+  max-width: 620px;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
 }
 
 .market-search {
-  width: 406px;
-  --el-input-height: 54px;
+  min-width: 0;
+  --el-input-height: 40px;
 }
 
 :deep(.market-search .el-input__wrapper) {
-  padding: 0 16px 0 20px;
-  border-radius: 9px;
+  padding: 0 14px;
+  border-radius: 8px;
   background: #fff;
-  box-shadow: 0 0 0 1px #dbe5f4 inset;
+  box-shadow: 0 0 0 1px var(--tool-input-border) inset;
 }
 
 :deep(.market-search .el-input__inner) {
-  color: #20355c;
+  color: var(--tool-text);
   font-size: 14px;
   font-weight: 700;
 }
 
-.search-trigger {
-  width: 32px;
-  height: 32px;
+.search-button,
+.demand-btn {
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  background: transparent;
-  color: #385283;
-  cursor: pointer;
-}
-
-.search-trigger .el-icon {
-  font-size: 22px;
-}
-
-.demand-btn {
-  height: 54px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid #1260e8;
+  gap: 7px;
+  border: 1px solid var(--tool-primary);
   border-radius: 8px;
-  padding: 0 24px;
-  background: #fff;
-  color: #1260e8;
-  font-size: 17px;
+  padding: 0 15px;
+  background: var(--tool-primary);
+  color: #fff;
+  font-size: 14px;
   line-height: 1;
   font-weight: 850;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 12px 26px rgba(18, 96, 232, 0.08);
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.search-button {
+  padding: 0 16px;
+}
+
+.search-button:hover,
+.demand-btn:hover {
+  background: var(--tool-primary-deep);
+  box-shadow: 0 8px 20px rgba(36, 95, 143, 0.18);
+  transform: translateY(-1px);
 }
 
 .demand-btn .el-icon {
-  font-size: 23px;
+  font-size: 18px;
 }
 
 .notification-btn {
   position: relative;
-  width: 54px;
-  height: 54px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #dbe5f4;
+  border: 1px solid var(--tool-input-border);
   border-radius: 8px;
   background: #fff;
-  color: #385283;
+  color: var(--tool-muted);
   cursor: pointer;
-  box-shadow: 0 12px 26px rgba(42, 87, 160, 0.07);
+  box-shadow: 0 12px 26px rgba(31, 54, 76, 0.07);
   transition:
     border-color 0.16s ease,
     color 0.16s ease,
-    box-shadow 0.16s ease;
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
 }
 
 .notification-btn:hover {
-  border-color: #b8cff4;
-  color: #1260e8;
-  box-shadow: 0 14px 28px rgba(18, 96, 232, 0.12);
+  border-color: #b8c9d9;
+  color: var(--tool-primary);
+  background: var(--tool-primary-soft);
+  box-shadow: 0 14px 28px rgba(36, 95, 143, 0.12);
+  transform: translateY(-1px);
 }
 
 .notification-btn .el-icon {
-  font-size: 24px;
+  font-size: 19px;
 }
 
 .notification-badge {
@@ -1043,10 +992,10 @@ onBeforeUnmount(() => {
 }
 
 :global(.tool-notification-popper) {
-  border: 1px solid #dbe5f4 !important;
+  border: 1px solid var(--tool-input-border) !important;
   border-radius: 12px !important;
   padding: 14px !important;
-  box-shadow: 0 18px 46px rgba(31, 84, 156, 0.16) !important;
+  box-shadow: 0 18px 46px rgba(31, 54, 76, 0.16) !important;
 }
 
 .notice-popover {
@@ -1059,12 +1008,12 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #edf2f9;
+  border-bottom: 1px solid var(--tool-border);
 }
 
 .notice-head strong {
   display: block;
-  color: #0b1833;
+  color: var(--tool-title);
   font-size: 17px;
   line-height: 1.2;
   font-weight: 850;
@@ -1091,11 +1040,11 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #d8e5f7;
+  border: 1px solid var(--tool-input-border);
   border-radius: 7px;
   padding: 0 10px;
   background: #fff;
-  color: #1260e8;
+  color: var(--tool-primary);
   font-size: 13px;
   font-weight: 750;
   cursor: pointer;
@@ -1116,7 +1065,7 @@ onBeforeUnmount(() => {
 
 :deep(.notice-tabs .el-tabs__nav-wrap::after) {
   height: 1px;
-  background: #edf2f9;
+  background: var(--tool-border);
 }
 
 .notice-list {
@@ -1135,14 +1084,14 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 14px;
   padding: 12px;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--tool-border);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.96);
 }
 
 .notice-item.unread {
-  border-color: #bcd1f7;
-  background: #f6f9ff;
+  border-color: #b8c9d9;
+  background: #f8fafc;
 }
 
 .notice-main {
@@ -1151,7 +1100,7 @@ onBeforeUnmount(() => {
 
 .notice-main strong {
   display: block;
-  color: #0f1f3d;
+  color: var(--tool-title);
   font-size: 15px;
   line-height: 1.35;
   font-weight: 850;
@@ -1168,7 +1117,7 @@ onBeforeUnmount(() => {
 .notice-main time {
   display: block;
   margin-top: 7px;
-  color: #8a97af;
+  color: var(--tool-weak);
   font-size: 12px;
   line-height: 1.2;
   font-weight: 600;
@@ -1186,11 +1135,11 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border: 1px solid #b7cef7;
+  border: 1px solid #b8c9d9;
   border-radius: 7px;
   padding: 0 10px;
   background: #fff;
-  color: #1260e8;
+  color: var(--tool-primary);
   font-size: 13px;
   font-weight: 750;
   cursor: pointer;
@@ -1228,10 +1177,10 @@ onBeforeUnmount(() => {
 :global(.portal-demand-dialog) {
   width: min(760px, calc(100vw - 32px)) !important;
   overflow: hidden;
-  border: 1px solid #dbe5f4;
+  border: 1px solid var(--tool-input-border);
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 28px 70px rgba(17, 50, 106, 0.22);
+  box-shadow: 0 28px 70px rgba(31, 54, 76, 0.2);
 }
 
 :global(.portal-demand-dialog .el-dialog__header) {
@@ -1248,7 +1197,7 @@ onBeforeUnmount(() => {
 }
 
 :global(.portal-demand-dialog .el-dialog__headerbtn:hover) {
-  background: #edf4ff;
+  background: var(--tool-primary-soft);
 }
 
 :global(.portal-demand-dialog .el-dialog__body) {
@@ -1257,8 +1206,8 @@ onBeforeUnmount(() => {
 
 :global(.portal-demand-dialog .el-dialog__footer) {
   padding: 18px 26px 22px;
-  border-top: 1px solid #edf2f9;
-  background: #f9fbff;
+  border-top: 1px solid var(--tool-border);
+  background: #f8fafc;
 }
 
 .demand-dialog-head {
@@ -1266,10 +1215,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 14px;
   padding: 24px 28px 20px;
-  border-bottom: 1px solid #edf2f9;
-  background:
-    linear-gradient(135deg, rgba(237, 244, 255, 0.98) 0%, rgba(255, 255, 255, 0.96) 58%),
-    radial-gradient(circle at 88% 0%, rgba(18, 96, 232, 0.12), transparent 34%);
+  border-bottom: 1px solid var(--tool-border);
+  background: linear-gradient(135deg, var(--tool-accent-soft) 0%, rgba(255, 255, 255, 0.96) 58%);
 }
 
 .demand-dialog-icon {
@@ -1280,11 +1227,11 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: linear-gradient(180deg, #4fa6ff 0%, #1260e8 100%);
+  background: linear-gradient(180deg, #d19a37 0%, var(--tool-accent) 100%);
   color: #fff;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.46),
-    0 14px 26px rgba(18, 96, 232, 0.22);
+    0 14px 26px rgba(183, 121, 31, 0.22);
 }
 
 .demand-dialog-icon .el-icon {
@@ -1293,7 +1240,7 @@ onBeforeUnmount(() => {
 
 .demand-dialog-head strong {
   display: block;
-  color: #0b1833;
+  color: var(--tool-title);
   font-size: 23px;
   line-height: 1.2;
   font-weight: 850;
@@ -1301,7 +1248,7 @@ onBeforeUnmount(() => {
 
 .demand-dialog-head p {
   margin: 7px 0 0;
-  color: #53668f;
+  color: var(--tool-muted);
   font-size: 14px;
   line-height: 1.4;
   font-weight: 650;
@@ -1324,24 +1271,24 @@ onBeforeUnmount(() => {
 :deep(.demand-tabs .el-tabs__nav) {
   gap: 4px;
   padding: 4px;
-  border: 1px solid #dbe5f4;
+  border: 1px solid var(--tool-input-border);
   border-radius: 8px;
-  background: #f4f8ff;
+  background: #f5f7fa;
 }
 
 :deep(.demand-tabs .el-tabs__item) {
   height: 36px;
   border-radius: 7px;
   padding: 0 18px;
-  color: #49618c;
+  color: var(--tool-muted);
   font-size: 14px;
   font-weight: 800;
 }
 
 :deep(.demand-tabs .el-tabs__item.is-active) {
-  background: #1260e8;
+  background: var(--tool-accent);
   color: #fff;
-  box-shadow: 0 8px 18px rgba(18, 96, 232, 0.2);
+  box-shadow: 0 8px 18px rgba(183, 121, 31, 0.2);
 }
 
 .demand-intro {
@@ -1351,14 +1298,14 @@ onBeforeUnmount(() => {
   gap: 18px;
   margin-bottom: 18px;
   padding: 14px 16px;
-  border: 1px solid #dbe8fb;
+  border: 1px solid #dce5ed;
   border-radius: 8px;
-  background: linear-gradient(135deg, #f6f9ff 0%, #fff 100%);
+  background: linear-gradient(135deg, #fff9ed 0%, #fff 100%);
 }
 
 .demand-intro strong {
   display: block;
-  color: #0b1833;
+  color: var(--tool-title);
   font-size: 15px;
   line-height: 1.2;
   font-weight: 850;
@@ -1366,7 +1313,7 @@ onBeforeUnmount(() => {
 
 .demand-intro p {
   margin: 6px 0 0;
-  color: #53668f;
+  color: var(--tool-muted);
   font-size: 13px;
   line-height: 1.55;
   font-weight: 650;
@@ -1379,8 +1326,8 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   border-radius: 999px;
   padding: 0 12px;
-  background: #edf4ff;
-  color: #1260e8;
+  background: var(--tool-accent-soft);
+  color: var(--tool-accent);
   font-size: 12px;
   line-height: 1;
   font-weight: 800;
@@ -1395,7 +1342,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.portal-demand-form .el-form-item__label) {
-  color: #25395f;
+  color: var(--tool-text);
   font-size: 14px;
   font-weight: 800;
 }
@@ -1404,13 +1351,13 @@ onBeforeUnmount(() => {
   min-height: 42px;
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 0 0 1px #dbe5f4 inset;
+  box-shadow: 0 0 0 1px var(--tool-input-border) inset;
 }
 
 :deep(.portal-demand-form .el-input__wrapper.is-focus) {
   box-shadow:
-    0 0 0 1px #1260e8 inset,
-    0 8px 18px rgba(18, 96, 232, 0.08);
+    0 0 0 1px var(--tool-primary) inset,
+    0 8px 18px rgba(36, 95, 143, 0.08);
 }
 
 .suggestion-app-select {
@@ -1421,18 +1368,18 @@ onBeforeUnmount(() => {
   min-height: 42px;
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 0 0 1px #dbe5f4 inset;
+  box-shadow: 0 0 0 1px var(--tool-input-border) inset;
 }
 
 :deep(.suggestion-app-select .el-select__wrapper.is-focused) {
   box-shadow:
-    0 0 0 1px #1260e8 inset,
-    0 8px 18px rgba(18, 96, 232, 0.08);
+    0 0 0 1px var(--tool-primary) inset,
+    0 8px 18px rgba(36, 95, 143, 0.08);
 }
 
 :deep(.portal-demand-form .el-input__inner),
 :deep(.portal-demand-form .el-textarea__inner) {
-  color: #25395f;
+  color: var(--tool-text);
   font-size: 14px;
   font-weight: 650;
 }
@@ -1441,14 +1388,14 @@ onBeforeUnmount(() => {
   min-height: 142px !important;
   border-radius: 8px;
   padding: 12px 14px;
-  box-shadow: 0 0 0 1px #dbe5f4 inset;
+  box-shadow: 0 0 0 1px var(--tool-input-border) inset;
   resize: none;
 }
 
 :deep(.portal-demand-form .el-textarea__inner:focus) {
   box-shadow:
-    0 0 0 1px #1260e8 inset,
-    0 8px 18px rgba(18, 96, 232, 0.08);
+    0 0 0 1px var(--tool-primary) inset,
+    0 8px 18px rgba(36, 95, 143, 0.08);
 }
 
 .demand-type-group {
@@ -1466,24 +1413,24 @@ onBeforeUnmount(() => {
   width: 100%;
   height: auto;
   display: block;
-  border: 1px solid #dbe5f4;
+  border: 1px solid var(--tool-input-border);
   border-radius: 8px;
   padding: 13px 15px;
   background: #fff;
-  color: #25395f;
+  color: var(--tool-text);
   text-align: left;
   box-shadow: none;
 }
 
 :deep(.demand-type-group .el-radio-button:first-child .el-radio-button__inner) {
-  border-left: 1px solid #dbe5f4;
+  border-left: 1px solid var(--tool-input-border);
 }
 
 :deep(.demand-type-group .el-radio-button.is-active .el-radio-button__inner) {
-  border-color: #1260e8;
-  background: #edf4ff;
-  color: #1260e8;
-  box-shadow: 0 0 0 1px #1260e8;
+  border-color: var(--tool-accent);
+  background: var(--tool-accent-soft);
+  color: var(--tool-accent);
+  box-shadow: 0 0 0 1px var(--tool-accent);
 }
 
 .demand-type-option {
@@ -1507,13 +1454,13 @@ onBeforeUnmount(() => {
 }
 
 :deep(.demand-type-group .el-radio-button.is-active .demand-type-option em) {
-  color: #1260e8;
+  color: var(--tool-accent);
 }
 
 :global(.portal-app-select-popper) {
-  border: 1px solid #dbe5f4 !important;
+  border: 1px solid var(--tool-input-border) !important;
   border-radius: 8px !important;
-  box-shadow: 0 18px 42px rgba(31, 84, 156, 0.16) !important;
+  box-shadow: 0 18px 42px rgba(31, 54, 76, 0.16) !important;
 }
 
 :global(.portal-app-select-popper .el-select-dropdown__item) {
@@ -1522,7 +1469,7 @@ onBeforeUnmount(() => {
 }
 
 :global(.portal-app-select-popper .el-select-dropdown__item.is-selected) {
-  color: #1260e8;
+  color: var(--tool-primary);
 }
 
 .suggestion-app-option {
@@ -1533,7 +1480,7 @@ onBeforeUnmount(() => {
 }
 
 .suggestion-app-option strong {
-  color: #0f1f3d;
+  color: var(--tool-title);
   font-size: 14px;
   line-height: 1.2;
   font-weight: 850;
@@ -1553,14 +1500,14 @@ onBeforeUnmount(() => {
   gap: 18px;
   margin-bottom: 14px;
   padding: 14px 16px;
-  border: 1px solid #dbe8fb;
+  border: 1px solid #dce5ed;
   border-radius: 8px;
-  background: linear-gradient(135deg, #f6f9ff 0%, #fff 100%);
+  background: linear-gradient(135deg, #fff9ed 0%, #fff 100%);
 }
 
 .my-demand-head strong {
   display: block;
-  color: #0b1833;
+  color: var(--tool-title);
   font-size: 15px;
   line-height: 1.2;
   font-weight: 850;
@@ -1568,7 +1515,7 @@ onBeforeUnmount(() => {
 
 .my-demand-head p {
   margin: 6px 0 0;
-  color: #53668f;
+  color: var(--tool-muted);
   font-size: 13px;
   line-height: 1.55;
   font-weight: 650;
@@ -1582,7 +1529,7 @@ onBeforeUnmount(() => {
 }
 
 .my-demand-tools > span {
-  color: #53668f;
+  color: var(--tool-muted);
   font-size: 13px;
   font-weight: 750;
   white-space: nowrap;
@@ -1593,11 +1540,11 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #d8e5f7;
+  border: 1px solid var(--tool-input-border);
   border-radius: 8px;
   padding: 0 12px;
   background: #fff;
-  color: #1260e8;
+  color: var(--tool-primary);
   font-size: 13px;
   font-weight: 750;
   white-space: nowrap;
@@ -1605,8 +1552,8 @@ onBeforeUnmount(() => {
 }
 
 .my-demand-tools button:hover {
-  border-color: #b8cff4;
-  background: #f4f8ff;
+  border-color: #b8c9d9;
+  background: #f8fafc;
 }
 
 .my-demand-list {
@@ -1620,11 +1567,11 @@ onBeforeUnmount(() => {
 }
 
 .my-demand-card {
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--tool-border);
   border-radius: 8px;
   padding: 15px 16px;
-  background: linear-gradient(180deg, #fff 0%, #fbfdff 100%);
-  box-shadow: 0 8px 22px rgba(42, 87, 160, 0.05);
+  background: linear-gradient(180deg, #fff 0%, #fafbf7 100%);
+  box-shadow: 0 8px 22px rgba(31, 54, 76, 0.06);
 }
 
 .my-demand-card-head,
@@ -1637,7 +1584,7 @@ onBeforeUnmount(() => {
 
 .my-demand-card-head strong {
   display: block;
-  color: #0f1f3d;
+  color: var(--tool-title);
   font-size: 16px;
   line-height: 1.35;
   font-weight: 850;
@@ -1654,9 +1601,9 @@ onBeforeUnmount(() => {
 
 .my-demand-content {
   margin: 12px 0 0;
-  border-left: 3px solid #d8e7ff;
+  border-left: 3px solid #d7c4a7;
   padding-left: 12px;
-  color: #33476e;
+  color: var(--tool-text);
   font-size: 14px;
   line-height: 1.65;
   font-weight: 600;
@@ -1665,16 +1612,16 @@ onBeforeUnmount(() => {
 
 .my-demand-reply {
   margin-top: 12px;
-  border: 1px solid #cfe0fb;
+  border: 1px solid #d7c4a7;
   border-radius: 8px;
   padding: 11px 12px;
-  background: #f2f7ff;
-  color: #1c3768;
+  background: #f8f3eb;
+  color: var(--tool-text);
 }
 
 .my-demand-reply strong {
   display: block;
-  color: #1260e8;
+  color: var(--tool-primary);
   font-size: 13px;
   line-height: 1.2;
   font-weight: 850;
@@ -1699,7 +1646,7 @@ onBeforeUnmount(() => {
 .my-demand-card-foot {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #edf2f9;
+  border-top: 1px solid var(--tool-border);
 }
 
 .my-demand-card-foot time {
@@ -1747,9 +1694,9 @@ onBeforeUnmount(() => {
 }
 
 :deep(.dialog-footer .el-button--primary) {
-  border-color: #1260e8;
-  background: #1260e8;
-  box-shadow: 0 10px 22px rgba(18, 96, 232, 0.2);
+  border-color: var(--tool-primary);
+  background: var(--tool-primary);
+  box-shadow: 0 10px 22px rgba(36, 95, 143, 0.2);
 }
 
 @media (max-width: 520px) {
@@ -1834,21 +1781,21 @@ onBeforeUnmount(() => {
   height: 38px;
   border-radius: 8px;
   background: transparent;
-  color: #0b1833;
+  color: var(--tool-title);
   font-size: 16px;
   font-weight: 750;
 }
 
 :deep(.pager .el-pager li.is-active) {
-  background: #1260e8;
+  background: var(--tool-primary);
   color: #fff;
-  box-shadow: 0 10px 22px rgba(18, 96, 232, 0.22);
+  box-shadow: 0 10px 22px rgba(36, 95, 143, 0.22);
 }
 
 :deep(.pager .btn-prev),
 :deep(.pager .btn-next) {
   background: #fff;
-  box-shadow: 0 8px 20px rgba(42, 87, 160, 0.08);
+  box-shadow: 0 8px 20px rgba(31, 54, 76, 0.08);
 }
 
 @media (max-width: 1720px) {
@@ -1858,62 +1805,42 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1500px) {
-  .tools-sidebar {
-    width: 270px;
-    flex-basis: 270px;
-  }
-
-  .market-main {
-    padding: 30px 32px;
-  }
-
-  .top-actions {
-    gap: 18px;
-  }
-
-  .market-search {
-    width: 360px;
-  }
-
   .app-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 1120px) {
-  .tools-sidebar {
-    width: 238px;
-    flex-basis: 238px;
+@media (max-width: 1360px) {
+  .tools-market {
+    grid-template-columns: 256px minmax(0, 1fr);
+    padding-inline: 22px;
   }
+}
 
+@media (max-width: 1120px) {
   .side-brand {
-    height: 96px;
-    padding-inline: 24px;
+    height: 86px;
+    min-height: 86px;
   }
 
   .side-brand strong {
-    font-size: 23px;
+    font-size: 22px;
   }
 
   .home-link {
-    margin-inline: 14px;
     padding-inline: 16px;
   }
 
   .side-nav {
-    gap: 12px;
-    padding: 18px 14px;
+    padding: 14px;
   }
 
   .side-link {
-    height: 56px;
-    gap: 14px;
-    padding: 0 16px;
-    font-size: 16px;
+    min-height: 58px;
   }
 
   .market-top {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .top-actions {
@@ -1923,8 +1850,12 @@ onBeforeUnmount(() => {
     gap: 14px;
   }
 
-  .market-search {
+  .search-box {
     width: 100%;
+  }
+
+  .market-search {
+    min-width: 0;
   }
 
   .demand-btn {
@@ -1938,50 +1869,44 @@ onBeforeUnmount(() => {
   .app-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .side-visual {
-    min-height: 220px;
-  }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 980px) {
   .tools-market {
-    display: block;
+    grid-template-columns: 1fr;
+    padding: 16px;
   }
 
   .tools-sidebar {
-    position: relative;
-    width: 100%;
-    height: auto;
-    min-height: auto;
-    align-self: stretch;
-    border-right: 0;
-    border-bottom: 1px solid #e1e9f5;
+    position: static;
+    max-height: none;
   }
 
   .side-brand {
-    height: 84px;
+    height: 86px;
+    min-height: 86px;
   }
 
   .side-nav {
     display: grid;
     grid-template-columns: 1fr;
     gap: 10px;
-    padding-top: 0;
+    max-height: none;
   }
 
   .home-link {
-    width: calc(100% - 28px);
+    width: 100%;
     justify-content: center;
-    margin: 0 14px 12px;
-  }
-
-  .side-visual {
-    display: none;
   }
 
   .market-main {
-    padding: 24px 18px;
+    padding: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .market-main {
+    padding: 0;
   }
 
   .app-grid {

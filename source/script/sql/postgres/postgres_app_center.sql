@@ -97,7 +97,7 @@ CREATE UNIQUE INDEX uk_rec_user_app ON app_recommend (user_id, app_id);
 COMMENT ON TABLE app_recommend IS '应用推荐';
 
 -- ----------------------------------------------------------------
--- 应用中心消息
+-- 门户通知消息
 -- ----------------------------------------------------------------
 CREATE TABLE app_message (
     message_id  int8         NOT NULL,
@@ -110,7 +110,23 @@ CREATE TABLE app_message (
     CONSTRAINT pk_app_message PRIMARY KEY (message_id)
 );
 CREATE INDEX idx_app_message_user ON app_message (user_id, is_read);
-COMMENT ON TABLE app_message IS '应用中心消息';
+COMMENT ON TABLE app_message IS '门户通知消息';
+
+-- ----------------------------------------------------------------
+-- 种子数据：v0.3.3 版本升级通知
+-- ----------------------------------------------------------------
+INSERT INTO app_message (message_id, user_id, title, content, msg_type, is_read, create_time)
+SELECT
+    2073003000000000000 + user_id,
+    user_id,
+    '版本升级：v0.3.3 门户通知上线',
+    'v0.3.3 新增门户右上角统一通知，支持版本升级、资源新增、应用上架、论坛反馈等消息提醒。',
+    'version',
+    '0',
+    now()
+FROM sys_user
+WHERE status = '0' AND del_flag = '0'
+ON CONFLICT (message_id) DO NOTHING;
 
 -- ----------------------------------------------------------------
 -- 应用需求反馈

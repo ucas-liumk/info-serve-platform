@@ -1,5 +1,6 @@
 package org.dromara.infoservice.service.impl;
 
+import cn.hutool.core.lang.Dict;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -7,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.json.utils.JsonUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.satoken.utils.LoginHelper;
@@ -23,6 +25,7 @@ import org.dromara.infoservice.mapper.InfoForumBoardMapper;
 import org.dromara.infoservice.mapper.InfoForumLikeMapper;
 import org.dromara.infoservice.mapper.InfoForumReplyMapper;
 import org.dromara.infoservice.mapper.InfoForumTopicMapper;
+import org.dromara.infoservice.service.IInfoPortalNotificationService;
 import org.dromara.infoservice.service.IInfoForumService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +49,7 @@ public class InfoForumServiceImpl implements IInfoForumService {
     private final InfoForumReplyMapper replyMapper;
     private final InfoForumBoardMapper boardMapper;
     private final InfoForumLikeMapper likeMapper;
+    private final IInfoPortalNotificationService notificationService;
 
     private LambdaQueryWrapper<InfoForumTopic> buildTopicWrapper(InfoForumTopicBo bo, boolean portal) {
         LambdaQueryWrapper<InfoForumTopic> w = Wrappers.lambdaQuery();
@@ -181,6 +186,7 @@ public class InfoForumServiceImpl implements IInfoForumService {
         topicMapper.update(null, Wrappers.<InfoForumTopic>lambdaUpdate()
             .setSql("reply_count = reply_count + 1")
             .eq(InfoForumTopic::getTopicId, bo.getTopicId()));
+        sendForumReplyNotification(topic, reply, bo);
         return replyMapper.selectVoById(reply.getReplyId());
     }
 
@@ -240,5 +246,45 @@ public class InfoForumServiceImpl implements IInfoForumService {
         if (board == null || !"0".equals(board.getStatus())) {
             throw new ServiceException("论坛版块不存在或已停用");
         }
+    }
+
+    private void sendForumReplyNotification(InfoForumTopic topic, InfoForumReply reply, InfoForumReplyBo bo) {
+        Long currentUserId = reply.getAuthorId();
+        Set<Long> recipients = new LinkedHashSet<>();
+        addRecipient(recipients, topic.getAuthorId(), currentUserId);
+        addRecipient(recipients, resolveReplyToUserId(bo.getRemark()), currentUserId);
+        if (recipients.isEmpty()) {
+            return;
+        }
+        String author = StringUtils.defaultIfBlank(reply.getAuthorName(), "用户");
+        String excerpt = StringUtils.substring(StringUtils.trimToEmpty(reply.getContent()), 0, 80);
+        notificationService.sendToUsers(
+            recipients,
+            "论坛有新回复：" + topic.getTitle(),
+            author + " 回复了话题“" + topic.getTitle() + "”：" + excerpt,
+            "forum"
+        );
+    }
+
+    private void addRecipient(Set<Long> recipients, Long userId, Long currentUserId) {
+        if (userId != null && !userId.equals(currentUserId)) {
+            recipients.add(userId);
+        }
+    }
+
+    private Long resolveReplyToUserId(String remark) {
+        try {
+            Dict meta = JsonUtils.parseMap(remark);
+            Object value = meta == null ? null : meta.get("replyToUserId");
+            if (value instanceof Number number) {
+                return number.longValue();
+            }
+            if (value instanceof String text && StringUtils.isNotBlank(text)) {
+                return Long.valueOf(text);
+            }
+        } catch (Exception ignored) {
+            return null;
+        }
+        return null;
     }
 }

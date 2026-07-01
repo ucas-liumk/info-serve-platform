@@ -6,14 +6,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.dromara.appcenter.domain.AppApplication;
 import org.dromara.appcenter.domain.AppDemand;
-import org.dromara.appcenter.domain.AppMessage;
 import org.dromara.appcenter.domain.bo.AppDemandBo;
 import org.dromara.appcenter.domain.bo.AppDemandSubmitBo;
 import org.dromara.appcenter.domain.vo.AppDemandVo;
 import org.dromara.appcenter.mapper.AppApplicationMapper;
 import org.dromara.appcenter.mapper.AppDemandMapper;
-import org.dromara.appcenter.mapper.AppMessageMapper;
 import org.dromara.appcenter.service.IAppDemandService;
+import org.dromara.appcenter.service.IPortalNotificationService;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -32,7 +31,7 @@ public class AppDemandServiceImpl implements IAppDemandService {
 
     private final AppDemandMapper baseMapper;
     private final AppApplicationMapper applicationMapper;
-    private final AppMessageMapper messageMapper;
+    private final IPortalNotificationService notificationService;
 
     private LambdaQueryWrapper<AppDemand> buildWrapper(AppDemandBo bo) {
         LambdaQueryWrapper<AppDemand> w = Wrappers.lambdaQuery();
@@ -151,14 +150,12 @@ public class AppDemandServiceImpl implements IAppDemandService {
     }
 
     private void sendHandleMessage(AppDemand demand, String handleRemark) {
-        AppMessage message = new AppMessage();
-        message.setUserId(demand.getRequesterId());
-        message.setTitle("需求反馈已回复");
-        message.setContent("你提交的“" + StringUtils.blankToDefault(demand.getAppName(), "需求反馈") + "”已有管理员回复：" + handleRemark);
-        message.setMsgType("demand");
-        message.setIsRead("0");
-        message.setCreateTime(new Date());
-        messageMapper.insert(message);
+        notificationService.sendToUser(
+            demand.getRequesterId(),
+            "需求反馈已回复",
+            "你提交的“" + StringUtils.blankToDefault(demand.getAppName(), "需求反馈") + "”已有管理员回复：" + handleRemark,
+            "demand"
+        );
     }
 
     @Override
