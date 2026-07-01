@@ -80,8 +80,8 @@ create table sys_client (
     client_secret       varchar2(255)  default null,
     grant_type          varchar2(255)  default null,
     device_type         varchar2(32)   default null,
-    active_timeout      number(11)    default 1800,
-    timeout             number(11)    default 604800,
+    active_timeout      number(11)    default 86400,
+    timeout             number(11)    default 86400,
     status              char(1)       default '0',
     del_flag            char(1)       default '0',
     create_dept         number(20)    default null,
@@ -110,8 +110,8 @@ comment on column sys_client.create_time            is '创建时间';
 comment on column sys_client.update_by              is '更新者';
 comment on column sys_client.update_time            is '更新时间';
 
-insert into sys_client values (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 1800, 604800, 0, 0, 103, 1, sysdate, 1, sysdate);
-insert into sys_client values (2, '428a8310cd442757ae699df5d894f051', 'app', 'app123', 'password,sms,social', 'android', 1800, 604800, 0, 0, 103, 1, sysdate, 1, sysdate);
+insert into sys_client values (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 86400, 86400, 0, 0, 103, 1, sysdate, 1, sysdate);
+insert into sys_client values (2, '428a8310cd442757ae699df5d894f051', 'app', 'app123', 'password,sms,social', 'android', 86400, 86400, 0, 0, 103, 1, sysdate, 1, sysdate);
 
 insert into sys_dict_type values(11, '000000', '授权类型', 'sys_grant_type',     '0', 103, 1, sysdate, null, null, '认证授权类型');
 insert into sys_dict_type values(12, '000000', '设备类型', 'sys_device_type',    '0', 103, 1, sysdate, null, null, '客户端设备类型');

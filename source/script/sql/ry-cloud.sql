@@ -972,8 +972,8 @@ create table sys_client (
     client_secret       varchar(255)  default null        comment '客户端秘钥',
     grant_type          varchar(255)  default null        comment '授权类型',
     device_type         varchar(32)   default null        comment '设备类型',
-    active_timeout      int(11)       default 1800        comment 'token活跃超时时间',
-    timeout             int(11)       default 604800      comment 'token固定超时',
+    active_timeout      int(11)       default 86400       comment 'token活跃超时时间',
+    timeout             int(11)       default 86400       comment 'token固定超时',
     status              char(1)       default '0'         comment '状态（0正常 1停用）',
     del_flag            char(1)       default '0'         comment '删除标志（0代表存在 1代表删除）',
     create_dept         bigint(20)    default null        comment '创建部门',
@@ -984,8 +984,8 @@ create table sys_client (
     primary key (id)
 ) engine=innodb comment='系统授权表';
 
-insert into sys_client values (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 1800, 604800, 0, 0, 103, 1, sysdate(), 1, sysdate());
-insert into sys_client values (2, '428a8310cd442757ae699df5d894f051', 'app', 'app123', 'password,sms,social', 'android', 1800, 604800, 0, 0, 103, 1, sysdate(), 1, sysdate());
+insert into sys_client values (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 86400, 86400, 0, 0, 103, 1, sysdate(), 1, sysdate());
+insert into sys_client values (2, '428a8310cd442757ae699df5d894f051', 'app', 'app123', 'password,sms,social', 'android', 86400, 86400, 0, 0, 103, 1, sysdate(), 1, sysdate());
 
 CREATE TABLE test_demo
 (

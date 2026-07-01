@@ -275,9 +275,9 @@ comment on column sys_user.remark       is '备注';
 
 -- 初始化-用户信息表数据
 -- ----------------------------
-insert into sys_user values(1, '000000', 103, 'admin', '疯狂的狮子Li', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', null, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', now(), 103, 1, now(), null, null, '管理员');
-insert into sys_user values(3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', null, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', now(), 103, 1, now(), 3, now(), NULL);
-insert into sys_user values(4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', null, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', now(), 103, 1, now(), 4, now(), NULL);
+insert into sys_user values(1, '000000', 103, 'admin', '疯狂的狮子Li', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', null, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '0', '127.0.0.1', now(), 103, 1, now(), null, null, '管理员');
+insert into sys_user values(3, '000000', 108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', null, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '0', '127.0.0.1', now(), 103, 1, now(), 3, now(), NULL);
+insert into sys_user values(4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', null, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '0', '127.0.0.1', now(), 103, 1, now(), 4, now(), NULL);
 
 
 -- ----------------------------
@@ -1050,7 +1050,7 @@ comment on column sys_config.remark         is '备注';
 insert into sys_config values(1, '000000', '主框架页-默认皮肤样式名称',     'sys.index.skinName',            'skin-blue',     'Y', 103, 1, now(), null, null, '蓝色 skin-blue、绿色 skin-green、紫色 skin-purple、红色 skin-red、黄色 skin-yellow' );
 insert into sys_config values(2, '000000', '用户管理-账号初始密码',         'sys.user.initPassword',         '123456',        'Y', 103, 1, now(), null, null, '初始化密码 123456' );
 insert into sys_config values(3, '000000', '主框架页-侧边栏主题',           'sys.index.sideTheme',           'theme-dark',    'Y', 103, 1, now(), null, null, '深色主题theme-dark，浅色主题theme-light' );
-insert into sys_config values(5, '000000', '账号自助-是否开启用户注册功能',   'true',         'Y', 103, 1, now(), null, null, '是否开启注册用户功能（true开启，false关闭）');
+insert into sys_config values(5, '000000', '账号自助-是否开启用户注册功能',   'sys.account.registerUser',      'true',         'Y', 103, 1, now(), null, null, '是否开启注册用户功能（true开启，false关闭）');
 insert into sys_config values(11, '000000', 'OSS预览列表资源开关',          'sys.oss.previewListResource',   'true',          'Y', 103, 1, now(), null, null, 'true:开启, false:关闭');
 
 
@@ -1345,8 +1345,8 @@ create table sys_client (
     client_secret       varchar(255)  default ''::varchar,
     grant_type          varchar(255)  default ''::varchar,
     device_type         varchar(32)   default ''::varchar,
-    active_timeout      int4          default 1800,
-    timeout             int4          default 604800,
+    active_timeout      int4          default 86400,
+    timeout             int4          default 86400,
     status              char(1)       default '0'::bpchar,
     del_flag            char(1)       default '0'::bpchar,
     create_dept         int8,
@@ -1374,8 +1374,8 @@ comment on column sys_client.create_time            is '创建时间';
 comment on column sys_client.update_by              is '更新者';
 comment on column sys_client.update_time            is '更新时间';
 
-insert into sys_client values (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 1800, 604800, 0, 0, 103, 1, now(), 1, now());
-insert into sys_client values (2, '428a8310cd442757ae699df5d894f051', 'app', 'app123', 'password,sms,social', 'android', 1800, 604800, 0, 0, 103, 1, now(), 1, now());
+insert into sys_client values (1, 'e5cd7e4891bf95d1d19206ce24a7b32e', 'pc', 'pc123', 'password,social', 'pc', 86400, 86400, 0, 0, 103, 1, now(), 1, now());
+insert into sys_client values (2, '428a8310cd442757ae699df5d894f051', 'app', 'app123', 'password,sms,social', 'android', 86400, 86400, 0, 0, 103, 1, now(), 1, now());
 
 create table if not exists test_demo
 (
