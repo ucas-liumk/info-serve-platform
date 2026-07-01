@@ -1,7 +1,11 @@
 package org.dromara.appcenter.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.dromara.appcenter.domain.*;
 import org.dromara.appcenter.domain.vo.AppCategoryVo;
 import org.dromara.appcenter.domain.vo.AppMessageVo;
@@ -73,21 +77,21 @@ class AppPortalServiceImplTest {
 
     @Test
     void categories_shouldFilterByStatus0() {
-        AppCategoryVo cat = new AppCategoryVo();
+        AppCategory cat = new AppCategory();
         cat.setCategoryId(1L);
         cat.setCategoryName("Tools");
-        when(categoryMapper.selectVoList(any())).thenReturn(List.of(cat));
+        when(categoryMapper.selectList(any())).thenReturn(List.of(cat));
 
         List<AppCategoryVo> result = service.categories();
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getCategoryName()).isEqualTo("Tools");
-        verify(categoryMapper).selectVoList(any());
+        verify(categoryMapper).selectList(any());
     }
 
     @Test
     void categories_shouldReturnEmptyWhenNoEnabledCategories() {
-        when(categoryMapper.selectVoList(any())).thenReturn(Collections.emptyList());
+        when(categoryMapper.selectList(any())).thenReturn(Collections.emptyList());
 
         List<AppCategoryVo> result = service.categories();
 
@@ -105,7 +109,7 @@ class AppPortalServiceImplTest {
         page.setTotal(0);
         when(applicationMapper.selectPage(any(), any())).thenReturn(page);
 
-        TableDataInfo<PortalAppVo> result = service.apps(null, null, "latest", pageQuery);
+        TableDataInfo<PortalAppVo> result = service.apps(null, null, null, "latest", pageQuery);
 
         assertThat(result).isNotNull();
         assertThat(result.getRows()).isEmpty();
@@ -120,7 +124,7 @@ class AppPortalServiceImplTest {
         page.setTotal(0);
         when(applicationMapper.selectPage(any(), any())).thenReturn(page);
 
-        TableDataInfo<PortalAppVo> result = service.apps(null, null, "hot", pageQuery);
+        TableDataInfo<PortalAppVo> result = service.apps(null, null, null, "hot", pageQuery);
 
         assertThat(result).isNotNull();
         verify(applicationMapper).selectPage(any(), any());
@@ -133,7 +137,7 @@ class AppPortalServiceImplTest {
         page.setTotal(0);
         when(applicationMapper.selectPage(any(), any())).thenReturn(page);
 
-        TableDataInfo<PortalAppVo> result = service.apps(null, null, "use", pageQuery);
+        TableDataInfo<PortalAppVo> result = service.apps(null, null, null, "use", pageQuery);
 
         assertThat(result).isNotNull();
         verify(applicationMapper).selectPage(any(), any());
@@ -148,7 +152,7 @@ class AppPortalServiceImplTest {
         page.setTotal(0);
         when(applicationMapper.selectPage(any(), any())).thenReturn(page);
 
-        TableDataInfo<PortalAppVo> result = service.apps("unknown-code", null, "latest", pageQuery);
+        TableDataInfo<PortalAppVo> result = service.apps("unknown-code", null, null, "latest", pageQuery);
 
         assertThat(result.getRows()).isEmpty();
         verify(categoryMapper).selectOne(any());
@@ -166,7 +170,7 @@ class AppPortalServiceImplTest {
         page.setTotal(0);
         when(applicationMapper.selectPage(any(), any())).thenReturn(page);
 
-        TableDataInfo<PortalAppVo> result = service.apps("tools", null, "latest", pageQuery);
+        TableDataInfo<PortalAppVo> result = service.apps("tools", null, null, "latest", pageQuery);
 
         assertThat(result).isNotNull();
         verify(categoryMapper).selectOne(any());
@@ -180,7 +184,7 @@ class AppPortalServiceImplTest {
         page.setTotal(0);
         when(applicationMapper.selectPage(any(), any())).thenReturn(page);
 
-        TableDataInfo<PortalAppVo> result = service.apps(null, "office", "latest", pageQuery);
+        TableDataInfo<PortalAppVo> result = service.apps(null, "office", null, "latest", pageQuery);
 
         assertThat(result).isNotNull();
         verify(applicationMapper).selectPage(any(), any());
@@ -210,7 +214,7 @@ class AppPortalServiceImplTest {
         cat.setCategoryName("Office");
         when(categoryMapper.selectList(null)).thenReturn(List.of(cat));
 
-        TableDataInfo<PortalAppVo> result = service.apps(null, null, "latest", pageQuery);
+        TableDataInfo<PortalAppVo> result = service.apps(null, null, null, "latest", pageQuery);
 
         assertThat(result.getRows()).hasSize(1);
         PortalAppVo vo = result.getRows().get(0);
@@ -226,10 +230,28 @@ class AppPortalServiceImplTest {
         page.setTotal(0);
         when(applicationMapper.selectPage(any(), any())).thenReturn(page);
 
-        service.apps("all", null, "latest", pageQuery);
+        service.apps("all", null, null, "latest", pageQuery);
 
         // categoryMapper.selectOne should NOT be called since code is "all"
         verify(categoryMapper, never()).selectOne(any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void apps_withAppType_shouldApplyAppTypeFilter() {
+        Page<AppApplication> page = new Page<>(1, 10);
+        page.setRecords(Collections.emptyList());
+        page.setTotal(0);
+        when(applicationMapper.selectPage(any(), any())).thenReturn(page);
+
+        service.apps(null, null, "online", "latest", pageQuery);
+
+        ArgumentCaptor<LambdaQueryWrapper<AppApplication>> captor =
+            ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(applicationMapper).selectPage(any(), captor.capture());
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), AppApplication.class);
+        assertThat(captor.getValue().getSqlSegment()).contains("app_type");
+        assertThat(captor.getValue().getParamNameValuePairs()).containsValue("online");
     }
 
     // ============================================================
@@ -274,7 +296,7 @@ class AppPortalServiceImplTest {
         ArgumentCaptor<LambdaUpdateWrapper<AppApplication>> cap =
             ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
         verify(applicationMapper).update(isNull(), cap.capture());
-        assertThat(cap.getValue().getSqlSet()).contains("use_count = use_count + 1");
+        assertThat(cap.getValue().getSqlSet()).contains("use_count = COALESCE(use_count, 0) + 1");
     }
 
     // ============================================================
@@ -489,32 +511,32 @@ class AppPortalServiceImplTest {
 
     @Test
     void messages_withIsReadFilter_shouldReturnPage() {
-        Page<AppMessageVo> msgPage = new Page<>(1, 10);
-        AppMessageVo msgVo = new AppMessageVo();
-        msgVo.setMessageId(1L);
-        msgVo.setTitle("Hello");
-        msgPage.setRecords(List.of(msgVo));
+        Page<AppMessage> msgPage = new Page<>(1, 10);
+        AppMessage msg = new AppMessage();
+        msg.setMessageId(1L);
+        msg.setTitle("Hello");
+        msgPage.setRecords(List.of(msg));
         msgPage.setTotal(1);
-        when(messageMapper.selectVoPage(any(), any())).thenReturn(msgPage);
+        when(messageMapper.selectPage(any(), any())).thenReturn(msgPage);
 
         TableDataInfo<AppMessageVo> result = service.messages("0", pageQuery);
 
         assertThat(result.getRows()).hasSize(1);
         assertThat(result.getTotal()).isEqualTo(1);
-        verify(messageMapper).selectVoPage(any(), any());
+        verify(messageMapper).selectPage(any(), any());
     }
 
     @Test
     void messages_withNoFilter_shouldReturnAllMessages() {
-        Page<AppMessageVo> msgPage = new Page<>(1, 10);
+        Page<AppMessage> msgPage = new Page<>(1, 10);
         msgPage.setRecords(Collections.emptyList());
         msgPage.setTotal(0);
-        when(messageMapper.selectVoPage(any(), any())).thenReturn(msgPage);
+        when(messageMapper.selectPage(any(), any())).thenReturn(msgPage);
 
         TableDataInfo<AppMessageVo> result = service.messages(null, pageQuery);
 
         assertThat(result.getRows()).isEmpty();
-        verify(messageMapper).selectVoPage(any(), any());
+        verify(messageMapper).selectPage(any(), any());
     }
 
     // ============================================================

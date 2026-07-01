@@ -128,6 +128,17 @@ CREATE TABLE IF NOT EXISTS info_forum_like (
 CREATE UNIQUE INDEX IF NOT EXISTS uk_info_forum_like_user_target ON info_forum_like (user_id, target_type, target_id);
 COMMENT ON TABLE info_forum_like IS '信息中心论坛点赞';
 
+CREATE TABLE IF NOT EXISTS info_resource_favorite (
+    id          int8      NOT NULL,
+    resource_id int8     NOT NULL,
+    user_id     int8     NOT NULL,
+    create_time timestamp DEFAULT NULL,
+    CONSTRAINT pk_info_resource_favorite PRIMARY KEY (id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_info_resource_fav_user_resource ON info_resource_favorite (user_id, resource_id);
+CREATE INDEX IF NOT EXISTS idx_info_resource_fav_resource ON info_resource_favorite (resource_id);
+COMMENT ON TABLE info_resource_favorite IS '信息中心资料收藏';
+
 INSERT INTO info_resource_category (category_id, category_name, category_code, description, icon, order_num, create_time)
 VALUES
 (300001, '政策制度', 'policy', '规章制度、流程规范和政策类资料。', 'document', 1, now()),
@@ -146,7 +157,7 @@ INSERT INTO info_forum_topic
     (topic_id, board_id, title, content, author_id, author_name, view_count, reply_count, like_count, is_top, is_closed, status, tenant_id, create_time)
 VALUES
 (320001, 310001, '信息中心数智服务平台一期上线试运行',
- '一期先开放资料共享、工具即用和服务论坛。试运行期间请在论坛反馈资料补充、工具接入和使用体验问题。',
+ '一期先开放资料共享、应用中心和服务论坛。试运行期间请在论坛反馈资料补充、应用接入和使用体验问题。',
  1, '管理员', 0, 0, 0, '1', '0', '0', '000000', now())
 ON CONFLICT (topic_id) DO NOTHING;
 

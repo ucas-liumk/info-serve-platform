@@ -37,16 +37,17 @@ export function uploadPortalResourceFile(data: FormData): AxiosPromise<ResourceU
     url: '/infoservice/portal/resources/upload',
     method: 'post',
     data,
+    timeout: 5 * 60 * 1000,
     headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
   });
 }
 
 export function createPortalResource(data: ResourcePortalPayload) {
-  return request({ url: '/infoservice/portal/resources', method: 'post', data });
+  return request({ url: '/infoservice/portal/resources', method: 'post', data, headers: { repeatSubmit: false } });
 }
 
 export function updatePortalResource(resourceId: ResourceId, data: ResourcePortalPayload) {
-  return request({ url: `/infoservice/portal/resources/${resourceId}`, method: 'put', data });
+  return request({ url: `/infoservice/portal/resources/${resourceId}`, method: 'put', data, headers: { repeatSubmit: false } });
 }
 
 export function changePortalResourceStatus(resourceId: ResourceId, status: string) {
@@ -55,6 +56,14 @@ export function changePortalResourceStatus(resourceId: ResourceId, status: strin
 
 export function deletePortalResource(resourceId: ResourceId) {
   return request({ url: `/infoservice/portal/resources/${resourceId}`, method: 'delete' });
+}
+
+export function favoritePortalResource(resourceId: ResourceId) {
+  return request({ url: `/infoservice/portal/resources/${resourceId}/favorite`, method: 'post' });
+}
+
+export function unfavoritePortalResource(resourceId: ResourceId) {
+  return request({ url: `/infoservice/portal/resources/${resourceId}/favorite`, method: 'delete' });
 }
 
 export function listForumBoards(): AxiosPromise<ForumBoard[]> {

@@ -1,5 +1,6 @@
 package org.dromara.appcenter.controller.portal;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.dromara.appcenter.domain.bo.AppDemandSubmitBo;
 import org.dromara.appcenter.domain.vo.AppCategoryVo;
@@ -15,6 +16,7 @@ import org.dromara.common.web.core.BaseController;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -32,14 +34,20 @@ public class AppPortalController extends BaseController {
     @GetMapping("/apps")
     public TableDataInfo<PortalAppVo> apps(@RequestParam(required = false) String categoryCode,
                                            @RequestParam(required = false) String keyword,
+                                           @RequestParam(required = false) String appType,
                                            @RequestParam(required = false, defaultValue = "latest") String sort,
                                            PageQuery pageQuery) {
-        return portalService.apps(categoryCode, keyword, sort, pageQuery);
+        return portalService.apps(categoryCode, keyword, appType, sort, pageQuery);
     }
 
     @PostMapping("/apps/{id}/use")
     public R<String> use(@PathVariable Long id) {
         return R.ok("操作成功", portalService.use(id));
+    }
+
+    @GetMapping("/apps/{id}/package/download")
+    public void downloadPackage(@PathVariable Long id, HttpServletResponse response) throws IOException {
+        portalService.downloadPackage(id, response);
     }
 
     @PostMapping("/apps/{id}/favorite")

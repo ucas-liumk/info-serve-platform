@@ -78,6 +78,20 @@ public class InfoResourcePortalController {
         return Boolean.TRUE.equals(resourceService.deleteOwnById(resourceId)) ? R.ok() : R.fail("删除资料失败");
     }
 
+    @Log(title = "门户资料收藏", businessType = BusinessType.INSERT)
+    @PostMapping("/{resourceId}/favorite")
+    public R<Void> favorite(@PathVariable Long resourceId) {
+        resourceService.favorite(resourceId, true);
+        return R.ok();
+    }
+
+    @Log(title = "门户资料取消收藏", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{resourceId}/favorite")
+    public R<Void> unfavorite(@PathVariable Long resourceId) {
+        resourceService.favorite(resourceId, false);
+        return R.ok();
+    }
+
     @GetMapping("/{resourceId}/preview")
     public void preview(@PathVariable Long resourceId, HttpServletResponse response) throws IOException {
         resourceService.previewFile(resourceId, response);

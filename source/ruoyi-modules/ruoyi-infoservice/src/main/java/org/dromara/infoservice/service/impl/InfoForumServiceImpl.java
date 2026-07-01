@@ -27,6 +27,7 @@ import org.dromara.infoservice.mapper.InfoForumReplyMapper;
 import org.dromara.infoservice.mapper.InfoForumTopicMapper;
 import org.dromara.infoservice.service.IInfoPortalNotificationService;
 import org.dromara.infoservice.service.IInfoForumService;
+import org.dromara.infoservice.support.InfoUserDisplayNameResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +51,7 @@ public class InfoForumServiceImpl implements IInfoForumService {
     private final InfoForumBoardMapper boardMapper;
     private final InfoForumLikeMapper likeMapper;
     private final IInfoPortalNotificationService notificationService;
+    private final InfoUserDisplayNameResolver userDisplayNameResolver;
 
     private LambdaQueryWrapper<InfoForumTopic> buildTopicWrapper(InfoForumTopicBo bo, boolean portal) {
         LambdaQueryWrapper<InfoForumTopic> w = Wrappers.lambdaQuery();
@@ -80,6 +82,7 @@ public class InfoForumServiceImpl implements IInfoForumService {
         List<Long> boardIds = rows.stream().map(InfoForumTopicVo::getBoardId).distinct().toList();
         Map<Long, String> boardNames = boardMapper.selectList(Wrappers.<InfoForumBoard>lambdaQuery().in(InfoForumBoard::getBoardId, boardIds))
             .stream().collect(Collectors.toMap(InfoForumBoard::getBoardId, InfoForumBoard::getBoardName, (a, b) -> a));
+        Map<Long, String> authorNames = userDisplayNameResolver.resolveDisplayNames(rows.stream().map(InfoForumTopicVo::getAuthorId).toList());
         Long userId = LoginHelper.getUserId();
         Set<Long> likedTopicIds = Collections.emptySet();
         if (userId != null) {
@@ -93,8 +96,17 @@ public class InfoForumServiceImpl implements IInfoForumService {
         Set<Long> finalLikedTopicIds = likedTopicIds;
         rows.forEach(row -> {
             row.setBoardName(boardNames.get(row.getBoardId()));
+            row.setAuthorName(StringUtils.defaultIfBlank(authorNames.get(row.getAuthorId()), row.getAuthorName()));
             row.setLiked(finalLikedTopicIds.contains(row.getTopicId()));
         });
+    }
+
+    private void fillReplyExt(List<InfoForumReplyVo> rows) {
+        if (rows.isEmpty()) {
+            return;
+        }
+        Map<Long, String> authorNames = userDisplayNameResolver.resolveDisplayNames(rows.stream().map(InfoForumReplyVo::getAuthorId).toList());
+        rows.forEach(row -> row.setAuthorName(StringUtils.defaultIfBlank(authorNames.get(row.getAuthorId()), row.getAuthorName())));
     }
 
     @Override
@@ -123,6 +135,7 @@ public class InfoForumServiceImpl implements IInfoForumService {
             .eq(InfoForumReply::getTopicId, topicId)
             .eq(InfoForumReply::getStatus, "0")
             .orderByAsc(InfoForumReply::getCreateTime));
+        fillReplyExt(replies);
         ForumTopicDetailVo detail = new ForumTopicDetailVo();
         detail.setTopic(topicVo);
         detail.setReplies(replies);
@@ -166,7 +179,7 @@ public class InfoForumServiceImpl implements IInfoForumService {
         fillTopicDefaults(topic);
         topic.setStatus("0");
         topic.setAuthorId(LoginHelper.getUserId());
-        topic.setAuthorName(StringUtils.defaultIfBlank(LoginHelper.getUsername(), "用户"));
+        topic.setAuthorName(userDisplayNameResolver.currentUserDisplayName("用户"));
         topicMapper.insert(topic);
         return queryTopicById(topic.getTopicId());
     }
@@ -180,14 +193,16 @@ public class InfoForumServiceImpl implements IInfoForumService {
         }
         InfoForumReply reply = MapstructUtils.convert(bo, InfoForumReply.class);
         reply.setAuthorId(LoginHelper.getUserId());
-        reply.setAuthorName(StringUtils.defaultIfBlank(LoginHelper.getUsername(), "用户"));
+        reply.setAuthorName(userDisplayNameResolver.currentUserDisplayName("用户"));
         reply.setStatus("0");
         replyMapper.insert(reply);
         topicMapper.update(null, Wrappers.<InfoForumTopic>lambdaUpdate()
             .setSql("reply_count = reply_count + 1")
             .eq(InfoForumTopic::getTopicId, bo.getTopicId()));
         sendForumReplyNotification(topic, reply, bo);
-        return replyMapper.selectVoById(reply.getReplyId());
+        InfoForumReplyVo replyVo = replyMapper.selectVoById(reply.getReplyId());
+        fillReplyExt(replyVo == null ? Collections.emptyList() : List.of(replyVo));
+        return replyVo;
     }
 
     @Override

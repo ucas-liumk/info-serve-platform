@@ -25,10 +25,13 @@ public class InfoResourceVo implements Serializable {
     private String previewType;
     private Long downloadCount;
     private Long viewCount;
+    private Long favoriteCount;
+    private Boolean favorited;
     private String status;
     private String remark;
     private Long createBy;
     private String ownerName;
     private Boolean canManage;
     private Date createTime;
+    private Date updateTime;
 }

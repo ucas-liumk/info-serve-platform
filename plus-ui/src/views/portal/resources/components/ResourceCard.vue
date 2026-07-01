@@ -2,7 +2,8 @@
   <article class="resource-card" @click="emit('preview', resource)">
     <div class="preview-stack" aria-hidden="true">
       <div :class="['preview-sheet', 'sheet-front', typeClass]">
-        <canvas v-if="pdfThumbnailUrl" v-show="pdfThumbnailReady" ref="thumbnailCanvasRef" class="thumbnail-canvas"></canvas>
+        <img v-if="cachedThumbnailUrl" :src="cachedThumbnailUrl" :alt="resource.title" />
+        <canvas v-else-if="pdfThumbnailUrl" v-show="pdfThumbnailReady" ref="thumbnailCanvasRef" class="thumbnail-canvas"></canvas>
         <img v-else-if="imageThumbnailUrl" :src="imageThumbnailUrl" :alt="resource.title" @error="imageThumbnailBroken = true" />
         <template v-if="showFallbackCover">
           <span class="cover-ribbon">{{ resource.categoryName || '资源共享' }}</span>
@@ -17,32 +18,44 @@
         {{ resource.title }}
       </button>
       <div class="resource-meta">
-        <span>大小：{{ formatSize(resource.fileSize) }}</span>
-        <i></i>
-        <span>浏览：{{ resource.viewCount || 0 }}次</span>
-        <i></i>
-        <span>下载：{{ resource.downloadCount || 0 }}次</span>
+        <span>大小 {{ formatSize(resource.fileSize) }}</span>
+        <span>浏览 {{ resource.viewCount || 0 }}次</span>
+        <span>下载 {{ resource.downloadCount || 0 }}次</span>
       </div>
-      <div class="card-actions">
-        <button class="action-button primary" type="button" @click.stop="emit('preview', resource)">
-          <el-icon><View /></el-icon>
-          <span>预览</span>
-        </button>
-        <button class="action-button" type="button" @click.stop="emit('download', resource)">
-          <el-icon><Download /></el-icon>
-          <span>下载</span>
-        </button>
-      </div>
+    </div>
+
+    <div class="card-actions">
+      <button class="action-button primary" type="button" @click.stop="emit('preview', resource)">
+        <el-icon><View /></el-icon>
+        <span>预览</span>
+      </button>
+      <button class="action-button" type="button" @click.stop="emit('download', resource)">
+        <el-icon><Download /></el-icon>
+        <span>下载</span>
+      </button>
+      <button
+        :class="['action-button', 'favorite', { active: resource.favorited }]"
+        type="button"
+        :title="resource.favorited ? '取消收藏' : '收藏'"
+        :aria-label="resource.favorited ? '取消收藏' : '收藏'"
+        @click.stop="emit('favorite', resource)"
+      >
+        <el-icon>
+          <StarFilled v-if="resource.favorited" />
+          <Star v-else />
+        </el-icon>
+      </button>
     </div>
   </article>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { Download, View } from '@element-plus/icons-vue';
+import { Download, Star, StarFilled, View } from '@element-plus/icons-vue';
 import { resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/infoservice/portal';
 import type { InfoResource } from '@/api/infoservice/types';
 import { getToken } from '@/utils/auth';
+import { getCachedThumbnail, setCachedThumbnail } from '../thumbnailCache';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 
@@ -55,6 +68,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'preview', resource: InfoResource): void;
   (e: 'download', resource: InfoResource): void;
+  (e: 'favorite', resource: InfoResource): void;
 }>();
 
 const IMAGE_SUFFIXES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
@@ -93,6 +107,7 @@ const OFFICE_SUFFIXES = [
 
 const imageThumbnailBroken = ref(false);
 const pdfThumbnailReady = ref(false);
+const cachedThumbnailUrl = ref('');
 const thumbnailCanvasRef = ref<HTMLCanvasElement>();
 let renderToken = 0;
 let loadingTask: ReturnType<typeof getDocument> | null = null;
@@ -151,7 +166,7 @@ const pdfThumbnailUrl = computed(() => {
   return buildAuthedUrl(resourcePdfPreviewUrl(props.resource.resourceId));
 });
 
-const showFallbackCover = computed(() => !imageThumbnailUrl.value && !pdfThumbnailReady.value);
+const showFallbackCover = computed(() => !cachedThumbnailUrl.value && !imageThumbnailUrl.value && !pdfThumbnailReady.value);
 
 const clearCanvas = () => {
   const canvas = thumbnailCanvasRef.value;
@@ -211,6 +226,9 @@ const renderPdfThumbnail = async () => {
     context.restore();
     if (token === renderToken) {
       pdfThumbnailReady.value = true;
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+      setCachedThumbnail(props.resource, dataUrl);
+      cachedThumbnailUrl.value = dataUrl;
     }
     await cleanupDocument(doc);
   } catch (error) {
@@ -228,7 +246,16 @@ const renderPdfThumbnail = async () => {
 watch(
   () => [props.resource.resourceId, props.resource.previewType, props.resource.fileSuffix, props.resource.mimeType],
   () => {
+    renderToken += 1;
+    void loadingTask?.destroy();
+    loadingTask = null;
+    pdfThumbnailReady.value = false;
+    clearCanvas();
     imageThumbnailBroken.value = false;
+    cachedThumbnailUrl.value = getCachedThumbnail(props.resource);
+    if (cachedThumbnailUrl.value) {
+      return;
+    }
     void renderPdfThumbnail();
   },
   { immediate: true }
@@ -250,11 +277,13 @@ const formatSize = (size?: number) => {
 
 <style scoped>
 .resource-card {
-  min-height: 188px;
+  min-height: 186px;
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
-  align-items: center;
-  gap: 16px;
+  grid-template-rows: minmax(0, 1fr) 32px;
+  align-items: start;
+  column-gap: 16px;
+  row-gap: 8px;
   border: 1px solid #e3e8f0;
   border-radius: 8px;
   padding: 14px 16px;
@@ -275,6 +304,8 @@ const formatSize = (size?: number) => {
 
 .preview-stack {
   position: relative;
+  grid-row: 1 / span 2;
+  align-self: start;
   width: 112px;
   height: 142px;
 }
@@ -382,10 +413,11 @@ const formatSize = (size?: number) => {
 
 .resource-body {
   min-width: 0;
-  align-self: stretch;
+  align-self: start;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 22px;
 }
 
 .title-button {
@@ -409,40 +441,46 @@ const formatSize = (size?: number) => {
 }
 
 .resource-meta {
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 11px;
+  flex-wrap: nowrap;
   color: var(--resource-weak, #96a1af);
   font-size: 12px;
   font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.resource-meta i {
-  width: 1px;
-  height: 13px;
-  background: #b6c0cf;
+.resource-meta span {
+  flex: 0 0 auto;
 }
 
 .card-actions {
-  margin-top: 14px;
+  grid-column: 2;
+  align-self: end;
+  margin-top: 0;
   padding-top: 0;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .action-button {
   height: 32px;
-  min-width: 78px;
+  min-width: 64px;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   border: 1px solid var(--resource-input-border, #d3dee8);
   border-radius: 6px;
-  padding: 0 12px;
+  padding: 0 9px;
   background: #f8fafc;
   color: var(--resource-text, #32445c);
   font-size: 13px;
@@ -453,6 +491,12 @@ const formatSize = (size?: number) => {
     background 0.16s ease,
     color 0.16s ease,
     box-shadow 0.16s ease;
+}
+
+.action-button.favorite {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
 }
 
 .action-button:hover {
@@ -474,11 +518,24 @@ const formatSize = (size?: number) => {
   color: #fff;
 }
 
+.action-button.favorite.active {
+  border-color: rgba(47, 138, 122, 0.38);
+  background: var(--resource-accent-soft, #e7f4f0);
+  color: var(--resource-accent, #2f8a7a);
+}
+
+.action-button.favorite.active:hover {
+  border-color: var(--resource-accent, #2f8a7a);
+  background: #dcefe9;
+  color: var(--resource-accent, #2f8a7a);
+}
+
 @media (max-width: 1540px) {
   .resource-card {
-    min-height: 180px;
+    min-height: 178px;
     grid-template-columns: 104px minmax(0, 1fr);
-    gap: 10px;
+    column-gap: 10px;
+    row-gap: 8px;
     padding: 12px;
   }
 
@@ -490,6 +547,15 @@ const formatSize = (size?: number) => {
   .title-button {
     font-size: 15px;
   }
+
+  .resource-body {
+    padding-top: 19px;
+  }
+
+  .resource-meta {
+    gap: 8px;
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 620px) {
@@ -499,7 +565,7 @@ const formatSize = (size?: number) => {
   }
 
   .card-actions {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 }
 </style>

@@ -33,6 +33,8 @@ public interface IInfoResourceService {
 
     void downloadFile(Long resourceId, HttpServletResponse response) throws IOException;
 
+    void favorite(Long resourceId, boolean add);
+
     Boolean insertByBo(InfoResourceBo bo);
 
     Boolean insertPortalByBo(InfoResourceBo bo);

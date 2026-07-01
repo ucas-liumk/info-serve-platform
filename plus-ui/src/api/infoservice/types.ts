@@ -33,6 +33,8 @@ export interface InfoResource {
   previewType: string;
   downloadCount: number;
   viewCount: number;
+  favoriteCount?: number;
+  favorited?: boolean;
   status: string;
   remark?: string;
   createBy?: number | string;
@@ -40,6 +42,7 @@ export interface InfoResource {
   createByName?: string;
   canManage?: boolean;
   createTime: string;
+  updateTime?: string;
 }
 
 export interface ResourceUploadResult {
@@ -90,6 +93,8 @@ export interface ForumReply {
   content: string;
   authorId: number;
   authorName: string;
+  status?: string;
+  remark?: string;
   createTime: string;
 }
 
@@ -121,7 +126,7 @@ export interface InfoResourceQuery extends PageQuery {
 }
 
 export interface ResourcePortalQuery extends PageQuery {
-  scope?: 'public' | 'mine';
+  scope?: 'public' | 'mine' | 'favorites';
   keyword?: string;
   categoryId?: number | string;
   categoryCode?: string;

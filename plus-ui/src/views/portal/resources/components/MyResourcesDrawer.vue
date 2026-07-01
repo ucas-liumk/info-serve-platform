@@ -27,7 +27,7 @@
       </div>
 
       <div v-loading="loading" class="drawer-body">
-        <template v-if="activeTab === 'uploads'">
+        <template v-if="activeTab === 'uploads' || activeTab === 'favorites'">
           <article v-for="item in resources" :key="item.resourceId" class="resource-row">
             <button class="row-main" type="button" @click="emit('preview', item)">
               <span class="file-mark">{{ typeLabel(item) }}</span>
@@ -45,15 +45,16 @@
             <div class="row-actions">
               <button type="button" @click="emit('preview', item)">预览</button>
               <button type="button" @click="emit('download', item)">下载</button>
-              <button type="button" @click="emit('edit', item)">编辑</button>
-              <button type="button" @click="emit('replace', item)">重传</button>
-              <button type="button" @click="emit('status', item, item.status === '0' ? '1' : '0')">
+              <button v-if="activeTab === 'uploads'" type="button" @click="emit('edit', item)">编辑</button>
+              <button v-if="activeTab === 'uploads'" type="button" @click="emit('replace', item)">重传</button>
+              <button v-if="activeTab === 'uploads'" type="button" @click="emit('status', item, item.status === '0' ? '1' : '0')">
                 {{ item.status === '0' ? '下架' : '发布' }}
               </button>
-              <button class="danger" type="button" @click="emit('delete', item)">删除</button>
+              <button v-if="activeTab === 'favorites'" type="button" @click="emit('favorite', item)">取消收藏</button>
+              <button v-if="activeTab === 'uploads'" class="danger" type="button" @click="emit('delete', item)">删除</button>
             </div>
           </article>
-          <el-empty v-if="!loading && resources.length === 0" :image-size="92" description="暂无上传资料" />
+          <el-empty v-if="!loading && resources.length === 0" :image-size="92" :description="activeTab === 'uploads' ? '暂无上传资料' : '暂无收藏记录'" />
         </template>
 
         <el-empty v-else :image-size="92" :description="emptyText" />
@@ -86,6 +87,7 @@ const emit = defineEmits<{
   (e: 'replace', resource: InfoResource): void;
   (e: 'status', resource: InfoResource, status: string): void;
   (e: 'delete', resource: InfoResource): void;
+  (e: 'favorite', resource: InfoResource): void;
   (e: 'upload'): void;
 }>();
 
@@ -129,8 +131,8 @@ const formatSize = (size?: number) => {
   min-height: 100%;
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
-  background: #f7faff;
-  color: #25395f;
+  background: #f5f7fa;
+  color: var(--resource-text, #32445c);
   font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
@@ -140,7 +142,7 @@ const formatSize = (size?: number) => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border-bottom: 1px solid #e1e9f6;
+  border-bottom: 1px solid var(--resource-border, #dce5ed);
   padding: 18px 20px;
   background: #fff;
 }
@@ -151,14 +153,14 @@ const formatSize = (size?: number) => {
 }
 
 .drawer-head strong {
-  color: #0b1833;
+  color: var(--resource-title, #14243a);
   font-size: 22px;
   line-height: 1.1;
   font-weight: 900;
 }
 
 .drawer-head span {
-  color: #53668f;
+  color: var(--resource-muted, #68788c);
   font-size: 13px;
   font-weight: 700;
 }
@@ -169,17 +171,17 @@ const formatSize = (size?: number) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 8px;
   background: #fff;
-  color: #53668f;
+  color: var(--resource-muted, #68788c);
   cursor: pointer;
 }
 
 .close-button:hover {
-  border-color: #1260e8;
-  color: #1260e8;
-  background: #edf4ff;
+  border-color: var(--resource-primary, #245f8f);
+  color: var(--resource-primary, #245f8f);
+  background: var(--resource-primary-soft, #eaf2f8);
 }
 
 .resource-tabs {
@@ -193,17 +195,17 @@ const formatSize = (size?: number) => {
 
 .resource-tabs :deep(.el-tabs__item) {
   height: 46px;
-  color: #53668f;
+  color: var(--resource-muted, #68788c);
   font-size: 15px;
   font-weight: 800;
 }
 
 .resource-tabs :deep(.el-tabs__item.is-active) {
-  color: #1260e8;
+  color: var(--resource-primary, #245f8f);
 }
 
 .resource-tabs :deep(.el-tabs__active-bar) {
-  background: #1260e8;
+  background: var(--resource-primary, #245f8f);
 }
 
 .upload-summary {
@@ -212,13 +214,13 @@ const formatSize = (size?: number) => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid #e1e9f6;
+  border-bottom: 1px solid var(--resource-border, #dce5ed);
   padding: 0 20px;
   background: #fff;
 }
 
 .upload-summary span {
-  color: #53668f;
+  color: var(--resource-muted, #68788c);
   font-size: 13px;
   font-weight: 800;
 }
@@ -228,17 +230,17 @@ const formatSize = (size?: number) => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #1260e8;
+  border: 1px solid var(--resource-primary, #245f8f);
   border-radius: 8px;
   padding: 0 11px;
-  background: #1260e8;
+  background: var(--resource-primary, #245f8f);
   color: #fff;
   font-weight: 800;
   cursor: pointer;
 }
 
 .upload-summary button:hover {
-  background: #0f55cf;
+  background: var(--resource-primary-deep, #183f63);
 }
 
 .drawer-body {
@@ -253,7 +255,7 @@ const formatSize = (size?: number) => {
 .resource-row {
   display: grid;
   gap: 12px;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 8px;
   padding: 13px;
   background: #fff;
@@ -280,8 +282,8 @@ const formatSize = (size?: number) => {
   justify-content: center;
   border: 1px solid #d7e5fb;
   border-radius: 8px;
-  background: #edf4ff;
-  color: #1260e8;
+  background: var(--resource-primary-soft, #eaf2f8);
+  color: var(--resource-primary, #245f8f);
   font-size: 12px;
   font-weight: 900;
 }
@@ -302,24 +304,24 @@ const formatSize = (size?: number) => {
 }
 
 .row-text strong {
-  color: #0b1833;
+  color: var(--resource-title, #14243a);
   font-size: 15px;
   font-weight: 900;
 }
 
 .row-main:hover .row-text strong {
-  color: #1260e8;
+  color: var(--resource-primary, #245f8f);
 }
 
 .row-text em {
-  color: #53668f;
+  color: var(--resource-muted, #68788c);
   font-size: 13px;
   font-style: normal;
   font-weight: 700;
 }
 
 .row-text small {
-  color: #8a97af;
+  color: var(--resource-weak, #96a1af);
   font-size: 12px;
   font-weight: 650;
 }
@@ -333,7 +335,7 @@ const formatSize = (size?: number) => {
 
 .row-meta {
   gap: 8px;
-  color: #8a97af;
+  color: var(--resource-weak, #96a1af);
   font-size: 12px;
   font-weight: 700;
 }
@@ -345,7 +347,7 @@ const formatSize = (size?: number) => {
   border-radius: 6px;
   padding: 0 7px;
   background: #eef3f8;
-  color: #53668f;
+  color: var(--resource-muted, #68788c);
 }
 
 .status-pill.online {
@@ -364,20 +366,20 @@ const formatSize = (size?: number) => {
 
 .row-actions button {
   height: 30px;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 7px;
   padding: 0 9px;
   background: #fff;
-  color: #25395f;
+  color: var(--resource-text, #32445c);
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
 }
 
 .row-actions button:hover {
-  border-color: #1260e8;
-  background: #edf4ff;
-  color: #1260e8;
+  border-color: var(--resource-primary, #245f8f);
+  background: var(--resource-primary-soft, #eaf2f8);
+  color: var(--resource-primary, #245f8f);
 }
 
 .row-actions button.danger:hover {

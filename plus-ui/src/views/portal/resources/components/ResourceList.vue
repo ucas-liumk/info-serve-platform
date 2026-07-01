@@ -27,13 +27,20 @@
           <el-icon><Download /></el-icon>
           下载
         </button>
+        <button :class="{ active: item.favorited }" type="button" @click.stop="emit('favorite', item)">
+          <el-icon>
+            <StarFilled v-if="item.favorited" />
+            <Star v-else />
+          </el-icon>
+          {{ item.favorited ? '已收藏' : '收藏' }}
+        </button>
       </div>
     </article>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Document, Download, View } from '@element-plus/icons-vue';
+import { Document, Download, Star, StarFilled, View } from '@element-plus/icons-vue';
 import type { InfoResource } from '@/api/infoservice/types';
 
 defineProps<{
@@ -43,6 +50,7 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'preview', resource: InfoResource): void;
   (e: 'download', resource: InfoResource): void;
+  (e: 'favorite', resource: InfoResource): void;
 }>();
 
 const formatSize = (size?: number) => {
@@ -65,7 +73,7 @@ const formatSize = (size?: number) => {
   grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 8px;
   padding: 14px;
   background: #fff;
@@ -74,8 +82,8 @@ const formatSize = (size?: number) => {
 }
 
 .resource-row:hover {
-  border-color: #bdd2f5;
-  background: #fbfdff;
+  border-color: #b8c9d9;
+  background: #fbfcfe;
 }
 
 .row-icon {
@@ -85,8 +93,8 @@ const formatSize = (size?: number) => {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: #edf4ff;
-  color: #1260e8;
+  background: var(--resource-accent-soft, #e7f4f0);
+  color: var(--resource-accent, #2f8a7a);
   font-size: 23px;
 }
 
@@ -108,7 +116,7 @@ const formatSize = (size?: number) => {
   border: 0;
   padding: 0;
   background: transparent;
-  color: #0b1833;
+  color: var(--resource-title, #14243a);
   font-size: 16px;
   font-weight: 850;
   text-align: left;
@@ -118,7 +126,7 @@ const formatSize = (size?: number) => {
 }
 
 .row-title button:hover {
-  color: #1260e8;
+  color: var(--resource-primary, #245f8f);
 }
 
 .row-title span,
@@ -134,19 +142,19 @@ const formatSize = (size?: number) => {
 }
 
 .row-title span {
-  background: #edf4ff;
-  color: #1260e8;
+  background: var(--resource-accent-soft, #e7f4f0);
+  color: var(--resource-accent, #2f8a7a);
 }
 
 .row-title em {
-  background: #f7faff;
-  color: #53668f;
+  background: #f5f7fa;
+  color: var(--resource-muted, #68788c);
 }
 
 .row-main p {
   margin: 8px 0 0;
   overflow: hidden;
-  color: #53668f;
+  color: var(--resource-muted, #68788c);
   font-size: 13px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -159,7 +167,7 @@ const formatSize = (size?: number) => {
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 9px;
-  color: #8a97af;
+  color: var(--resource-weak, #96a1af);
   font-size: 12px;
   font-weight: 650;
 }
@@ -175,19 +183,25 @@ const formatSize = (size?: number) => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 8px;
   padding: 0 10px;
   background: #fff;
-  color: #25395f;
+  color: var(--resource-text, #32445c);
   font-weight: 700;
   cursor: pointer;
 }
 
 .row-actions button:hover {
-  border-color: #1260e8;
-  color: #1260e8;
-  background: #edf4ff;
+  border-color: var(--resource-primary, #245f8f);
+  color: var(--resource-primary, #245f8f);
+  background: var(--resource-primary-soft, #eaf2f8);
+}
+
+.row-actions button.active {
+  border-color: rgba(47, 138, 122, 0.38);
+  background: var(--resource-accent-soft, #e7f4f0);
+  color: var(--resource-accent, #2f8a7a);
 }
 
 @media (max-width: 760px) {

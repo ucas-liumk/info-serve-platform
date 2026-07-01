@@ -3,7 +3,9 @@ package org.dromara.appcenter.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.appcenter.domain.*;
 import org.dromara.appcenter.domain.bo.AppDemandSubmitBo;
 import org.dromara.appcenter.domain.vo.*;
@@ -12,12 +14,18 @@ import org.dromara.appcenter.service.IAppDemandService;
 import org.dromara.appcenter.service.IAppPortalService;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.core.utils.file.FileUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.oss.core.OssClient;
+import org.dromara.common.oss.factory.OssFactory;
 import org.dromara.common.satoken.utils.LoginHelper;
+import org.dromara.resource.api.RemoteFileService;
+import org.dromara.resource.api.domain.RemoteFile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +40,9 @@ public class AppPortalServiceImpl implements IAppPortalService {
     private final AppMessageMapper messageMapper;
     private final IAppDemandService demandService;
 
+    @DubboReference
+    private RemoteFileService remoteFileService;
+
     @Override
     public List<AppCategoryVo> categories() {
         return categoryMapper.selectList(
@@ -42,9 +53,12 @@ public class AppPortalServiceImpl implements IAppPortalService {
     }
 
     @Override
-    public TableDataInfo<PortalAppVo> apps(String categoryCode, String keyword, String sort, PageQuery pageQuery) {
+    public TableDataInfo<PortalAppVo> apps(String categoryCode, String keyword, String appType, String sort, PageQuery pageQuery) {
         LambdaQueryWrapper<AppApplication> w = Wrappers.lambdaQuery();
         w.eq(AppApplication::getStatus, "0");
+        if (StringUtils.isNotBlank(appType) && !"all".equals(appType)) {
+            w.eq(AppApplication::getAppType, appType);
+        }
         if (StringUtils.isNotBlank(categoryCode) && !"all".equals(categoryCode)) {
             AppCategory c = categoryMapper.selectOne(
                 Wrappers.<AppCategory>lambdaQuery().eq(AppCategory::getCategoryCode, categoryCode));
@@ -99,6 +113,9 @@ public class AppPortalServiceImpl implements IAppPortalService {
             v.setDescription(a.getDescription());
             v.setTags(a.getTags());
             v.setAccessUrl(a.getAccessUrl());
+            v.setAppType(resolveAppType(a.getAppType()));
+            v.setPackageName(a.getPackageName());
+            v.setPackageSize(a.getPackageSize());
             v.setIsSecurity(a.getIsSecurity());
             v.setUseCount(Optional.ofNullable(a.getUseCount()).orElse(0L));
             v.setFavoriteCount(favoriteCounts.getOrDefault(a.getAppId(), 0L));
@@ -116,9 +133,34 @@ public class AppPortalServiceImpl implements IAppPortalService {
         if (app == null || !"0".equals(app.getStatus())) {
             throw new ServiceException("应用不存在或已下架");
         }
+        if ("offline".equals(resolveAppType(app.getAppType()))) {
+            throw new ServiceException("离线工具请下载安装包后使用");
+        }
         applicationMapper.update(null, Wrappers.<AppApplication>lambdaUpdate()
             .setSql("use_count = COALESCE(use_count, 0) + 1").eq(AppApplication::getAppId, appId));
         return app.getAccessUrl();
+    }
+
+    @Override
+    public void downloadPackage(Long appId, HttpServletResponse response) throws IOException {
+        AppApplication app = applicationMapper.selectById(appId);
+        if (app == null || !"0".equals(app.getStatus())) {
+            throw new ServiceException("应用不存在或已下架");
+        }
+        if (!"offline".equals(resolveAppType(app.getAppType())) || app.getPackageOssId() == null) {
+            throw new ServiceException("该应用未配置离线安装包");
+        }
+        List<RemoteFile> files = remoteFileService.selectByIds(String.valueOf(app.getPackageOssId()));
+        if (files == null || files.isEmpty() || StringUtils.isBlank(files.get(0).getName())) {
+            throw new ServiceException("离线安装包不存在或已被删除");
+        }
+        RemoteFile remoteFile = files.get(0);
+        String fileName = StringUtils.defaultIfBlank(app.getPackageName(), remoteFile.getOriginalName());
+        fileName = StringUtils.defaultIfBlank(fileName, app.getAppName());
+        response.setContentType(StringUtils.defaultIfBlank(FileUtils.getMimeType(fileName), "application/octet-stream"));
+        FileUtils.setAttachmentResponseHeader(response, fileName);
+        response.addHeader("Access-Control-Expose-Headers", "download-filename, Content-Disposition");
+        resolveStorage(remoteFile).download(remoteFile.getName(), response.getOutputStream(), response::setContentLengthLong);
     }
 
     @Override
@@ -276,6 +318,19 @@ public class AppPortalServiceImpl implements IAppPortalService {
         vo.setOrderNum(entity.getOrderNum());
         vo.setStatus(entity.getStatus());
         return vo;
+    }
+
+    private String resolveAppType(String appType) {
+        if (StringUtils.isBlank(appType)) {
+            return "online";
+        }
+        return appType;
+    }
+
+    private OssClient resolveStorage(RemoteFile remoteFile) {
+        return StringUtils.isBlank(remoteFile.getService())
+            ? OssFactory.instance()
+            : OssFactory.instance(remoteFile.getService());
     }
 
     private AppMessageVo toMessageVo(AppMessage entity) {

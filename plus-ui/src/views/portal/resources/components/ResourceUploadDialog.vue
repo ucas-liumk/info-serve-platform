@@ -201,21 +201,21 @@ watch(
 .current-file {
   display: grid;
   gap: 4px;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 8px;
   padding: 10px 12px;
-  background: #f7faff;
+  background: #f5f7fa;
 }
 
 .current-file strong {
-  color: #1260e8;
+  color: var(--resource-primary, #245f8f);
   font-size: 12px;
   font-weight: 800;
 }
 
 .current-file span {
   overflow: hidden;
-  color: #53668f;
+  color: var(--resource-muted, #68788c);
   font-size: 13px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -245,11 +245,11 @@ watch(
   display: grid;
   place-items: center;
   gap: 8px;
-  border: 1px dashed #dbe5f4;
+  border: 1px dashed var(--resource-input-border, #d3dee8);
   border-radius: 8px;
   padding: 24px 16px;
-  background: #f7faff;
-  color: #53668f;
+  background: #f5f7fa;
+  color: var(--resource-muted, #68788c);
   text-align: center;
   cursor: pointer;
   overflow: hidden;
@@ -258,19 +258,24 @@ watch(
 .file-picker:hover,
 .file-picker:focus-within,
 .native-upload.selected .file-picker {
-  border-color: #1260e8;
-  background: #edf4ff;
+  border-color: var(--resource-primary, #245f8f);
+  background: var(--resource-primary-soft, #eaf2f8);
+}
+
+.native-upload.selected .file-picker {
+  min-height: 102px;
+  padding: 18px 16px;
 }
 
 .file-picker .el-icon {
-  color: #1260e8;
+  color: var(--resource-primary, #245f8f);
   font-size: 42px;
 }
 
 .file-picker strong {
   max-width: 100%;
   overflow: hidden;
-  color: #0b1833;
+  color: var(--resource-title, #14243a);
   font-size: 15px;
   font-weight: 850;
   text-overflow: ellipsis;
@@ -278,18 +283,19 @@ watch(
 }
 
 .file-picker span {
-  color: #53668f;
+  color: var(--resource-muted, #68788c);
   font-size: 13px;
   font-weight: 700;
 }
 
 .selected-files {
-  max-height: 170px;
+  max-height: min(260px, 34vh);
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 8px;
   margin: 0;
   overflow: auto;
-  padding: 0;
+  padding: 2px;
   list-style: none;
 }
 
@@ -299,10 +305,11 @@ watch(
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 8px;
-  padding: 7px 9px;
+  padding: 8px 9px;
   background: #fff;
+  box-shadow: 0 4px 12px rgba(20, 36, 67, 0.04);
 }
 
 .selected-files li span {
@@ -319,13 +326,13 @@ watch(
 }
 
 .selected-files li strong {
-  color: #0b1833;
+  color: var(--resource-title, #14243a);
   font-size: 13px;
   font-weight: 850;
 }
 
 .selected-files li em {
-  color: #8a97af;
+  color: var(--resource-weak, #96a1af);
   font-size: 12px;
   font-style: normal;
   font-weight: 700;
@@ -333,11 +340,11 @@ watch(
 
 .selected-files li button {
   height: 28px;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 7px;
   padding: 0 9px;
   background: #fff;
-  color: #25395f;
+  color: var(--resource-text, #32445c);
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
@@ -360,24 +367,24 @@ watch(
 
 .dialog-submit {
   border: 0;
-  background: #1260e8;
+  background: var(--resource-primary, #245f8f);
   color: #fff;
 }
 
 .dialog-cancel {
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--resource-border, #dce5ed);
   background: #fff;
-  color: #25395f;
+  color: var(--resource-text, #32445c);
 }
 
 .dialog-submit:hover {
-  background: #0f55cf;
+  background: var(--resource-primary-deep, #183f63);
 }
 
 .dialog-cancel:hover {
-  border-color: #1260e8;
-  color: #1260e8;
-  background: #edf4ff;
+  border-color: var(--resource-primary, #245f8f);
+  color: var(--resource-primary, #245f8f);
+  background: var(--resource-primary-soft, #eaf2f8);
 }
 
 .dialog-submit:disabled {
@@ -387,11 +394,11 @@ watch(
 
 .resource-upload-dialog :deep(.el-dialog__header) {
   padding: 20px 24px 12px;
-  border-bottom: 1px solid #e1e9f6;
+  border-bottom: 1px solid var(--resource-border, #dce5ed);
 }
 
 .resource-upload-dialog :deep(.el-dialog__title) {
-  color: #0b1833;
+  color: var(--resource-title, #14243a);
   font-size: 22px;
   font-weight: 850;
 }
@@ -401,7 +408,7 @@ watch(
 }
 
 .resource-upload-dialog :deep(.el-form-item__label) {
-  color: #25395f;
+  color: var(--resource-text, #32445c);
   font-weight: 700;
 }
 
@@ -409,16 +416,16 @@ watch(
 .resource-upload-dialog :deep(.el-textarea__inner),
 .resource-upload-dialog :deep(.el-select__wrapper) {
   border-radius: 8px;
-  box-shadow: 0 0 0 1px #dbe5f4 inset;
+  box-shadow: 0 0 0 1px var(--resource-input-border, #d3dee8) inset;
 }
 
 .resource-upload-dialog :deep(.el-textarea__inner) {
   min-height: 112px;
-  color: #25395f;
+  color: var(--resource-text, #32445c);
   font-weight: 650;
 }
 
 .resource-upload-dialog :deep(.el-icon--upload) {
-  color: #1260e8;
+  color: var(--resource-primary, #245f8f);
 }
 </style>

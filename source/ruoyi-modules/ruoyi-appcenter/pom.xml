@@ -20,6 +20,9 @@
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-idempotent</artifactId></dependency>
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-tenant</artifactId></dependency>
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-security</artifactId></dependency>
+        <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-dubbo</artifactId></dependency>
+        <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-oss</artifactId></dependency>
+        <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-api-resource</artifactId></dependency>
 
         <!-- Test -->
         <dependency>

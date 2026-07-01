@@ -60,9 +60,9 @@ spring:
   servlet:
     multipart:
       # 整个请求大小限制
-      max-request-size: 20MB
+      max-request-size: 200MB
       # 上传单个文件大小限制
-      max-file-size: 10MB
+      max-file-size: 200MB
   mvc:
     # 设置静态资源路径 防止所有请求都去查静态资源
     static-path-pattern: /static/**
@@ -357,9 +357,9 @@ spring:
   servlet:
     multipart:
       # 整个请求大小限制
-      max-request-size: 20MB
+      max-request-size: 200MB
       # 上传单个文件大小限制
-      max-file-size: 10MB
+      max-file-size: 200MB
   mvc:
     # 设置静态资源路径 防止所有请求都去查静态资源
     static-path-pattern: /static/**
@@ -655,9 +655,9 @@ spring:
   servlet:
     multipart:
       # 整个请求大小限制
-      max-request-size: 20MB
+      max-request-size: 200MB
       # 上传单个文件大小限制
-      max-file-size: 10MB
+      max-file-size: 200MB
   mvc:
     # 设置静态资源路径 防止所有请求都去查静态资源
     static-path-pattern: /static/**
@@ -952,9 +952,9 @@ spring:
   servlet:
     multipart:
       # 整个请求大小限制
-      max-request-size: 20MB
+      max-request-size: 200MB
       # 上传单个文件大小限制
-      max-file-size: 10MB
+      max-file-size: 200MB
   mvc:
     # 设置静态资源路径 防止所有请求都去查静态资源
     static-path-pattern: /static/**

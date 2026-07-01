@@ -19,13 +19,16 @@ import org.dromara.common.oss.factory.OssFactory;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.infoservice.domain.InfoResource;
 import org.dromara.infoservice.domain.InfoResourceCategory;
+import org.dromara.infoservice.domain.InfoResourceFavorite;
 import org.dromara.infoservice.domain.bo.InfoResourceBo;
 import org.dromara.infoservice.domain.vo.InfoResourceVo;
 import org.dromara.infoservice.domain.vo.ResourceUploadVo;
 import org.dromara.infoservice.mapper.InfoResourceCategoryMapper;
+import org.dromara.infoservice.mapper.InfoResourceFavoriteMapper;
 import org.dromara.infoservice.mapper.InfoResourceMapper;
 import org.dromara.infoservice.service.IInfoPortalNotificationService;
 import org.dromara.infoservice.service.IInfoResourceService;
+import org.dromara.infoservice.support.InfoUserDisplayNameResolver;
 import org.dromara.resource.api.RemoteFileService;
 import org.dromara.resource.api.domain.RemoteFile;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,6 +57,7 @@ import java.util.stream.Collectors;
 public class InfoResourceServiceImpl implements IInfoResourceService {
 
     private static final String SCOPE_MINE = "mine";
+    private static final String SCOPE_FAVORITES = "favorites";
     private static final long ONE_MB = 1024L * 1024L;
     private static final Set<String> PDF_CONVERTIBLE_SUFFIXES = Set.of(
         "doc", "docx", "docm", "dot", "dotx", "dotm",
@@ -65,7 +69,9 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
 
     private final InfoResourceMapper baseMapper;
     private final InfoResourceCategoryMapper categoryMapper;
+    private final InfoResourceFavoriteMapper favoriteMapper;
     private final IInfoPortalNotificationService notificationService;
+    private final InfoUserDisplayNameResolver userDisplayNameResolver;
 
     @DubboReference
     private RemoteFileService remoteFileService;
@@ -82,6 +88,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     private LambdaQueryWrapper<InfoResource> buildWrapper(InfoResourceBo bo, boolean portal) {
         LambdaQueryWrapper<InfoResource> w = Wrappers.lambdaQuery();
         boolean mineScope = portal && SCOPE_MINE.equals(bo.getScope());
+        boolean favoritesScope = portal && SCOPE_FAVORITES.equals(bo.getScope());
         w.eq(bo.getCategoryId() != null, InfoResource::getCategoryId, bo.getCategoryId());
         if (portal) {
             if (mineScope) {
@@ -91,6 +98,17 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
                 }
             } else {
                 w.eq(InfoResource::getStatus, "0");
+                if (favoritesScope) {
+                    List<Long> resourceIds = favoriteMapper.selectList(Wrappers.<InfoResourceFavorite>lambdaQuery()
+                            .eq(InfoResourceFavorite::getUserId, requireLogin())
+                            .orderByDesc(InfoResourceFavorite::getCreateTime))
+                        .stream().map(InfoResourceFavorite::getResourceId).toList();
+                    if (resourceIds.isEmpty()) {
+                        w.eq(InfoResource::getResourceId, -1L);
+                    } else {
+                        w.in(InfoResource::getResourceId, resourceIds);
+                    }
+                }
             }
         } else if (isActiveFilter(bo.getStatus())) {
             w.eq(InfoResource::getStatus, bo.getStatus());
@@ -122,16 +140,30 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         if (rows.isEmpty()) {
             return;
         }
-        List<Long> ids = rows.stream().map(InfoResourceVo::getCategoryId).distinct().toList();
-        Map<Long, String> categoryNames = categoryMapper.selectList(Wrappers.<InfoResourceCategory>lambdaQuery().in(InfoResourceCategory::getCategoryId, ids))
+        List<Long> categoryIds = rows.stream().map(InfoResourceVo::getCategoryId).filter(id -> id != null).distinct().toList();
+        Map<Long, String> categoryNames = categoryIds.isEmpty() ? Collections.emptyMap() : categoryMapper.selectList(Wrappers.<InfoResourceCategory>lambdaQuery().in(InfoResourceCategory::getCategoryId, categoryIds))
             .stream().collect(Collectors.toMap(InfoResourceCategory::getCategoryId, InfoResourceCategory::getCategoryName, (a, b) -> a));
         Long currentUserId = LoginHelper.getUserId();
-        String currentUsername = StringUtils.defaultIfBlank(LoginHelper.getUsername(), "我");
+        String currentDisplayName = userDisplayNameResolver.currentUserDisplayName("我");
+        Map<Long, String> ownerNames = userDisplayNameResolver.resolveDisplayNames(rows.stream().map(InfoResourceVo::getCreateBy).toList());
+        List<Long> resourceIds = rows.stream().map(InfoResourceVo::getResourceId).filter(id -> id != null).distinct().toList();
+        Set<Long> favoritedIds = currentUserId == null || resourceIds.isEmpty()
+            ? Collections.emptySet()
+            : favoriteMapper.selectList(Wrappers.<InfoResourceFavorite>lambdaQuery()
+                    .eq(InfoResourceFavorite::getUserId, currentUserId)
+                    .in(InfoResourceFavorite::getResourceId, resourceIds))
+                .stream().map(InfoResourceFavorite::getResourceId).collect(Collectors.toSet());
+        Map<Long, Long> favoriteCounts = resourceIds.isEmpty()
+            ? Collections.emptyMap()
+            : favoriteMapper.selectList(Wrappers.<InfoResourceFavorite>lambdaQuery().in(InfoResourceFavorite::getResourceId, resourceIds))
+                .stream().collect(Collectors.groupingBy(InfoResourceFavorite::getResourceId, Collectors.counting()));
         rows.forEach(row -> {
             row.setCategoryName(categoryNames.get(row.getCategoryId()));
             boolean mine = currentUserId != null && currentUserId.equals(row.getCreateBy());
             row.setCanManage(mine);
-            row.setOwnerName(mine ? currentUsername : "平台用户");
+            row.setOwnerName(StringUtils.defaultIfBlank(ownerNames.get(row.getCreateBy()), mine ? currentDisplayName : "平台用户"));
+            row.setFavorited(favoritedIds.contains(row.getResourceId()));
+            row.setFavoriteCount(favoriteCounts.getOrDefault(row.getResourceId(), 0L));
         });
     }
 
@@ -263,6 +295,32 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void favorite(Long resourceId, boolean add) {
+        Long userId = requireLogin();
+        if (add) {
+            InfoResource resource = baseMapper.selectById(resourceId);
+            if (resource == null || !"0".equals(resource.getStatus())) {
+                throw new ServiceException("资料不存在或已下架");
+            }
+        }
+        Long exist = favoriteMapper.selectCount(Wrappers.<InfoResourceFavorite>lambdaQuery()
+            .eq(InfoResourceFavorite::getUserId, userId)
+            .eq(InfoResourceFavorite::getResourceId, resourceId));
+        if (add && exist == 0) {
+            InfoResourceFavorite favorite = new InfoResourceFavorite();
+            favorite.setResourceId(resourceId);
+            favorite.setUserId(userId);
+            favorite.setCreateTime(new Date());
+            favoriteMapper.insert(favorite);
+        } else if (!add && exist > 0) {
+            favoriteMapper.delete(Wrappers.<InfoResourceFavorite>lambdaQuery()
+                .eq(InfoResourceFavorite::getUserId, userId)
+                .eq(InfoResourceFavorite::getResourceId, resourceId));
+        }
+    }
+
+    @Override
     public Boolean insertByBo(InfoResourceBo bo) {
         InfoResource add = MapstructUtils.convert(bo, InfoResource.class);
         assertCategoryUsable(add.getCategoryId());
@@ -338,11 +396,15 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     @Override
     public Boolean deleteOwnById(Long resourceId) {
         assertOwnedResource(resourceId);
+        favoriteMapper.delete(Wrappers.<InfoResourceFavorite>lambdaQuery().eq(InfoResourceFavorite::getResourceId, resourceId));
         return baseMapper.deleteById(resourceId) > 0;
     }
 
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids) {
+        if (ids != null && !ids.isEmpty()) {
+            favoriteMapper.delete(Wrappers.<InfoResourceFavorite>lambdaQuery().in(InfoResourceFavorite::getResourceId, ids));
+        }
         return baseMapper.deleteByIds(ids) > 0;
     }
 
@@ -616,7 +678,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         if (resource == null || StringUtils.isBlank(resource.getTitle())) {
             return;
         }
-        String uploader = StringUtils.defaultIfBlank(LoginHelper.getUsername(), "用户");
+        String uploader = userDisplayNameResolver.currentUserDisplayName("用户");
         String fileName = StringUtils.defaultIfBlank(resource.getOriginalName(), resource.getTitle());
         notificationService.sendToAllUsers(
             "新增资源：" + resource.getTitle(),

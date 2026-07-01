@@ -17,6 +17,9 @@ public class PortalAppVo implements Serializable {
     private String description;
     private String tags;
     private String accessUrl;
+    private String appType;
+    private String packageName;
+    private Long packageSize;
     private String isSecurity;
     private Long useCount;
     private Long favoriteCount;

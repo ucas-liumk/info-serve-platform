@@ -71,9 +71,16 @@
 
         <div class="resource-results">
           <div v-if="displayMode === 'grid'" class="resource-grid">
-            <ResourceCard v-for="item in resources" :key="item.resourceId" :resource="item" @preview="openPreview" @download="openDownload" />
+            <ResourceCard
+              v-for="item in resources"
+              :key="item.resourceId"
+              :resource="item"
+              @preview="openPreview"
+              @download="openDownload"
+              @favorite="toggleFavorite"
+            />
           </div>
-          <ResourceList v-else :resources="resources" @preview="openPreview" @download="openDownload" />
+          <ResourceList v-else :resources="resources" @preview="openPreview" @download="openDownload" @favorite="toggleFavorite" />
 
           <el-empty v-if="!loading && resources.length === 0" description="暂无资料" />
         </div>
@@ -104,6 +111,7 @@
       @replace="openReplaceDialog"
       @status="changeOwnStatus"
       @delete="deleteOwnResource"
+      @favorite="toggleFavorite"
       @upload="openCreateDialog"
     />
 
@@ -131,8 +139,10 @@ import {
   changePortalResourceStatus,
   createPortalResource,
   deletePortalResource,
+  favoritePortalResource,
   listResourceCategories,
   listResources,
+  unfavoritePortalResource,
   updatePortalResource,
   uploadPortalResourceFile
 } from '@/api/infoservice/portal';
@@ -171,7 +181,7 @@ const uploadedWithin = ref('all');
 const sizeRange = ref('all');
 const sort = ref('latest');
 const pageNum = ref(1);
-const pageSize = ref(12);
+const pageSize = ref(15);
 const total = ref(0);
 const myResourcesTotal = ref(0);
 const loading = ref(false);
@@ -230,7 +240,7 @@ const reloadFirst = () => {
 };
 
 const loadMyResources = async () => {
-  if (myResourceTab.value !== 'uploads') {
+  if (myResourceTab.value !== 'uploads' && myResourceTab.value !== 'favorites') {
     myResources.value = [];
     myResourcesTotal.value = 0;
     return;
@@ -241,7 +251,7 @@ const loadMyResources = async () => {
   myResourcesLoading.value = true;
   try {
     const res: any = await listResources({
-      scope: 'mine',
+      scope: myResourceTab.value === 'favorites' ? 'favorites' : 'mine',
       sort: 'latest',
       status: 'all',
       pageNum: 1,
@@ -305,6 +315,34 @@ const openPreview = (resource: InfoResource) => {
 
 const openDownload = (resource: InfoResource) => {
   downloadPortalResource(resource);
+};
+
+const updateResourceFavoriteState = (resourceId: number | string, favorited: boolean) => {
+  const update = (item: InfoResource) => {
+    if (String(item.resourceId) !== String(resourceId)) return;
+    const currentCount = item.favoriteCount || 0;
+    item.favorited = favorited;
+    item.favoriteCount = favorited ? currentCount + 1 : Math.max(currentCount - 1, 0);
+  };
+  resources.value.forEach(update);
+  myResources.value.forEach(update);
+};
+
+const toggleFavorite = async (resource: InfoResource) => {
+  if (!ensureLogin()) {
+    return;
+  }
+  const nextFavorited = !resource.favorited;
+  if (nextFavorited) {
+    await favoritePortalResource(resource.resourceId);
+  } else {
+    await unfavoritePortalResource(resource.resourceId);
+  }
+  updateResourceFavoriteState(resource.resourceId, nextFavorited);
+  ElMessage.success(nextFavorited ? '已收藏' : '已取消收藏');
+  if (myResourcesVisible.value && myResourceTab.value === 'favorites') {
+    await loadMyResources();
+  }
 };
 
 const openCreateDialog = () => {
@@ -593,7 +631,7 @@ onMounted(async () => {
   min-width: 0;
   display: grid;
   align-content: start;
-  gap: 16px;
+  gap: 12px;
 }
 
 .resource-topbar {
@@ -726,8 +764,8 @@ onMounted(async () => {
 }
 
 .resource-results {
-  min-height: 520px;
-  padding: 18px;
+  min-height: 360px;
+  padding: 16px 18px 14px;
 }
 
 .resource-grid {
@@ -739,7 +777,7 @@ onMounted(async () => {
 .pager {
   display: flex;
   justify-content: center;
-  padding: 4px 0 0;
+  padding: 0;
 }
 
 .resources-app :deep(.el-pagination.is-background .el-pager li.is-active) {

@@ -2,8 +2,10 @@ package org.dromara.appcenter.service;
 
 import org.dromara.appcenter.domain.bo.AppApplicationBo;
 import org.dromara.appcenter.domain.vo.AppApplicationVo;
+import org.dromara.appcenter.domain.vo.AppPackageUploadVo;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,5 +17,6 @@ public interface IAppApplicationService {
     Boolean insertByBo(AppApplicationBo bo);
     Boolean updateByBo(AppApplicationBo bo);
     Boolean changeStatus(Long appId, String status);
+    AppPackageUploadVo uploadPackage(MultipartFile file);
     Boolean deleteWithValidByIds(Collection<Long> ids);
 }

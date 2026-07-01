@@ -50,6 +50,11 @@ CREATE TABLE app_application (
     description     varchar(255) DEFAULT NULL,
     tags            varchar(255) DEFAULT NULL,
     access_url      varchar(500) NOT NULL,
+    app_type        varchar(20)  DEFAULT 'online' NOT NULL,
+    package_oss_id  int8         DEFAULT NULL,
+    package_name    varchar(255) DEFAULT NULL,
+    package_size    int8         DEFAULT NULL,
+    package_url     varchar(500) DEFAULT NULL,
     status          char(1)      DEFAULT '0',
     is_security     char(1)      DEFAULT '0',
     use_count       int8         DEFAULT 0,
@@ -171,21 +176,21 @@ INSERT INTO app_category (category_id, category_name, category_code, icon, order
 -- ----------------------------------------------------------------
 INSERT INTO app_application
     (app_id, app_name, app_code, version, category_id, icon, accent,
-     description, tags, access_url, status, is_security,
+     description, tags, access_url, app_type, status, is_security,
      use_count, recommend_count, order_num, create_time)
 VALUES
 (1, 'Stirling PDF', 'stirling-pdf', 'latest', 1, 'PDF', '#2563eb',
  'PDF 合并、拆分、压缩、转换与页面处理工具，即开即用。',
- 'PDF,文档处理,转换', 'http://127.0.0.1:18080', '0', '0', 128, 36, 1, now()),
+ 'PDF,文档处理,转换', 'http://127.0.0.1:18080', 'online', '0', '0', 128, 36, 1, now()),
 (2, 'draw.io', 'drawio', 'latest', 2, 'DIO', '#0f766e',
  '流程图、架构图、网络拓扑和业务图示绘制工具。',
- '流程图,架构图,绘图', 'http://127.0.0.1:18082', '0', '0', 96, 28, 2, now()),
+ '流程图,架构图,绘图', 'http://127.0.0.1:18082', 'online', '0', '0', 96, 28, 2, now()),
 (3, 'Excalidraw', 'excalidraw', 'latest', 3, 'EX', '#c2410c',
  '轻量白板和草图协作工具，适合快速表达方案和讨论。',
- '白板,草图,协作', 'http://127.0.0.1:18090', '0', '0', 84, 24, 3, now());
+ '白板,草图,协作', 'http://127.0.0.1:18090', 'online', '0', '0', 84, 24, 3, now());
 
 -- ----------------------------------------------------------------
--- sys_menu: 门户应用管理目录 + 工具即用菜单 + 按钮权限
+-- sys_menu: 门户应用管理目录 + 应用中心菜单 + 按钮权限
 -- 幂等: ON CONFLICT (menu_id) DO NOTHING
 -- ----------------------------------------------------------------
 
@@ -194,14 +199,14 @@ INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component,
 VALUES (2000, '门户应用管理', 0, 5, 'portal-apps', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
--- 工具应用 菜单 (menu_id=2010)
+-- 应用管理 菜单 (menu_id=2010)
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
-VALUES (2010, '工具应用', 2000, 1, 'application', 'admin/appcenter/application/index', '', '1', '0', 'C', '0', '0', 'appcenter:application:list', 'list', 103, 1, now())
+VALUES (2010, '应用管理', 2000, 1, 'application', 'admin/appcenter/application/index', '', '1', '0', 'C', '0', '0', 'appcenter:application:list', 'list', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
--- 工具分类 菜单 (menu_id=2020)
+-- 应用分类 菜单 (menu_id=2020)
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
-VALUES (2020, '工具分类', 2000, 2, 'category', 'admin/appcenter/category/index', '', '1', '0', 'C', '0', '0', 'appcenter:category:list', 'tree', 103, 1, now())
+VALUES (2020, '应用分类', 2000, 2, 'category', 'admin/appcenter/category/index', '', '1', '0', 'C', '0', '0', 'appcenter:category:list', 'tree', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
 -- 需求反馈 菜单 (menu_id=2030)
