@@ -324,8 +324,8 @@ import {
   ZoomIn,
   ZoomOut
 } from '@element-plus/icons-vue';
-import { getDocument, GlobalWorkerOptions, TextLayer } from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
+import { getDocument, GlobalWorkerOptions, TextLayer } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist/types/src/pdf';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;

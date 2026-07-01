@@ -1,4 +1,5 @@
 import { createApp } from 'vue';
+import '@/utils/promise-polyfill';
 // global css
 import 'virtual:uno.css';
 import 'element-plus/theme-chalk/dark/css-vars.css';

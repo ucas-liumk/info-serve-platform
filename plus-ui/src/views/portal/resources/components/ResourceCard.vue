@@ -43,8 +43,8 @@ import { Download, View } from '@element-plus/icons-vue';
 import { resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/infoservice/portal';
 import type { InfoResource } from '@/api/infoservice/types';
 import { getToken } from '@/utils/auth';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
