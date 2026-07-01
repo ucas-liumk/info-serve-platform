@@ -6,12 +6,16 @@ CREATE TABLE IF NOT EXISTS info_resource_favorite (
     id          int8      NOT NULL,
     resource_id int8     NOT NULL,
     user_id     int8     NOT NULL,
+    tenant_id   varchar(20) DEFAULT '000000' NOT NULL,
     create_time timestamp DEFAULT NULL,
     CONSTRAINT pk_info_resource_favorite PRIMARY KEY (id)
 );
+ALTER TABLE info_resource_favorite ADD COLUMN IF NOT EXISTS tenant_id varchar(20) DEFAULT '000000' NOT NULL;
+UPDATE info_resource_favorite SET tenant_id = '000000' WHERE tenant_id IS NULL OR tenant_id = '';
 CREATE UNIQUE INDEX IF NOT EXISTS uk_info_resource_fav_user_resource ON info_resource_favorite (user_id, resource_id);
 CREATE INDEX IF NOT EXISTS idx_info_resource_fav_resource ON info_resource_favorite (resource_id);
-COMMENT ON TABLE info_resource_favorite IS '淇℃伅涓績璧勬枡鏀惰棌';
+CREATE INDEX IF NOT EXISTS idx_info_resource_fav_tenant ON info_resource_favorite (tenant_id);
+COMMENT ON TABLE info_resource_favorite IS '信息中心资料收藏';
 
 DO $$
 BEGIN

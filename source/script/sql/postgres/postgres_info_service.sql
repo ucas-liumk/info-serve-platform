@@ -132,11 +132,13 @@ CREATE TABLE IF NOT EXISTS info_resource_favorite (
     id          int8      NOT NULL,
     resource_id int8     NOT NULL,
     user_id     int8     NOT NULL,
+    tenant_id   varchar(20) DEFAULT '000000' NOT NULL,
     create_time timestamp DEFAULT NULL,
     CONSTRAINT pk_info_resource_favorite PRIMARY KEY (id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uk_info_resource_fav_user_resource ON info_resource_favorite (user_id, resource_id);
 CREATE INDEX IF NOT EXISTS idx_info_resource_fav_resource ON info_resource_favorite (resource_id);
+CREATE INDEX IF NOT EXISTS idx_info_resource_fav_tenant ON info_resource_favorite (tenant_id);
 COMMENT ON TABLE info_resource_favorite IS '信息中心资料收藏';
 
 INSERT INTO info_resource_category (category_id, category_name, category_code, description, icon, order_num, create_time)

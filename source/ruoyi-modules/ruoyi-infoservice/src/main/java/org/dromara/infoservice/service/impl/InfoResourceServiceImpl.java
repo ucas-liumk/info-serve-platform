@@ -311,6 +311,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
             InfoResourceFavorite favorite = new InfoResourceFavorite();
             favorite.setResourceId(resourceId);
             favorite.setUserId(userId);
+            favorite.setTenantId(LoginHelper.getTenantId());
             favorite.setCreateTime(new Date());
             favoriteMapper.insert(favorite);
         } else if (!add && exist > 0) {

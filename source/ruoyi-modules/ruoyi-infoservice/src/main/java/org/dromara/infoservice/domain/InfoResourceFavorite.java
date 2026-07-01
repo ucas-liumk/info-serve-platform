@@ -17,5 +17,6 @@ public class InfoResourceFavorite implements Serializable {
     private Long id;
     private Long resourceId;
     private Long userId;
+    private String tenantId;
     private Date createTime;
 }
