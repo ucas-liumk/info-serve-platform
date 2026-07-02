@@ -20,6 +20,8 @@
     "url": "https://gitee.com/JavaLionLi/plus-ui.git"
   },
   "dependencies": {
+    "@embedpdf/pdfium": "2.14.4",
+    "@embedpdf/vue-pdf-viewer": "2.14.4",
     "@element-plus/icons-vue": "2.3.2",
     "@highlightjs/vue-plugin": "2.1.2",
     "@vueup/vue-quill": "1.2.0",
