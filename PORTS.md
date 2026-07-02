@@ -45,7 +45,7 @@
 | System | `8101` | `source/ruoyi-modules/ruoyi-system/src/main/resources/application.yml` | 系统管理 |
 | Gen | `8102` | `source/ruoyi-modules/ruoyi-gen/src/main/resources/application.yml` | 代码生成 |
 | Workflow | `8105` | `source/ruoyi-modules/ruoyi-workflow/src/main/resources/application.yml` | 工作流 |
-| AppCenter | `8106` | `source/ruoyi-modules/ruoyi-appcenter/src/main/resources/application.yml` | 工具即用/应用中心 |
+| AppCenter | `8106` | `source/ruoyi-modules/ruoyi-appcenter/src/main/resources/application.yml` | 应用中心 |
 | InfoService | `8107` | `source/ruoyi-modules/ruoyi-infoservice/src/main/resources/application.yml` | 信息服务 |
 | Job | `8113` | `source/ruoyi-modules/ruoyi-job/src/main/resources/application.yml` | 任务服务；避开本机占用的 `8103` |
 | Resource | `8114` | `source/ruoyi-modules/ruoyi-resource/src/main/resources/application.yml` | 文件/资源服务；避开本机占用的 `8104` |
