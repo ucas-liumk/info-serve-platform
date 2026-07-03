@@ -47,7 +47,10 @@ build_java_image() {
     "${SOURCE_DIR}/ruoyi-modules/ruoyi-appcenter" \
     "target/ruoyi-appcenter.jar"
 
-  build_java_image "infosys/ruoyi-cloud-plus-infoservice:2.6.2" \
-    "${SOURCE_DIR}/ruoyi-modules/ruoyi-infoservice" \
-    "target/ruoyi-infoservice.jar"
+  # infoservice 需要 LibreOffice + CJK 字体做文档转 PDF 预览，使用专用 Dockerfile
+  docker build \
+    -t "infosys/ruoyi-cloud-plus-infoservice:2.6.2" \
+    --build-arg "JAR_FILE=target/ruoyi-infoservice.jar" \
+    -f "${ROOT_DIR}/deploy/docker/infoservice.Dockerfile" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-infoservice"
 } 2>&1 | tee "${LOG_DIR}/docker-build-images.log"

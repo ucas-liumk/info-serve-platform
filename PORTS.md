@@ -47,7 +47,7 @@
 | Resource | `8114` | `source/ruoyi-modules/ruoyi-resource/src/main/resources/application.yml` | 文件服务；避开本机占用的 `8104` |
 | Monitor | `8190` | `source/ruoyi-visual/ruoyi-monitor/src/main/resources/application.yml` | Spring Boot Admin |
 
-已从源码移除的服务（gen `8102`、workflow `8105`、job `8113`、gateway-mvc `8181`、demo `8121`、test-mq `8122`、snailjob `8191-8193`、seata `8194`）不再占用端口；compose 中残留条目位于 `archived` profile，默认不启动。
+已移除的服务（gen `8102`、workflow `8105`、job `8113`、gateway-mvc `8181`、demo `8121`、test-mq `8122`、snailjob `8191-8193`、seata `8194`）不再占用端口，compose 中对应条目已删除。
 
 ## 基础设施端口
 
