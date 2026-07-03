@@ -27,3 +27,6 @@ deploy/initdb-postgres/
 # misc
 .DS_Store
 *.class
+# 防误提交：工具误产出的目录与 UTM 挂载点
+undefined/
+.utm-disk/

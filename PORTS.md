@@ -1,6 +1,6 @@
 # 项目端口清单
 
-更新时间：2026-06-28
+更新时间：2026-07-03
 
 当前项目采用统一号段：
 
@@ -40,22 +40,14 @@
 | 服务 | 端口 | 配置位置 | 说明 |
 | --- | ---: | --- | --- |
 | Gateway | `8180` | `source/ruoyi-gateway/src/main/resources/application.yml` | 后端统一入口 |
-| Gateway MVC | `8181` | `source/ruoyi-gateway-mvc/src/main/resources/application.yml` | MVC 网关备用模块 |
 | Auth | `8110` | `source/ruoyi-auth/src/main/resources/application.yml` | 认证服务 |
 | System | `8101` | `source/ruoyi-modules/ruoyi-system/src/main/resources/application.yml` | 系统管理 |
-| Gen | `8102` | `source/ruoyi-modules/ruoyi-gen/src/main/resources/application.yml` | 代码生成 |
-| Workflow | `8105` | `source/ruoyi-modules/ruoyi-workflow/src/main/resources/application.yml` | 工作流 |
-| AppCenter | `8106` | `source/ruoyi-modules/ruoyi-appcenter/src/main/resources/application.yml` | 应用中心 |
+| AppCenter | `8106` | `source/ruoyi-modules/ruoyi-appcenter/src/main/resources/application.yml` | 应用中心（工具即用） |
 | InfoService | `8107` | `source/ruoyi-modules/ruoyi-infoservice/src/main/resources/application.yml` | 信息服务 |
-| Job | `8113` | `source/ruoyi-modules/ruoyi-job/src/main/resources/application.yml` | 任务服务；避开本机占用的 `8103` |
-| Resource | `8114` | `source/ruoyi-modules/ruoyi-resource/src/main/resources/application.yml` | 文件/资源服务；避开本机占用的 `8104` |
-| Demo | `8121` | `source/ruoyi-example/ruoyi-demo/src/main/resources/application.yml` | 示例服务 |
-| Test MQ | `8122` | `source/ruoyi-example/ruoyi-test-mq/src/main/resources/application.yml` | MQ 示例服务 |
+| Resource | `8114` | `source/ruoyi-modules/ruoyi-resource/src/main/resources/application.yml` | 文件服务；避开本机占用的 `8104` |
 | Monitor | `8190` | `source/ruoyi-visual/ruoyi-monitor/src/main/resources/application.yml` | Spring Boot Admin |
-| SnailJob 控制台 | `8191` | `source/ruoyi-visual/ruoyi-snailjob-server/src/main/resources/application.yml` | 任务调度控制台 |
-| SnailJob 服务端通信 | `8192` | `source/script/config/nacos/ruoyi-snailjob-server.yml` | SnailJob Netty 通信端口 |
-| Job Snail 客户端 | `8193` | `source/script/config/nacos/ruoyi-job.yml` / `deploy/docker-compose.yml` | Job 服务接入 SnailJob |
-| Seata Server | `8194` | `source/ruoyi-visual/ruoyi-seata-server/src/main/resources/application.yml` | 当前默认未启用 |
+
+已从源码移除的服务（gen `8102`、workflow `8105`、job `8113`、gateway-mvc `8181`、demo `8121`、test-mq `8122`、snailjob `8191-8193`、seata `8194`）不再占用端口；compose 中残留条目位于 `archived` profile，默认不启动。
 
 ## 基础设施端口
 
@@ -89,12 +81,12 @@
 
 Docker/Nginx 前端入口监听宿主机 `7010`，容器内部仍监听 `80`。
 
-| 浏览器路径 | Nginx 转发到 |
+| 浏览器路径 | Nginx 行为 |
 | --- | --- |
-| `/` | 前端静态文件 |
-| `/prod-api/` | `ruoyi-gateway:8180` |
-| `/admin/` | `ruoyi-monitor:8190/admin/` |
-| `/snail-job/` | `ruoyi-snailjob-server:8191/snail-job/` |
+| `/` | 前端静态文件（SPA fallback 到 `index.html`） |
+| `/prod-api/` | 反代 `ruoyi-gateway:8180` |
+| `/admin`、`/admin/**` | SPA fallback 到 `index.html`（管理后台前端路由，非 monitor 代理） |
+| `*.mjs` | 修正 MIME 为 `application/javascript`（PDF worker 需要） |
 
 ## 查端口占用
 
