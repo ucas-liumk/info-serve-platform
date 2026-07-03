@@ -20,7 +20,7 @@ selenium-debug.log
 *.sln
 *.local
 
-package-lock.json
+# 本项目使用 npm，package-lock.json 必须入库以锁定依赖版本
 yarn.lock
 pnpm-lock.yaml
 
