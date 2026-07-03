@@ -10,7 +10,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.common.core.constant.CacheNames;
 import org.dromara.common.core.constant.Constants;
 import org.dromara.common.core.constant.SystemConstants;
@@ -30,7 +29,6 @@ import org.dromara.system.domain.bo.SysTenantBo;
 import org.dromara.system.domain.vo.SysTenantVo;
 import org.dromara.system.mapper.*;
 import org.dromara.system.service.ISysTenantService;
-import org.dromara.workflow.api.RemoteWorkflowService;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -58,9 +56,6 @@ public class SysTenantServiceImpl implements ISysTenantService {
     private final SysDictTypeMapper dictTypeMapper;
     private final SysDictDataMapper dictDataMapper;
     private final SysConfigMapper configMapper;
-
-    @DubboReference(mock = "true")
-    private RemoteWorkflowService remoteWorkflowService;
 
     /**
      * 查询租户
@@ -212,8 +207,6 @@ public class SysTenantServiceImpl implements ISysTenantService {
         }
         configMapper.insertBatch(sysConfigList);
 
-        // 新增租户流程定义
-        remoteWorkflowService.syncDef(tenantId);
         return true;
     }
 
