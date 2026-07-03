@@ -1,8 +1,8 @@
 # 项目启动操作手册
 
-更新时间：2026-07-01
+更新时间：2026-07-03
 
-当前定版：0.3.0
+当前定版：见根目录 [`VERSION`](./VERSION)（版本号唯一来源）
 
 ## 1. 当前项目路径
 
@@ -99,20 +99,20 @@ source
 ```text
 host: 0.0.0.0
 port: 由 .env.development 的 VITE_APP_PORT 决定
-接口代理目标：http://localhost:19080
+接口代理目标：http://localhost:8180
 ```
 
 当前 `.env.development` 中：
 
 ```text
-VITE_APP_PORT = 80
+VITE_APP_PORT = 7018
 VITE_APP_BASE_API = /dev-api
 ```
 
 后端网关暴露端口：
 
 ```text
-Gateway: http://localhost:19080
+Gateway: http://localhost:8180
 ```
 
 ## 4. 已确认的本机环境
@@ -213,25 +213,25 @@ docker compose --env-file .env down
 
 ## 8. Docker 暴露端口
 
-项目自带 `RUNBOOK.md` 中记录的端口：
+端口以 [PORTS.md](./PORTS.md) 为唯一清单，常用如下：
 
 | 服务 | 地址 |
 |---|---|
-| Web | `http://localhost:19100` |
-| Gateway | `http://localhost:19080` |
-| Nacos | `http://127.0.0.1:19848/nacos` |
-| PostgreSQL | `127.0.0.1:19432` |
-| MySQL | `127.0.0.1:19306` |
-| Redis | `127.0.0.1:19379` |
-| MinIO | `http://localhost:19000` |
+| Web | `http://localhost:7010` |
+| Gateway | `http://localhost:8180` |
+| Nacos | `http://127.0.0.1:8148/nacos` |
+| PostgreSQL | `127.0.0.1:8132` |
+| MySQL | `127.0.0.1:8136` |
+| Redis | `127.0.0.1:8179` |
+| MinIO | `http://localhost:8160`（控制台 `8161`） |
 
 Mac mini 访问 Windows 上的服务时，用 Windows 局域网 IP：
 
 ```text
 Windows IP：192.168.8.10
-Web：http://192.168.8.10:19100
-Gateway：http://192.168.8.10:19080
-前端开发服务：http://192.168.8.10:80
+Web：http://192.168.8.10:7010
+Gateway：http://192.168.8.10:8180
+前端开发服务：http://192.168.8.10:7018
 ```
 
 ## 9. 第三步：后端用 IDEA 打开
@@ -264,9 +264,8 @@ JDK 17
 | 资源 | `org.dromara.resource.RuoYiResourceApplication` | `8114` |
 | 应用中心 | `org.dromara.appcenter.RuoYiAppCenterApplication` | `8106` |
 | 信息服务 | `org.dromara.infoservice.RuoYiInfoServiceApplication` | `8107` |
-| 代码生成 | `org.dromara.gen.RuoYiGenApplication` | `8102` |
-| 工作流 | `org.dromara.workflow.RuoYiWorkflowApplication` | `8105` |
-| 定时任务 | `org.dromara.job.RuoYiJobApplication` | `8113` |
+
+（代码生成 / 工作流 / 定时任务已随模块精简移出源码，无对应启动类。）
 
 日常开发不一定全部启动。建议优先启动：
 
@@ -393,49 +392,34 @@ host: 0.0.0.0
 
 所以 Mac mini 可以通过 Windows 局域网 IP 访问。
 
-如果端口 `80` 被占用，可以临时修改：
-
-```text
-plus-ui\.env.development
-VITE_APP_PORT = 5173
-```
-
-然后重新执行：
-
-```powershell
-npm run dev
-```
+当前开发端口为 `7018`（`plus-ui\.env.development` 的 `VITE_APP_PORT`）。如被占用，临时改为其他空闲端口并重新执行 `npm run dev`。
 
 Mac mini 访问：
 
 ```text
-http://192.168.8.10:5173
+http://192.168.8.10:7018
 ```
 
-## 12. Git 注意事项
+## 12. Git 工作流（2026-07-03 起）
 
-当前项目从 Mac mini 复制到 Windows 后，Git 检查出现过：
+仓库拓扑：
 
 ```text
-fatal: detected dubious ownership in repository
+唯一真相源（hub）：E:\git\info-serve.git（本机裸仓库）
+Windows 工作副本：E:\gallant-dev\active\info-serve（remote origin=hub、github=GitHub 镜像）
+Mac 工作副本：/Users/macmini/info-serve
+GitHub：ucas-liumk/info-serve-platform，仅作备份镜像，定版后从 Mac 推送
 ```
 
-原因是目录 owner 是 `BUILTIN/Administrators`，当前用户是 `DESKTOP-H3KBS56\liumk`。
+分支纪律（详见 RUNBOOK.md「协作与分支纪律」）：
 
-可执行：
-
-```powershell
-git config --global --add safe.directory E:/gallant-dev/active/info-serve
+```text
+1. main 只进合并，禁止直接提交
+2. 每个工作线程一个分支 feat/<bc>-<topic>，按 docs/architecture/bounded-contexts.md 的限界上下文认领
+3. 开工第一步 git fetch 并新开分支；收工最后一步 push——未 push 的工作视为不存在
 ```
 
-然后再检查：
-
-```powershell
-cd E:\gallant-dev\active\info-serve
-git status
-```
-
-当前工作区有大量未提交改动和新增文件，启动前建议先确认不要覆盖这些内容。
+历史备注：如遇 `dubious ownership` 报错，执行 `git config --global --add safe.directory <目录>`。
 
 ## 13. 当前检查结果
 
@@ -447,9 +431,9 @@ git status
 - [x] 确认部署目录：`deploy`。
 - [x] 确认 Windows 已安装 Node / npm / JDK / Maven / Docker CLI。
 - [x] 确认 Docker Desktop 后台暂未运行。
-- [x] 确认前端代理目标：`http://localhost:19080`。
-- [x] 确认 Docker Web 端口：`19100`。
-- [x] 确认 Docker Gateway 端口：`19080`。
+- [x] 确认前端代理目标：`http://localhost:8180`。
+- [x] 确认 Docker Web 端口：`7010`。
+- [x] 确认 Docker Gateway 端口：`8180`。
 - [x] 确认 Maven 内部 BOM 已手动安装到本机仓库。
 
 待执行：
@@ -467,21 +451,21 @@ git status
 每天开始：
 
 ```text
-1. Windows 打开 Docker Desktop
-2. deploy 目录执行 docker compose up -d
-3. IDEA 打开 source
-4. VS Code 打开 plus-ui
-5. VS Code 执行 npm run dev
-6. Mac mini 浏览器访问 Windows IP 测试
+1. git fetch origin 并在新分支上开工（见 §12 分支纪律）
+2. Windows 打开 Docker Desktop
+3. deploy 目录执行 docker compose up -d
+4. IDEA 打开 source
+5. VS Code 打开 plus-ui
+6. VS Code 执行 npm run dev
+7. Mac mini 浏览器访问 Windows IP 测试
 ```
 
 每天结束：
 
 ```text
-1. git status
-2. git diff
-3. 提交或保存当前工作
-4. deploy 目录执行 docker compose stop
+1. git status / git diff 自检
+2. 提交当前工作并 push 到 origin（未 push 的工作视为不存在）
+3. deploy 目录执行 docker compose stop
 ```
 
 ## 15. 后续更新规则
