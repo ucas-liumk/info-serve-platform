@@ -21,7 +21,7 @@
 
 ## 数据库架构（PostgreSQL 迁移）
 
-- 业务数据全部运行在 **PostgreSQL**：`ry-cloud`（系统/用户/角色/菜单/代码生成/资源）、`ry-job`（SnailJob）、`ry-workflow`（warm-flow）。
+- 业务数据全部运行在 **PostgreSQL**：`ry-cloud`（系统/用户/角色/菜单/应用中心/信息服务）。
 - **MySQL 仅作为 Nacos 配置库**（`ry-config`）。Nacos 官方不支持 PostgreSQL，故保留一个轻量 MySQL 容器专供其配置存储。
 - 迁移涉及改动：`ruoyi-common-mybatis` 与 `ruoyi-snailjob-server` 启用 `org.postgresql` 驱动；`script/config/nacos/datasource.yml` 与 6 个模块 yml 切 PG 驱动/URL；`deploy/scripts/generate-initdb.py` 产出 `initdb-mysql/`（仅 Nacos）与 `initdb-postgres/`（业务库，含建库脚本 `00-init.sh` 与官方 `postgres_ry_*.sql`）。
 - MyBatis-Plus 分页自动识别数据库类型，无需改方言。账号：PG `ruoyi/ruoyi123`，库见上。
@@ -154,4 +154,4 @@ docker compose --env-file .env down
 - 初始化 SQL 已统一添加 `SET NAMES utf8mb4`，避免中文配置和租户名称导入后乱码。
 - `sys_user.nick_name` 与 `sys_social.nick_name` 初始化时扩展为 `varchar(64)`，避免演示数据导入失败。
 - `ruoyi-auth.yml` 中 `security.captcha.enabled` 已临时设为 `false` 便于局域网首轮验证；正式使用前建议恢复验证码并修改默认密码。
-- gen / job / workflow / snailjob 服务已移出源码，compose 中对应条目位于 `archived` profile（默认不启动）；`ry-job`、`ry-workflow` 两库仅为历史兼容保留。
+- gen / job / workflow / snailjob 服务及其配置、路由、数据源已彻底移除；新装机不再创建 `ry-job`、`ry-workflow` 库（存量环境中的旧库不受影响，可自行归档删除）。

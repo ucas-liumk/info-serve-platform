@@ -3,7 +3,7 @@
 
 迁移后架构：
 - MySQL 仅作为 Nacos 配置库（ry-config），输出到 deploy/initdb-mysql/
-- PostgreSQL 承载全部业务库（ry-cloud / ry-job / ry-workflow），输出到 deploy/initdb-postgres/
+- PostgreSQL 承载业务库（ry-cloud），输出到 deploy/initdb-postgres/
 
 PG 业务库由 deploy/initdb-postgres/00-init.sh 在容器首次启动时创建并导入
 deploy/initdb-postgres/dumps/ 下的官方 postgres_ry_*.sql。
@@ -19,8 +19,6 @@ OUT_PG = ROOT / "deploy" / "initdb-postgres"
 # PG 业务库：库名 -> 官方 PG 脚本文件名
 PG_DATABASES = [
     ("ry-cloud", "postgres_ry_cloud.sql"),
-    ("ry-job", "postgres_ry_job.sql"),
-    ("ry-workflow", "postgres_ry_workflow.sql"),
 ]
 
 
@@ -60,8 +58,6 @@ def normalize_nacos_content(name: str, content: str, tenant: str) -> str:
         if name == "application-common.yml":
             content = content.replace("rabbitmq:\n    host: localhost\n    port: 8172", "rabbitmq:\n    host: rabbitmq\n    port: 5672")
             content = content.replace("redis:\n      host: localhost\n      port: 8179", "redis:\n      host: redis\n      port: 6379")
-        if name == "ruoyi-job.yml":
-            content = content.replace("host: 127.0.0.1\n    port: 8192", "host: ruoyi-snailjob-server\n    port: 8192")
         if name == "ruoyi-auth.yml":
             content = content.replace("address: http://localhost:7018", "address: http://nginx-web")
             content = content.replace("captcha:\n    # 是否开启验证码\n    enabled: true", "captcha:\n    # 是否开启验证码\n    enabled: false")
