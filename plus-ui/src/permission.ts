@@ -14,7 +14,7 @@ import { ADMIN_BASE_PATH, PORTAL_HOME_PATH } from '@/constants/router';
 NProgress.configure({ showSpinner: false });
 
 const whiteList = ['/login', '/social-callback'];
-const adminLegacyRoots = ['/system', '/monitor', '/tool', '/workflow', '/infoservice'];
+const adminLegacyRoots = ['/system', '/monitor', '/infoservice'];
 const adminLegacyPrefixes = ['/appcenter'];
 
 const isWhiteList = (path: string) => {
