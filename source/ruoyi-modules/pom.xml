@@ -11,8 +11,7 @@
     <modules>
         <module>ruoyi-system</module>
         <module>ruoyi-resource</module>
-        <module>ruoyi-appcenter</module>
-        <module>ruoyi-infoservice</module>
+        <module>ruoyi-portal</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>

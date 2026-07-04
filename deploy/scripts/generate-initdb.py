@@ -80,7 +80,7 @@ def generate_nacos_update_sql() -> None:
                 f"WHERE data_id={sql_string(path.name)} AND group_id='DEFAULT_GROUP' AND tenant_id='{tenant}';\n"
             )
     # 新模块配置在基线中无行,需 INSERT(MySQL ry-config 为 Nacos 存储)
-    new_configs = ["ruoyi-appcenter.yml", "ruoyi-infoservice.yml"]
+    new_configs = ["ruoyi-portal.yml"]
     for name in new_configs:
         path = config_dir / name
         for tenant in ("dev", "prod"):

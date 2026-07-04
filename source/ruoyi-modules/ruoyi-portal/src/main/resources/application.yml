@@ -1,0 +1,36 @@
+# Tomcat
+server:
+  port: 8107
+
+# Spring
+spring:
+  application:
+    name: ruoyi-portal
+  profiles:
+    active: @profiles.active@
+
+# 资料共享 PDF 预览转换缓存配置
+infoservice:
+  preview-cache:
+    dir: ${INFOSERVICE_PREVIEW_CACHE_DIR:/ruoyi/portal/preview-cache}
+    soffice: ${INFOSERVICE_PREVIEW_CACHE_SOFFICE:soffice}
+    timeout-seconds: ${INFOSERVICE_PREVIEW_CACHE_TIMEOUT_SECONDS:120}
+
+--- # nacos 配置
+spring:
+  cloud:
+    nacos:
+      server-addr: @nacos.server@
+      username: @nacos.username@
+      password: @nacos.password@
+      discovery:
+        group: @nacos.discovery.group@
+        namespace: ${spring.profiles.active}
+      config:
+        group: @nacos.config.group@
+        namespace: ${spring.profiles.active}
+  config:
+    import:
+      - optional:nacos:application-common.yml
+      - optional:nacos:datasource.yml
+      - optional:nacos:${spring.application.name}.yml
