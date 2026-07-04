@@ -30,7 +30,6 @@
     "await-to-js": "3.0.0",
     "axios": "1.13.6",
     "crypto-js": "4.2.0",
-    "docx-preview": "^0.3.7",
     "echarts": "6.0.0",
     "element-plus": "2.13.5",
     "file-saver": "2.0.5",
@@ -48,8 +47,7 @@
     "vue-json-pretty": "2.6.0",
     "vue-router": "5.0.3",
     "vue-types": "6.0.0",
-    "vxe-table": "4.18.1",
-    "xlsx": "^0.18.5"
+    "vxe-table": "4.18.1"
   },
   "devDependencies": {
     "@iconify/json": "^2.2.448",

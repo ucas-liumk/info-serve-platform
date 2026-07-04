@@ -4,18 +4,6 @@ datasource:
     url: jdbc:postgresql://localhost:8132/ry-cloud?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
     username: ruoyi
     password: ruoyi123
-  gen:
-    url: jdbc:postgresql://localhost:8132/ry-cloud?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
-    username: ruoyi
-    password: ruoyi123
-  job:
-    url: jdbc:postgresql://localhost:8132/ry-job?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
-    username: ruoyi
-    password: ruoyi123
-  workflow:
-    url: jdbc:postgresql://localhost:8132/ry-workflow?useUnicode=true&characterEncoding=utf8&useSSL=false&autoReconnect=true&reWriteBatchedInserts=true
-    username: ruoyi
-    password: ruoyi123
 #  system-oracle:
 #    url: jdbc:oracle:thin:@//localhost:1521/XE
 #    username: ROOT

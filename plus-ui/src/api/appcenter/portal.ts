@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { PortalApp, PortalCategory, PortalDemandForm, PortalDemandItem, PortalMessage } from './types';
+import { PortalApp, PortalCategory, PortalDemandForm, PortalDemandItem } from './types';
 
 export function listCategories(): AxiosPromise<PortalCategory[]> {
   return request({ url: '/appcenter/portal/categories', method: 'get' });
@@ -22,36 +22,8 @@ export function unfavorite(id: number) {
   return request({ url: `/appcenter/portal/apps/${id}/favorite`, method: 'delete' });
 }
 
-export function recommend(id: number) {
-  return request({ url: `/appcenter/portal/apps/${id}/recommend`, method: 'post' });
-}
-
-export function unrecommend(id: number) {
-  return request({ url: `/appcenter/portal/apps/${id}/recommend`, method: 'delete' });
-}
-
 export function listFavorites(query: any): AxiosPromise<PortalApp[]> {
   return request({ url: '/appcenter/portal/favorites', method: 'get', params: query });
-}
-
-export function listMessages(query: any): AxiosPromise<PortalMessage[]> {
-  return request({ url: '/appcenter/portal/messages', method: 'get', params: query });
-}
-
-export function unreadCount(): AxiosPromise<number> {
-  return request({ url: '/appcenter/portal/messages/unreadCount', method: 'get' });
-}
-
-export function readMessage(id: number) {
-  return request({ url: `/appcenter/portal/messages/${id}/read`, method: 'post' });
-}
-
-export function deleteReadMessage(id: number) {
-  return request({ url: `/appcenter/portal/messages/${id}`, method: 'delete' });
-}
-
-export function clearReadMessages() {
-  return request({ url: '/appcenter/portal/messages/history/clear', method: 'delete' });
 }
 
 export function submitDemand(data: PortalDemandForm) {

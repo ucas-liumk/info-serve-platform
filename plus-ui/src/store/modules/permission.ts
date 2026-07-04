@@ -23,7 +23,7 @@ const viewAliasMap: Record<string, string> = {
   'infoservice/forum/board': 'admin/forum/board/index'
 };
 
-const adminViewRoots = ['system', 'monitor', 'tool', 'workflow', 'demo'];
+const adminViewRoots = ['system', 'monitor'];
 
 const resolveViewCandidates = (view: any): string[] => {
   const viewPath = String(view || '');

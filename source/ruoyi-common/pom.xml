@@ -21,7 +21,6 @@
         <module>ruoyi-common-satoken</module>
         <module>ruoyi-common-web</module>
         <module>ruoyi-common-mybatis</module>
-        <module>ruoyi-common-job</module>
         <module>ruoyi-common-dubbo</module>
         <module>ruoyi-common-seata</module>
         <module>ruoyi-common-loadbalancer</module>
