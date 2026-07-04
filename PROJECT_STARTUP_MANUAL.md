@@ -262,10 +262,9 @@ JDK 17
 | 认证 | `org.dromara.auth.RuoYiAuthApplication` | `8110` |
 | 系统 | `org.dromara.system.RuoYiSystemApplication` | `8101` |
 | 资源 | `org.dromara.resource.RuoYiResourceApplication` | `8114` |
-| 应用中心 | `org.dromara.appcenter.RuoYiAppCenterApplication` | `8106` |
-| 信息服务 | `org.dromara.infoservice.RuoYiInfoServiceApplication` | `8107` |
+| 门户业务 | `org.dromara.portal.RuoYiPortalApplication` | `8107` |
 
-（代码生成 / 工作流 / 定时任务已随模块精简移出源码，无对应启动类。）
+（应用中心与信息服务已合并为门户业务服务 ruoyi-portal；代码生成 / 工作流 / 定时任务已移出源码。）
 
 日常开发不一定全部启动。建议优先启动：
 
@@ -274,8 +273,7 @@ ruoyi-gateway
 ruoyi-auth
 ruoyi-system
 ruoyi-resource
-ruoyi-appcenter
-ruoyi-infoservice
+ruoyi-portal
 ```
 
 如果 Docker Compose 已经把这些服务作为容器启动了，IDEA 中只启动你正在修改的那个服务即可。否则会端口冲突。
@@ -291,7 +289,7 @@ cd E:\gallant-dev\active\info-serve\source
 只检查某个服务和它依赖的模块能否编译：
 
 ```powershell
-mvn -pl ruoyi-modules/ruoyi-infoservice -am -DskipTests -Pdev compile
+mvn -pl ruoyi-modules/ruoyi-portal -am -DskipTests -Pdev compile
 ```
 
 第一次在新机器上用 Maven 源码启动服务前，先把本项目内部依赖安装到本机 Maven 仓库：
@@ -317,10 +315,7 @@ mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:r
 cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-resource
 mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
 
-cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-appcenter
-mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
-
-cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-infoservice
+cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-portal
 mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
 ```
 
