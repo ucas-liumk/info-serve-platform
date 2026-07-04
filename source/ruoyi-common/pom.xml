@@ -22,7 +22,6 @@
         <module>ruoyi-common-web</module>
         <module>ruoyi-common-mybatis</module>
         <module>ruoyi-common-dubbo</module>
-        <module>ruoyi-common-seata</module>
         <module>ruoyi-common-loadbalancer</module>
         <module>ruoyi-common-oss</module>
         <module>ruoyi-common-ratelimiter</module>

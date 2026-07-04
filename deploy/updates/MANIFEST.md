@@ -21,7 +21,7 @@
 
 ### 0.3.4 更新包非 SQL 操作清单（服务合并 + ruoyi-file 改名）
 
-1. **Nacos 配置必须走 OpenAPI/控制台发布，禁止 SQL 直写**（Nacos 对不存在的 data_id 有负缓存，SQL 直插后服务取不到；本地验证已踩坑）。需发布：新增 `ruoyi-portal.yml`、`ruoyi-file.yml`；更新 `ruoyi-gateway.yml`（/appcenter、/infoservice → lb://ruoyi-portal；/resource → /file）、`application-common.yml`（租户忽略表新增 portal_module）。可选清理旧行：`ruoyi-appcenter.yml`、`ruoyi-infoservice.yml`、`ruoyi-resource.yml`。
+1. **Nacos 配置必须走 OpenAPI/控制台发布，禁止 SQL 直写**（Nacos 对不存在的 data_id 有负缓存，SQL 直插后服务取不到；本地验证已踩坑；可用 `deploy/scripts/` 参考会话产出的 nacos-publish 模式）。需发布：新增 `ruoyi-portal.yml`、`ruoyi-file.yml`；更新 `ruoyi-gateway.yml`（/appcenter、/infoservice → lb://ruoyi-portal；/resource → /file）、`application-common.yml`（租户忽略表新增 portal_module；移除 seata 块）、`datasource.yml`（移除 seata 代理行）、`ruoyi-monitor.yml`（移除 seata 忽略项）。可选清理旧行：`ruoyi-appcenter.yml`、`ruoyi-infoservice.yml`、`ruoyi-resource.yml`。
 2. **镜像**：`PORTAL_IMAGE`（portal.Dockerfile 含 LibreOffice）替代 appcenter+infoservice 两镜像；`FILE_IMAGE` 替代 `RESOURCE_IMAGE`；**system 与 auth 也必须随包重建**（Dubbo 接口包名 org.dromara.resource.api → org.dromara.file.api，新旧镜像互不兼容）。
 3. **启动顺序**：更新配置 → 换四个业务镜像（file/system/auth/portal）→ 重启 gateway。
 4. 前端静态包必须同版更新（API 路径 /resource/** → /file/**）。
