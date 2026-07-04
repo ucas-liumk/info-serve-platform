@@ -1,21 +1,11 @@
 <template>
   <div class="resources-app">
-    <aside class="resource-sidebar">
-      <div class="side-brand">
-        <img src="@/assets/portal/module-resource.png" alt="资源共享" />
-        <div>
-          <strong>资源共享</strong>
-          <span>知识汇聚 · 共享价值</span>
-        </div>
-      </div>
-
-      <button class="home-button" type="button" @click="goPortalHome">
-        <el-icon><House /></el-icon>
-        <span>返回首页</span>
-      </button>
-
-      <ResourceFilterPanel :categories="categories" :total="categoryTotal" :category-code="categoryCode" @change-category="changeCategory" />
-    </aside>
+    <ResourceSidebar
+      :categories="categories"
+      :category-total="categoryTotal"
+      :category-code="categoryCode"
+      @change-category="changeCategory"
+    />
 
     <main class="resource-main">
       <header class="resource-topbar">
@@ -130,8 +120,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { House, Search, UploadFilled, User } from '@element-plus/icons-vue';
-import { PORTAL_HOME_PATH } from '@/constants/router';
+import { Search, UploadFilled, User } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/modules/user';
 import { getToken } from '@/utils/auth';
 import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
@@ -150,8 +139,8 @@ import type { InfoResource, ResourceCategory, ResourcePortalPayload, ResourceUpl
 import { downloadPortalResource } from './download';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
 import ResourceCard from './components/ResourceCard.vue';
-import ResourceFilterPanel from './components/ResourceFilterPanel.vue';
 import ResourceList from './components/ResourceList.vue';
+import ResourceSidebar from './components/ResourceSidebar.vue';
 import ResourceToolbar from './components/ResourceToolbar.vue';
 import ResourceUploadDialog from './components/ResourceUploadDialog.vue';
 
@@ -202,10 +191,6 @@ const ensureLogin = () => {
   }
   ElMessage.warning('请先登录后操作');
   return false;
-};
-
-const goPortalHome = () => {
-  router.push(PORTAL_HOME_PATH);
 };
 
 const loadCategories = async () => {
@@ -515,82 +500,6 @@ onMounted(async () => {
   color: var(--resource-muted);
 }
 
-.resource-sidebar {
-  position: sticky;
-  top: 18px;
-  align-self: start;
-  max-height: calc(100vh - 36px);
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 14px;
-  overflow: hidden;
-}
-
-.resource-sidebar :deep(.filter-panel) {
-  min-height: 0;
-  overflow: auto;
-}
-
-.side-brand {
-  position: relative;
-  height: 86px;
-  min-height: 86px;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  box-sizing: border-box;
-  border: 1px solid var(--resource-border);
-  border-radius: 8px;
-  padding: 16px;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(47, 138, 122, 0.12), transparent 42%), linear-gradient(180deg, #fff 0%, #f8fafc 100%);
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
-}
-
-.side-brand::after {
-  content: '';
-  position: absolute;
-  right: -24px;
-  bottom: -34px;
-  width: 110px;
-  height: 72px;
-  border: 1px solid rgba(47, 138, 122, 0.2);
-  border-radius: 8px;
-  transform: rotate(-14deg);
-  pointer-events: none;
-}
-
-.side-brand img {
-  position: relative;
-  z-index: 1;
-  width: 42px;
-  height: 42px;
-  object-fit: contain;
-}
-
-.side-brand div {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.side-brand strong {
-  color: var(--resource-title);
-  font-size: 22px;
-  line-height: 1.15;
-  font-weight: 900;
-}
-
-.side-brand span {
-  color: var(--resource-muted);
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.home-button,
 .upload-button,
 .mine-button,
 .search-button {
@@ -611,20 +520,6 @@ onMounted(async () => {
     color 0.18s ease,
     box-shadow 0.18s ease,
     transform 0.18s ease;
-}
-
-.home-button {
-  width: 100%;
-  border: 1px solid var(--resource-border);
-  background: #fff;
-  color: var(--resource-text);
-}
-
-.home-button:hover {
-  border-color: var(--resource-primary);
-  background: var(--resource-primary-soft);
-  color: var(--resource-primary);
-  transform: translateY(-1px);
 }
 
 .resource-main {
@@ -807,15 +702,6 @@ onMounted(async () => {
   .resources-app {
     grid-template-columns: 1fr;
     padding: 16px;
-  }
-
-  .resource-sidebar {
-    position: static;
-    max-height: none;
-  }
-
-  .resource-sidebar :deep(.filter-panel) {
-    max-height: none;
   }
 
   .resource-grid {
