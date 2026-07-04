@@ -107,7 +107,7 @@ def write_pg_business_db() -> None:
     pg_src = SOURCE / "script" / "sql" / "postgres"
     dumps_dir = OUT_PG / "dumps"
     dumps_dir.mkdir(parents=True, exist_ok=True)
-    extras = ["postgres_app_center.sql", "postgres_info_service.sql"]  # 追加到 ry-cloud
+    extras = ["postgres_app_center.sql", "postgres_info_service.sql", "postgres_portal_kernel.sql"]  # 追加到 ry-cloud
     for _, filename in PG_DATABASES:
         shutil.copyfile(pg_src / filename, dumps_dir / filename)
     for extra in extras:

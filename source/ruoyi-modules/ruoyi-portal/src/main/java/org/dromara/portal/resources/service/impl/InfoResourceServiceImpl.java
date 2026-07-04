@@ -766,4 +766,15 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         }
         return "file";
     }
+
+    @Override
+    public Long countPortalVisible() {
+        return baseMapper.selectCount(Wrappers.<InfoResource>lambdaQuery()
+            .eq(InfoResource::getStatus, "0"));
+    }
+
+    @Override
+    public Long sumPortalVisits() {
+        return baseMapper.sumPortalVisits();
+    }
 }

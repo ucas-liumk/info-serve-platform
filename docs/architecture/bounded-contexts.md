@@ -82,6 +82,8 @@ infoservice ┘             ├─ portal-kernel              ├─ kernel/appc
 
 ## 7. 边界纪律（构建期强制，不靠自觉）
 
+> 落地记录（2026-07-04）：规则 1-3 已由 `ruoyi-portal` 的 ArchUnit 测试强制（`src/test/java/org/dromara/portal/arch/BcBoundaryTest`，`mvn -DskipTests=false test` 执行）。Maven 子模块拆分推迟到某 BC 触发晋升时执行——包级 ArchUnit 已提供等价约束。补充例外：内核对内容 BC 的 **service 接口**可依赖（首页统计聚合），domain/mapper/impl 仍禁止。
+
 1. 每 BC 一个 Maven 子模块；依赖方向仅允许 `BC → kernel`，禁止 BC↔BC。
 2. 表归属私有：每 BC 只碰自己前缀的表；跨域数据走对方接口或事件。首页统计改为聚合各 BC 接口，消灭跨界裸 SQL。
 3. 内核能力参数化：`message(scene, …)`、`favorite(target_type, target_id)`，禁止每域复制一套。

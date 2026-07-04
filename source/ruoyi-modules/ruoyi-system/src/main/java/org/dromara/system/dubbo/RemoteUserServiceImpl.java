@@ -60,6 +60,13 @@ public class RemoteUserServiceImpl implements RemoteUserService {
     private final SysUserRoleMapper userRoleMapper;
     private final SysUserPostMapper userPostMapper;
 
+    @Override
+    public List<Long> selectActiveUserIds() {
+        return userMapper.selectObjs(new LambdaQueryWrapper<SysUser>()
+            .select(SysUser::getUserId)
+            .eq(SysUser::getStatus, "0"));
+    }
+
     /**
      * 通过用户名查询用户信息
      *

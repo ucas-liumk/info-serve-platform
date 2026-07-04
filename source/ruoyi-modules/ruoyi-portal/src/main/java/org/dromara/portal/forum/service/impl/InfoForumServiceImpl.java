@@ -302,4 +302,25 @@ public class InfoForumServiceImpl implements IInfoForumService {
         }
         return null;
     }
+
+    @Override
+    public TableDataInfo<InfoForumTopicVo> queryMyTopics(PageQuery pageQuery) {
+        Long userId = LoginHelper.getUserId();
+        Page<InfoForumTopicVo> page = topicMapper.selectVoPage(pageQuery.build(), Wrappers.<InfoForumTopic>lambdaQuery()
+            .eq(InfoForumTopic::getAuthorId, userId)
+            .orderByDesc(InfoForumTopic::getCreateTime));
+        fillTopicExt(page.getRecords());
+        return TableDataInfo.build(page);
+    }
+
+    @Override
+    public Long countPortalVisibleTopics() {
+        return topicMapper.selectCount(Wrappers.<InfoForumTopic>lambdaQuery()
+            .eq(InfoForumTopic::getStatus, "0"));
+    }
+
+    @Override
+    public Long countActiveAuthors() {
+        return topicMapper.countActiveAuthors();
+    }
 }
