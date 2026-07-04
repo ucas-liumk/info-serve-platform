@@ -96,12 +96,6 @@
                 <version>${revision}</version>
             </dependency>
 
-            <!-- 分布式事务 -->
-            <dependency>
-                <groupId>org.dromara</groupId>
-                <artifactId>ruoyi-common-seata</artifactId>
-                <version>${revision}</version>
-            </dependency>
 
             <!-- 自定义负载均衡 -->
             <dependency>
