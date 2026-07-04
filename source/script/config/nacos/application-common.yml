@@ -303,3 +303,4 @@ tenant:
     - info_forum_board
     - info_forum_like
     - info_resource_favorite
+    - portal_module

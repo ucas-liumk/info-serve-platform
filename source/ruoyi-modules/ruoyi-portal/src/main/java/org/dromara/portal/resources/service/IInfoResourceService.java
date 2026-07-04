@@ -35,6 +35,12 @@ public interface IInfoResourceService {
 
     void favorite(Long resourceId, boolean add);
 
+    /** 门户可见资料数（内核统计聚合用） */
+    Long countPortalVisible();
+
+    /** 资料浏览+下载总量（内核统计聚合用） */
+    Long sumPortalVisits();
+
     Boolean insertByBo(InfoResourceBo bo);
 
     Boolean insertPortalByBo(InfoResourceBo bo);

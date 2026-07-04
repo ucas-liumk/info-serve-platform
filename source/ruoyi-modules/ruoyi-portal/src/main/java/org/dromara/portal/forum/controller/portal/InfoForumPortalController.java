@@ -38,6 +38,11 @@ public class InfoForumPortalController {
         return forumService.queryTopicPage(bo, pageQuery);
     }
 
+    @GetMapping("/topics/my")
+    public TableDataInfo<InfoForumTopicVo> myTopics(PageQuery pageQuery) {
+        return forumService.queryMyTopics(pageQuery);
+    }
+
     @GetMapping("/topics/{topicId}")
     public R<ForumTopicDetailVo> detail(@PathVariable Long topicId) {
         return R.ok(forumService.queryPortalTopicDetail(topicId));

@@ -134,6 +134,13 @@ public interface RemoteUserService {
     List<Long> selectUserIdsByRoleIds(List<Long> roleIds);
 
     /**
+     * 查询全部有效用户ID（门户广播收件人等场景）
+     *
+     * @return 用户ids
+     */
+    List<Long> selectActiveUserIds();
+
+    /**
      * 通过角色ID查询用户
      *
      * @param roleIds 角色ids

@@ -31,4 +31,13 @@ public interface IInfoForumService {
     InfoForumReplyVo reply(InfoForumReplyBo bo);
 
     Boolean likeTopic(Long topicId, boolean add);
+
+    /** 我的话题（my-* 契约，供门户与个人工作台聚合） */
+    TableDataInfo<InfoForumTopicVo> queryMyTopics(PageQuery pageQuery);
+
+    /** 门户可见话题数（内核统计聚合用） */
+    Long countPortalVisibleTopics();
+
+    /** 论坛活跃用户数（发帖或回帖去重，内核统计聚合用） */
+    Long countActiveAuthors();
 }
