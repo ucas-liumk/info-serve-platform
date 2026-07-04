@@ -1,7 +1,7 @@
 import FileSaver from 'file-saver';
 import { ElMessage } from 'element-plus';
 import errorCode from '@/utils/errorCode';
-import { downloadResourceBlob } from '@/api/infoservice/portal';
+import { downloadResourceBlob } from '@/api/portal/resources';
 import type { InfoResource } from '@/api/infoservice/types';
 
 const decodeHeaderFileName = (value: unknown) => {

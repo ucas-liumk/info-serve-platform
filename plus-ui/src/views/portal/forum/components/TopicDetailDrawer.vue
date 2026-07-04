@@ -122,7 +122,7 @@
 import { computed, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { ChatDotRound, Close, Pointer, View } from '@element-plus/icons-vue';
-import { getForumTopic, likeForumTopic, replyForumTopic, unlikeForumTopic } from '@/api/infoservice/portal';
+import { getForumTopic, likeForumTopic, replyForumTopic, unlikeForumTopic } from '@/api/portal/forum';
 import { ForumReply, ForumTopicDetail } from '@/api/infoservice/types';
 
 interface ReplyMeta {

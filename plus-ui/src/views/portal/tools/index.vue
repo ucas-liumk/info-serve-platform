@@ -69,7 +69,7 @@ import CategoryTabs from './components/CategoryTabs.vue';
 import AppCard from './components/AppCard.vue';
 import ToolsSidebar from './components/ToolsSidebar.vue';
 import DemandDialog from './components/DemandDialog.vue';
-import { listApps, listCategories, listFavorites } from '@/api/appcenter/portal';
+import { listApps, listCategories, listFavorites } from '@/api/portal/appcenter';
 import { PortalApp, PortalCategory } from '@/api/appcenter/types';
 import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
 

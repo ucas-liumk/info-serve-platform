@@ -96,7 +96,7 @@
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { getPortalStats } from '@/api/infoservice/portal';
+import { getPortalStats } from '@/api/portal/stats';
 import { PortalStats } from '@/api/infoservice/types';
 import { listPortalModules } from '@/api/portal/module';
 import { getUserProfile, updateUserProfile, updateUserPwd } from '@/api/system/user';

@@ -58,7 +58,7 @@
 import { ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Delete, Refresh } from '@element-plus/icons-vue';
-import { listMyDemands, deleteMyDemand } from '@/api/appcenter/portal';
+import { listMyDemands, deleteMyDemand } from '@/api/portal/appcenter';
 import { PortalDemandItem } from '@/api/appcenter/types';
 
 const props = defineProps<{ active: boolean }>();

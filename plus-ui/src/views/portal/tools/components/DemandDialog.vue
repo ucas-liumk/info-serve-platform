@@ -103,7 +103,7 @@ import { computed, ref } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { DocumentAdd } from '@element-plus/icons-vue';
 import MyDemandList from './MyDemandList.vue';
-import { listApps, submitDemand } from '@/api/appcenter/portal';
+import { listApps, submitDemand } from '@/api/portal/appcenter';
 import { PortalApp, PortalDemandForm } from '@/api/appcenter/types';
 
 const visible = ref(false);

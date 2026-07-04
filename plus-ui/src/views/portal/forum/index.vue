@@ -79,7 +79,7 @@ import PortalNotificationBell from '@/layout/portal/components/PortalNotificatio
 import ForumSidebar from './components/ForumSidebar.vue';
 import TopicList from './components/TopicList.vue';
 import TopicDetailDrawer from './components/TopicDetailDrawer.vue';
-import { createForumTopic, listForumBoards, listForumTopics } from '@/api/infoservice/portal';
+import { createForumTopic, listForumBoards, listForumTopics } from '@/api/portal/forum';
 import { ForumBoard, ForumTopic } from '@/api/infoservice/types';
 
 const boards = ref<ForumBoard[]>([]);

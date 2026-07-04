@@ -134,7 +134,7 @@ import {
   unfavoritePortalResource,
   updatePortalResource,
   uploadPortalResourceFile
-} from '@/api/infoservice/portal';
+} from '@/api/portal/resources';
 import type { InfoResource, ResourceCategory, ResourcePortalPayload, ResourceUploadResult } from '@/api/infoservice/types';
 import { downloadPortalResource } from './download';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
