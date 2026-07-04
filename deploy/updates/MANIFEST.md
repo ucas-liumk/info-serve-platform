@@ -16,6 +16,7 @@
 | 0.3.3 | `0.3.3-nacos-common-config.sql` | MySQL `ry-config` | 已随 0.3.3 包投放（此前仅存在于发布包内、仓库无源，2026-07-03 回收入库） |
 | 0.3.3 | `0.3.3-portal-notifications.sql` | PG `ry-cloud` | ⚠️ **未随任何包投放**（0.3.3 装包遗漏）。内容为"版本升级"通知种子，随下次更新决定补投或作废 |
 | 0.3.4 | `0.3.4-appcenter-offline-package.sql` | PG `ry-cloud` | ⚠️ **已被提前打进 0.3.3 包**（包内文件名 `update_appcenter_offline_package_20260701.sql`）。0.3.4 定版时注意已升级主机勿重复投放（脚本本身幂等，可重跑） |
+| 0.3.4 | `0.3.4-portal-merge.sql` | PG `ry-cloud` | 待投放。服务合并配套：防御性清理三张幻影表。**另注意**：0.3.4 更新包需为存量 Nacos（MySQL `ry-config`）插入 `ruoyi-portal.yml` 配置行（内容取自重新生成的 `initdb-mysql/90-nacos-config-content.sql` 对应段），并可删除 `ruoyi-appcenter.yml`/`ruoyi-infoservice.yml` 旧行；compose 服务由两个换一个（`ruoyi-portal`，镜像 `PORTAL_IMAGE`） |
 
 ## 历史备注
 

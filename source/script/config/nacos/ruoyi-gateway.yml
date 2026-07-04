@@ -49,16 +49,15 @@ spring:
                 - Path=/resource/**
               filters:
                 - StripPrefix=1
-            # 应用中心
-            - id: ruoyi-appcenter
-              uri: lb://ruoyi-appcenter
+            # 门户业务服务（应用中心/资料共享/服务论坛，API 路径保持兼容）
+            - id: ruoyi-portal-appcenter
+              uri: lb://ruoyi-portal
               predicates:
                 - Path=/appcenter/**
               filters:
                 - StripPrefix=1
-            # 信息中心数智服务
-            - id: ruoyi-infoservice
-              uri: lb://ruoyi-infoservice
+            - id: ruoyi-portal-infoservice
+              uri: lb://ruoyi-portal
               predicates:
                 - Path=/infoservice/**
               filters:

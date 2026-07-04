@@ -48,13 +48,13 @@ cd /Users/macmini/info-serve/deploy
 python3 scripts/generate-initdb.py
 ```
 
-> 只改业务代码时，按需重建对应服务（其余沿用旧镜像），例如四个业务模块：
+> 只改业务代码时，按需重建对应服务（其余沿用旧镜像），例如业务模块：
 > ```bash
 > cd /Users/macmini/info-serve/source
 > docker run --rm -v "$PWD":/workspace -v /Users/macmini/.m2:/root/.m2 -w /workspace \
 >   -e MAVEN_OPTS="-Xmx1280m -XX:MaxMetaspaceSize=384m" \
 >   maven:3.9-eclipse-temurin-17 mvn -ntp -Pprod -DskipTests \
->   -pl ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-resource,ruoyi-modules/ruoyi-appcenter,ruoyi-modules/ruoyi-infoservice \
+>   -pl ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-resource,ruoyi-modules/ruoyi-portal \
 >   -am package
 > ```
 > 然后用 `deploy/build-images.sh` 中对应条目重建这些镜像。
@@ -69,7 +69,7 @@ docker run --rm \
   -w /workspace \
   maven:3.9-eclipse-temurin-17 \
   mvn -ntp -Pprod -DskipTests \
-    -pl ruoyi-visual/ruoyi-nacos,ruoyi-gateway,ruoyi-auth,ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-resource,ruoyi-modules/ruoyi-appcenter,ruoyi-modules/ruoyi-infoservice,ruoyi-visual/ruoyi-monitor \
+    -pl ruoyi-visual/ruoyi-nacos,ruoyi-gateway,ruoyi-auth,ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-resource,ruoyi-modules/ruoyi-portal,ruoyi-visual/ruoyi-monitor \
     -am package
 ```
 
@@ -82,7 +82,7 @@ docker run --rm \
   -w /workspace \
   -e MAVEN_OPTS="-Xmx768m -XX:MaxMetaspaceSize=256m" \
   maven:3.9-eclipse-temurin-17 \
-  mvn -o -ntp -Pprod -DskipTests -pl ruoyi-modules/ruoyi-infoservice -am package
+  mvn -o -ntp -Pprod -DskipTests -pl ruoyi-modules/ruoyi-portal -am package
 
 docker run --rm \
   -v /Users/macmini/info-serve/source:/workspace \
