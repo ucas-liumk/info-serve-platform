@@ -14,6 +14,8 @@
 
 ## 协作与分支纪律（2026-07-03 起）
 
+> 完整开发规约（含架构边界、验证门禁、多代理并行规则）见根目录 [AGENTS.md](./AGENTS.md)，对所有开发者与 AI 代理强制生效。
+
 - 唯一真相源：Windows 裸仓库 `E:/git/info-serve.git`；工作副本为 Windows `E:\gallant-dev\active\info-serve` 与 Mac `/Users/macmini/info-serve`；GitHub 为备份镜像（定版后从 Mac 推送）。
 - `main` 只进合并，禁止直接提交；每个工作线程一个分支 `feat/<bc>-<topic>`，按 `docs/architecture/bounded-contexts.md` 的限界上下文认领。
 - 开工第一步 `git fetch` 并新开分支；收工最后一步 push——**未 push 的工作视为不存在**。
