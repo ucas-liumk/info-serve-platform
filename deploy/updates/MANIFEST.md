@@ -16,7 +16,14 @@
 | 0.3.3 | `0.3.3-nacos-common-config.sql` | MySQL `ry-config` | 已随 0.3.3 包投放（此前仅存在于发布包内、仓库无源，2026-07-03 回收入库） |
 | 0.3.3 | `0.3.3-portal-notifications.sql` | PG `ry-cloud` | ⚠️ **未随任何包投放**（0.3.3 装包遗漏）。内容为"版本升级"通知种子，随下次更新决定补投或作废 |
 | 0.3.4 | `0.3.4-appcenter-offline-package.sql` | PG `ry-cloud` | ⚠️ **已被提前打进 0.3.3 包**（包内文件名 `update_appcenter_offline_package_20260701.sql`）。0.3.4 定版时注意已升级主机勿重复投放（脚本本身幂等，可重跑） |
-| 0.3.4 | `0.3.4-portal-merge.sql` | PG `ry-cloud` | 待投放。服务合并配套：防御性清理三张幻影表。**另注意**：0.3.4 更新包需为存量 Nacos（MySQL `ry-config`）插入 `ruoyi-portal.yml` 配置行（内容取自重新生成的 `initdb-mysql/90-nacos-config-content.sql` 对应段），并可删除 `ruoyi-appcenter.yml`/`ruoyi-infoservice.yml` 旧行；compose 服务由两个换一个（`ruoyi-portal`，镜像 `PORTAL_IMAGE`） |
+| 0.3.4 | `0.3.4-portal-merge.sql` | PG `ry-cloud` | 待投放。服务合并配套：防御性清理三张幻影表 |
+
+### 0.3.4 更新包非 SQL 操作清单（服务合并 + ruoyi-file 改名）
+
+1. **Nacos 配置必须走 OpenAPI/控制台发布，禁止 SQL 直写**（Nacos 对不存在的 data_id 有负缓存，SQL 直插后服务取不到；本地验证已踩坑）。需发布：新增 `ruoyi-portal.yml`、`ruoyi-file.yml`；更新 `ruoyi-gateway.yml`（/appcenter、/infoservice → lb://ruoyi-portal；/resource → /file）。可选清理旧行：`ruoyi-appcenter.yml`、`ruoyi-infoservice.yml`、`ruoyi-resource.yml`。
+2. **镜像**：`PORTAL_IMAGE`（portal.Dockerfile 含 LibreOffice）替代 appcenter+infoservice 两镜像；`FILE_IMAGE` 替代 `RESOURCE_IMAGE`；**system 与 auth 也必须随包重建**（Dubbo 接口包名 org.dromara.resource.api → org.dromara.file.api，新旧镜像互不兼容）。
+3. **启动顺序**：更新配置 → 换四个业务镜像（file/system/auth/portal）→ 重启 gateway。
+4. 前端静态包必须同版更新（API 路径 /resource/** → /file/**）。
 
 ## 历史备注
 

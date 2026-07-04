@@ -18,7 +18,7 @@
 | 智能问答 QA | 智能问答 | `qa` | `qa_` | 未开发；首页卡片无路由 |
 | 时事热点 News | 时事热点 | `news` | `news_` | 未开发；首页卡片无路由 |
 | 门户内核 Portal Kernel | —（不对用户暴露） | `portal` | `portal_` | 门户用户身份、消息通知、收藏、统计、上传适配 |
-| 文件服务 File | —（基础设施） | `ruoyi-file`（由 `ruoyi-resource` 整体改名，**已决**） | `sys_oss*` | 消除与"资料共享"的语义冲突；改名清单见 §8 |
+| 文件服务 File | —（基础设施） | `ruoyi-file`（由 `ruoyi-resource` 整体改名，**已执行**） | `sys_oss*` | 消除与"资料共享"的语义冲突；改名清单见 §8 |
 | 个人工作台 Workbench | 个人工作台 | `workbench` | —（无自有表） | **入口，不是内容域**：聚合内核与各 BC 的"我的…"视图 |
 | 模块注册表 Module Registry | —（后台配置） | `portal_module` | `portal_` | 内核职责：门户模块的启停/排序/权限可见性 |
 

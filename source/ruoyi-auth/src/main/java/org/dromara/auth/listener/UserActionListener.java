@@ -20,7 +20,7 @@ import org.dromara.common.log.event.LogininforEvent;
 import org.dromara.common.redis.utils.RedisUtils;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.common.tenant.helper.TenantHelper;
-import org.dromara.resource.api.RemoteMessageService;
+import org.dromara.file.api.RemoteMessageService;
 import org.dromara.system.api.RemoteUserService;
 import org.dromara.system.api.domain.SysUserOnline;
 import org.springframework.stereotype.Component;

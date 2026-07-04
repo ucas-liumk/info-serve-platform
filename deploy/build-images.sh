@@ -35,9 +35,9 @@ build_java_image() {
     "${SOURCE_DIR}/ruoyi-modules/ruoyi-system" \
     "target/ruoyi-system.jar"
 
-  build_java_image "infosys/ruoyi-cloud-plus-resource:2.6.2" \
-    "${SOURCE_DIR}/ruoyi-modules/ruoyi-resource" \
-    "target/ruoyi-resource.jar"
+  build_java_image "infosys/ruoyi-cloud-plus-file:2.6.2" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-file" \
+    "target/ruoyi-file.jar"
 
   build_java_image "infosys/ruoyi-cloud-plus-monitor:2.6.2" \
     "${SOURCE_DIR}/ruoyi-visual/ruoyi-monitor" \

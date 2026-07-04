@@ -283,20 +283,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ruoyi-resource:
+      ruoyi-file:
         condition: service_started
     networks:
       - infosys-ruoyi-cloud-plus
 
-  ruoyi-resource:
-    image: ${RESOURCE_IMAGE}
-    container_name: infosys-ruoyi-cloud-plus-resource
+  ruoyi-file:
+    image: ${FILE_IMAGE}
+    container_name: infosys-ruoyi-cloud-plus-file
     restart: unless-stopped
     environment:
       <<: *ruoyi-env
       SERVER_PORT: 8114
     volumes:
-      - ../logs/resource:/ruoyi/resource/logs
+      - ../logs/file:/app/logs
       - ../data/resource:/ruoyi/resource/upload
     depends_on:
       nacos:
