@@ -4,7 +4,7 @@
 
 ## 与上游的差异
 
-- **保留**：gateway、auth、system、resource（文件服务）、monitor、nacos。
+- **保留**：gateway、auth、system、file（文件服务，由 ruoyi-resource 改名）、monitor、nacos。
 - **新增业务模块**：`ruoyi-modules/ruoyi-portal` 门户业务服务，内部按限界上下文分包——`kernel`（门户内核：消息通知/统计）、`appcenter`（工具即用）、`resources`（资料共享）、`forum`（服务论坛）。对外 API 路径保持 `/appcenter/**`、`/infoservice/**` 兼容。
 - **已移除**：gen（代码生成）、job/snailjob（任务调度）、workflow/warm-flow（工作流）、seata-server、gateway-mvc、example/demo 及其配置、路由、数据库。
 - 业务数据库为 PostgreSQL（`ry-cloud`）；MySQL 仅作 Nacos 配置库（`ry-config`）。

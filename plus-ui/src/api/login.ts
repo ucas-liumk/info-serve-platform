@@ -53,7 +53,7 @@ export function register(data: any) {
 export function logout() {
   if (import.meta.env.VITE_APP_SSE === 'true') {
     request({
-      url: '/resource/sse/close',
+      url: '/file/sse/close',
       method: 'get'
     });
   }

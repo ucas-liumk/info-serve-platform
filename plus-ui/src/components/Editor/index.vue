@@ -54,7 +54,7 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const upload = reactive<UploadOption>({
   headers: globalHeaders(),
-  url: import.meta.env.VITE_APP_BASE_API + '/resource/oss/upload'
+  url: import.meta.env.VITE_APP_BASE_API + '/file/oss/upload'
 });
 const quillEditorRef = ref();
 const uploadRef = ref<HTMLDivElement>();

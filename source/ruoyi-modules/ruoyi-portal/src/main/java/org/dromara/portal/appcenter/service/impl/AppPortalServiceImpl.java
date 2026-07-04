@@ -23,8 +23,8 @@ import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.oss.core.OssClient;
 import org.dromara.common.oss.factory.OssFactory;
 import org.dromara.common.satoken.utils.LoginHelper;
-import org.dromara.resource.api.RemoteFileService;
-import org.dromara.resource.api.domain.RemoteFile;
+import org.dromara.file.api.RemoteFileService;
+import org.dromara.file.api.domain.RemoteFile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

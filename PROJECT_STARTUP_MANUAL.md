@@ -261,7 +261,7 @@ JDK 17
 | 网关 | `org.dromara.gateway.RuoYiGatewayApplication` | `8180` |
 | 认证 | `org.dromara.auth.RuoYiAuthApplication` | `8110` |
 | 系统 | `org.dromara.system.RuoYiSystemApplication` | `8101` |
-| 资源 | `org.dromara.resource.RuoYiResourceApplication` | `8114` |
+| 文件 | `org.dromara.file.RuoYiFileApplication` | `8114` |
 | 门户业务 | `org.dromara.portal.RuoYiPortalApplication` | `8107` |
 
 （应用中心与信息服务已合并为门户业务服务 ruoyi-portal；代码生成 / 工作流 / 定时任务已移出源码。）
@@ -272,7 +272,7 @@ JDK 17
 ruoyi-gateway
 ruoyi-auth
 ruoyi-system
-ruoyi-resource
+ruoyi-file
 ruoyi-portal
 ```
 
@@ -312,7 +312,7 @@ mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:r
 cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-system
 mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
 
-cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-resource
+cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-file
 mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
 
 cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-portal

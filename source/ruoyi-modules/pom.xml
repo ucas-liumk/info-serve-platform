@@ -10,7 +10,7 @@
 
     <modules>
         <module>ruoyi-system</module>
-        <module>ruoyi-resource</module>
+        <module>ruoyi-file</module>
         <module>ruoyi-portal</module>
     </modules>
 

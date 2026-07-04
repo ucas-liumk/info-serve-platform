@@ -43,7 +43,7 @@
 | Auth | `8110` | `source/ruoyi-auth/src/main/resources/application.yml` | 认证服务 |
 | System | `8101` | `source/ruoyi-modules/ruoyi-system/src/main/resources/application.yml` | 系统管理 |
 | Portal | `8107` | `source/ruoyi-modules/ruoyi-portal/src/main/resources/application.yml` | 门户业务服务（内核/应用中心/资料共享/论坛），由 appcenter(8106)+infoservice(8107) 合并 |
-| Resource | `8114` | `source/ruoyi-modules/ruoyi-resource/src/main/resources/application.yml` | 文件服务；避开本机占用的 `8104` |
+| File | `8114` | `source/ruoyi-modules/ruoyi-file/src/main/resources/application.yml` | 文件服务（由 ruoyi-resource 改名）；避开本机占用的 `8104` |
 | Monitor | `8190` | `source/ruoyi-visual/ruoyi-monitor/src/main/resources/application.yml` | Spring Boot Admin |
 
 已移除的服务（gen `8102`、workflow `8105`、job `8113`、gateway-mvc `8181`、demo `8121`、test-mq `8122`、snailjob `8191-8193`、seata `8194`）不再占用端口，compose 中对应条目已删除。

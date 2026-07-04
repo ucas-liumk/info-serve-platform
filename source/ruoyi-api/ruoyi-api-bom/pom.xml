@@ -30,7 +30,7 @@
             <!-- 资源服务接口 -->
             <dependency>
                 <groupId>org.dromara</groupId>
-                <artifactId>ruoyi-api-resource</artifactId>
+                <artifactId>ruoyi-api-file</artifactId>
                 <version>${revision}</version>
             </dependency>
 

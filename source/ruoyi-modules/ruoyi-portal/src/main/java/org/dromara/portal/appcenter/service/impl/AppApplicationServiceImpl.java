@@ -16,8 +16,8 @@ import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
-import org.dromara.resource.api.RemoteFileService;
-import org.dromara.resource.api.domain.RemoteFile;
+import org.dromara.file.api.RemoteFileService;
+import org.dromara.file.api.domain.RemoteFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 

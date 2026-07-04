@@ -32,7 +32,7 @@ import org.dromara.common.social.config.properties.SocialLoginConfigProperties;
 import org.dromara.common.social.config.properties.SocialProperties;
 import org.dromara.common.social.utils.SocialUtils;
 import org.dromara.common.tenant.helper.TenantHelper;
-import org.dromara.resource.api.RemoteMessageService;
+import org.dromara.file.api.RemoteMessageService;
 import org.dromara.system.api.RemoteClientService;
 import org.dromara.system.api.RemoteConfigService;
 import org.dromara.system.api.RemoteSocialService;

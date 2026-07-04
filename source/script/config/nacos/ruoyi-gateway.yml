@@ -9,8 +9,8 @@ security:
       - /auth/binding/*
       - /auth/register
       - /auth/tenant/list
-      - /resource/sms/code
-      - /resource/sse/close
+      - /file/sms/code
+      - /file/sse/close
       - /*/v3/api-docs
       - /*/error
       - /csrf
@@ -43,10 +43,10 @@ spring:
               filters:
                 - StripPrefix=1
             # 资源服务
-            - id: ruoyi-resource
-              uri: lb://ruoyi-resource
+            - id: ruoyi-file
+              uri: lb://ruoyi-file
               predicates:
-                - Path=/resource/**
+                - Path=/file/**
               filters:
                 - StripPrefix=1
             # 门户业务服务（应用中心/资料共享/服务论坛，API 路径保持兼容）

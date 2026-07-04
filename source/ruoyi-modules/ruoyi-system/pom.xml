@@ -96,7 +96,7 @@
 
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-api-resource</artifactId>
+            <artifactId>ruoyi-api-file</artifactId>
         </dependency>
 
     </dependencies>

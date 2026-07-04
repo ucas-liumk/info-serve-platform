@@ -54,7 +54,7 @@ python3 scripts/generate-initdb.py
 > docker run --rm -v "$PWD":/workspace -v /Users/macmini/.m2:/root/.m2 -w /workspace \
 >   -e MAVEN_OPTS="-Xmx1280m -XX:MaxMetaspaceSize=384m" \
 >   maven:3.9-eclipse-temurin-17 mvn -ntp -Pprod -DskipTests \
->   -pl ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-resource,ruoyi-modules/ruoyi-portal \
+>   -pl ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-file,ruoyi-modules/ruoyi-portal \
 >   -am package
 > ```
 > 然后用 `deploy/build-images.sh` 中对应条目重建这些镜像。
@@ -69,7 +69,7 @@ docker run --rm \
   -w /workspace \
   maven:3.9-eclipse-temurin-17 \
   mvn -ntp -Pprod -DskipTests \
-    -pl ruoyi-visual/ruoyi-nacos,ruoyi-gateway,ruoyi-auth,ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-resource,ruoyi-modules/ruoyi-portal,ruoyi-visual/ruoyi-monitor \
+    -pl ruoyi-visual/ruoyi-nacos,ruoyi-gateway,ruoyi-auth,ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-file,ruoyi-modules/ruoyi-portal,ruoyi-visual/ruoyi-monitor \
     -am package
 ```
 
@@ -90,7 +90,7 @@ docker run --rm \
   -w /workspace \
   -e MAVEN_OPTS="-Xmx768m -XX:MaxMetaspaceSize=256m" \
   maven:3.9-eclipse-temurin-17 \
-  mvn -o -ntp -Pprod -DskipTests -pl ruoyi-modules/ruoyi-resource -am package
+  mvn -o -ntp -Pprod -DskipTests -pl ruoyi-modules/ruoyi-file -am package
 ```
 
 前端：
