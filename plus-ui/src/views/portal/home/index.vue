@@ -173,6 +173,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowDown, Calendar, ChatLineRound, Collection, Connection, Service, Sunny, UserFilled } from '@element-plus/icons-vue';
 import { getPortalStats } from '@/api/infoservice/portal';
 import { PortalStats } from '@/api/infoservice/types';
+import { listPortalModules } from '@/api/portal/module';
 import { getUserProfile, updateUserProfile, updateUserPwd } from '@/api/system/user';
 import type { UserForm } from '@/api/system/user/types';
 import { PORTAL_HOME_PATH } from '@/constants/router';
@@ -289,13 +290,43 @@ const stats = ref<PortalStats>({
   todayVisitCount: 0
 });
 
-const modules: HomeModule[] = [
+/** 各模块默认配图（注册表 image 为空时按 moduleCode 兜底） */
+const MODULE_ART: Record<string, string> = {
+  resources: moduleResource,
+  appcenter: moduleTools,
+  qa: moduleQa,
+  news: moduleHot,
+  forum: moduleForum
+};
+
+/** 注册表不可用时的兜底卡片（与种子数据一致） */
+const DEFAULT_MODULES: HomeModule[] = [
   { title: '资料共享', desc: '数据汇聚  共享共用', image: moduleResource, path: '/portal/resources' },
   { title: '工具即用', desc: '开箱即用  提升效率', image: moduleTools, path: '/portal/tools' },
   { title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa },
   { title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot },
   { title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum' }
 ];
+
+const modules = ref<HomeModule[]>(DEFAULT_MODULES);
+
+/** 首页卡片改从 portal_module 注册表渲染（后台可配启停/排序/权限） */
+const loadModules = async () => {
+  try {
+    const res = await listPortalModules();
+    const rows = res.data ?? [];
+    if (rows.length > 0) {
+      modules.value = rows.map((row) => ({
+        title: row.moduleName,
+        desc: row.description || '',
+        image: row.image || MODULE_ART[row.moduleCode] || moduleTools,
+        path: row.status === '0' && row.entryPath ? row.entryPath : undefined
+      }));
+    }
+  } catch {
+    // 注册表不可用时保留兜底卡片，不阻塞首页
+  }
+};
 
 const userLabel = computed(() => userStore.nickname || userStore.name || '当前用户');
 
@@ -328,7 +359,7 @@ const statsItems = computed(() => {
     { label: '数据资源总量', value: formatNumber(stats.value.resourceCount), unit: '个', icon: Collection },
     { label: '服务调用总量', value: formatNumber(serviceTotal), unit: '次', icon: Service },
     { label: '活跃用户数', value: formatNumber(stats.value.activeUserCount), unit: '人', icon: UserFilled },
-    { label: '智能问答次数', value: formatNumber(stats.value.topicCount), unit: '次', icon: ChatLineRound },
+    { label: '论坛话题数', value: formatNumber(stats.value.topicCount), unit: '个', icon: ChatLineRound },
     { label: '今日访问量', value: formatNumber(stats.value.todayVisitCount), unit: '次', icon: Calendar },
     { label: '在线服务数', value: formatNumber(stats.value.toolCount), unit: '个', icon: Connection }
   ];
@@ -460,6 +491,8 @@ onMounted(async () => {
   timer = setInterval(() => {
     now.value = new Date();
   }, 1000);
+
+  void loadModules();
 
   loading.value = true;
   try {
