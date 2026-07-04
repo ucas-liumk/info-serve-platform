@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { PortalApp, PortalCategory, PortalDemandForm, PortalDemandItem } from './types';
+import { PortalApp, PortalCategory, PortalDemandForm, PortalDemandItem } from '@/api/appcenter/types';
 
 export function listCategories(): AxiosPromise<PortalCategory[]> {
   return request({ url: '/appcenter/portal/categories', method: 'get' });

@@ -52,7 +52,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { Download, Star, StarFilled, View } from '@element-plus/icons-vue';
-import { resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/infoservice/portal';
+import { resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/portal/resources';
 import type { InfoResource } from '@/api/infoservice/types';
 import { getToken } from '@/utils/auth';
 import { getCachedThumbnail, setCachedThumbnail } from '../thumbnailCache';

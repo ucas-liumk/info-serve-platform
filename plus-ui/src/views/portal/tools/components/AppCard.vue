@@ -57,7 +57,7 @@ import { computed, markRaw, ref } from 'vue';
 import { Clock, Star, StarFilled } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { PortalApp } from '@/api/appcenter/types';
-import { useApp, favorite, unfavorite } from '@/api/appcenter/portal';
+import { useApp, favorite, unfavorite } from '@/api/portal/appcenter';
 import IconArrowRight from '~icons/material-symbols/arrow-right-alt-rounded';
 import IconDify from '~icons/simple-icons/dify';
 import IconAirflow from '~icons/simple-icons/apacheairflow';

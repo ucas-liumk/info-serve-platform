@@ -25,15 +25,6 @@ export interface PortalCategory {
   appCount: number;
 }
 
-export interface PortalMessage {
-  messageId: number;
-  title: string;
-  content: string;
-  msgType: string;
-  isRead: string;
-  createTime: string;
-}
-
 export interface PortalDemandForm {
   demandType: 'new_app' | 'suggestion';
   appId?: number;

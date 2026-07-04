@@ -80,7 +80,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Back, Close, Download } from '@element-plus/icons-vue';
-import { getResource, resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/infoservice/portal';
+import { getResource, resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/portal/resources';
 import type { InfoResource } from '@/api/infoservice/types';
 import { getToken } from '@/utils/auth';
 import { downloadPortalResource } from './download';

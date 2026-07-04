@@ -20,7 +20,8 @@ const viewAliasMap: Record<string, string> = {
   'infoservice/resource/index': 'admin/resources/resource/index',
   'infoservice/resource/category': 'admin/resources/category/index',
   'infoservice/forum/topic': 'admin/forum/topic/index',
-  'infoservice/forum/board': 'admin/forum/board/index'
+  'infoservice/forum/board': 'admin/forum/board/index',
+  'portal/module/index': 'admin/portal/module/index'
 };
 
 const adminViewRoots = ['system', 'monitor'];
