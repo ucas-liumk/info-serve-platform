@@ -1,7 +1,16 @@
 import request from '@/utils/request';
 import axios, { AxiosPromise, AxiosResponse } from 'axios';
 import { globalHeaders } from '@/utils/request';
-import { InfoResource, ResourcePortalPayload, ResourcePortalQuery, ResourceCategory, ResourceUploadResult } from '@/api/infoservice/types';
+import {
+  InfoResource,
+  ResourceCategory,
+  ResourceNote,
+  ResourceNotePayload,
+  ResourcePortalPayload,
+  ResourcePortalQuery,
+  ResourceUploadResult,
+  ResourceViewRecord
+} from '@/api/infoservice/types';
 
 type ResourceId = number | string;
 
@@ -49,6 +58,30 @@ export function favoritePortalResource(resourceId: ResourceId) {
 
 export function unfavoritePortalResource(resourceId: ResourceId) {
   return request({ url: `/infoservice/portal/resources/${resourceId}/favorite`, method: 'delete' });
+}
+
+export function listMyResourceNotes(resourceId: ResourceId, query?: PageQuery): AxiosPromise<ResourceNote[]> {
+  return request({ url: `/infoservice/portal/resources/${resourceId}/notes/my`, method: 'get', params: query });
+}
+
+export function listPublicResourceNotes(resourceId: ResourceId, query?: PageQuery): AxiosPromise<ResourceNote[]> {
+  return request({ url: `/infoservice/portal/resources/${resourceId}/notes/public`, method: 'get', params: query });
+}
+
+export function createResourceNote(resourceId: ResourceId, data: ResourceNotePayload): AxiosPromise<ResourceNote> {
+  return request({ url: `/infoservice/portal/resources/${resourceId}/notes`, method: 'post', data, headers: { repeatSubmit: false } });
+}
+
+export function updateResourceNote(resourceId: ResourceId, noteId: ResourceId, data: ResourceNotePayload): AxiosPromise<ResourceNote> {
+  return request({ url: `/infoservice/portal/resources/${resourceId}/notes/${noteId}`, method: 'put', data, headers: { repeatSubmit: false } });
+}
+
+export function deleteResourceNote(resourceId: ResourceId, noteId: ResourceId) {
+  return request({ url: `/infoservice/portal/resources/${resourceId}/notes/${noteId}`, method: 'delete' });
+}
+
+export function listResourceViewRecords(resourceId: ResourceId, query?: PageQuery): AxiosPromise<ResourceViewRecord[]> {
+  return request({ url: `/infoservice/portal/resources/${resourceId}/view-records`, method: 'get', params: query });
 }
 
 export function resourcePreviewUrl(resourceId: ResourceId) {

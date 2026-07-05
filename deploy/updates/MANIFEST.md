@@ -24,6 +24,7 @@
 | 0.3.5 | `0.3.5-appcenter-access-scope.sql` | PG `ry-cloud` | 待投放。应用中心新增应用级开放范围，支持全部用户、指定角色、指定用户灰度开放 |
 | 0.3.5 | `0.3.5-required-knowledge-appcenter.sql` | PG `ry-cloud` | 待投放。应用中心新增“应知应会”站内应用入口 |
 | 0.3.5 | `0.3.5-required-knowledge-config.sql` | PG `ry-cloud` | 待投放。应知应会新增学习栏目、科目、知识点配置表、默认数据与后台菜单 |
+| 0.3.5 | `0.3.5-resource-preview-notes.sql` | PG `ry-cloud` | 待投放。资料预览页笔记与阅看记录表 |
 
 ### 0.3.4 更新包非 SQL 操作清单（服务合并 + ruoyi-file 改名）
 

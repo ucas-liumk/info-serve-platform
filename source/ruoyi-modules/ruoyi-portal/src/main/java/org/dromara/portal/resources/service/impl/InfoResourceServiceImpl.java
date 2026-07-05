@@ -20,12 +20,14 @@ import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.portal.resources.domain.InfoResource;
 import org.dromara.portal.resources.domain.InfoResourceCategory;
 import org.dromara.portal.resources.domain.InfoResourceFavorite;
+import org.dromara.portal.resources.domain.InfoResourceViewRecord;
 import org.dromara.portal.resources.domain.bo.InfoResourceBo;
 import org.dromara.portal.resources.domain.vo.InfoResourceVo;
 import org.dromara.portal.resources.domain.vo.ResourceUploadVo;
 import org.dromara.portal.resources.mapper.InfoResourceCategoryMapper;
 import org.dromara.portal.resources.mapper.InfoResourceFavoriteMapper;
 import org.dromara.portal.resources.mapper.InfoResourceMapper;
+import org.dromara.portal.resources.mapper.InfoResourceViewRecordMapper;
 import org.dromara.portal.kernel.service.IPortalNotificationService;
 import org.dromara.portal.resources.service.IInfoResourceService;
 import org.dromara.portal.kernel.support.InfoUserDisplayNameResolver;
@@ -70,6 +72,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     private final InfoResourceMapper baseMapper;
     private final InfoResourceCategoryMapper categoryMapper;
     private final InfoResourceFavoriteMapper favoriteMapper;
+    private final InfoResourceViewRecordMapper viewRecordMapper;
     private final IPortalNotificationService notificationService;
     private final InfoUserDisplayNameResolver userDisplayNameResolver;
 
@@ -194,6 +197,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         baseMapper.update(null, Wrappers.<InfoResource>lambdaUpdate()
             .setSql("view_count = view_count + 1")
             .eq(InfoResource::getResourceId, resourceId));
+        recordResourceView(resourceId);
         return convertPortalResource(resource);
     }
 
@@ -646,6 +650,22 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
             throw new ServiceException("请先登录");
         }
         return userId;
+    }
+
+    private void recordResourceView(Long resourceId) {
+        Long userId = LoginHelper.getUserId();
+        if (userId == null) { return; }
+        InfoResourceViewRecord record = new InfoResourceViewRecord();
+        record.setResourceId(resourceId);
+        record.setUserId(userId);
+        record.setUserName(userDisplayNameResolver.currentUserDisplayName("我"));
+        record.setActionType("view");
+        record.setTenantId(LoginHelper.getTenantId());
+        try {
+            viewRecordMapper.insert(record);
+        } catch (RuntimeException e) {
+            log.warn("记录资料阅看失败，已跳过阅看记录写入，resourceId={}, userId={}", resourceId, userId, e);
+        }
     }
 
     private void assertCategoryUsable(Long categoryId) {

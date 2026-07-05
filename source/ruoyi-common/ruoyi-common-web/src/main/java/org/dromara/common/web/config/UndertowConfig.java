@@ -38,8 +38,10 @@ public class UndertowConfig implements WebServerFactoryCustomizer<UndertowServle
     @Override
     public void customize(UndertowServletWebServerFactory factory) {
         long bytes = serverProperties.getUndertow().getMaxHttpPostSize().toBytes();
+        long maxEntitySize = bytes < 0 ? Long.MAX_VALUE : bytes;
         factory.addBuilderCustomizers(builder -> {
-            builder.setServerOption(UndertowOptions.MULTIPART_MAX_ENTITY_SIZE, bytes);
+            builder.setServerOption(UndertowOptions.MAX_ENTITY_SIZE, maxEntitySize);
+            builder.setServerOption(UndertowOptions.MULTIPART_MAX_ENTITY_SIZE, maxEntitySize);
         });
 
         // 默认不直接分配内存 如果项目中使用了 websocket 建议直接分配
