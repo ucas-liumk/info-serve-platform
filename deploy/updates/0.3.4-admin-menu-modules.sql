@@ -12,7 +12,32 @@ VALUES
     (3000, '资源共享', 0, 6, 'resources', NULL, '', '1', '0', 'M', '0', '0', '', 'documentation', 103, 1, now(), '资源共享后台管理'),
     (3050, '服务论坛', 0, 7, 'forum', NULL, '', '1', '0', 'M', '0', '0', '', 'message', 103, 1, now(), '服务论坛后台管理'),
     (2099, '门户配置', 0, 8, 'portal', NULL, '', '1', '0', 'M', '0', '0', '', 'component', 103, 1, now(), '门户公共配置'),
-    (4000, '应知应会', 0, 9, 'required-knowledge', 'admin/required-knowledge/index', '', '0', '0', 'C', '0', '0', '', 'education', 103, 1, now(), '应知应会后台入口')
+    (4000, '应知应会', 0, 9, 'required-knowledge', NULL, '', '1', '0', 'M', '0', '0', '', 'education', 103, 1, now(), '应知应会后台管理')
+ON CONFLICT (menu_id) DO UPDATE
+SET menu_name = EXCLUDED.menu_name,
+    parent_id = EXCLUDED.parent_id,
+    order_num = EXCLUDED.order_num,
+    path = EXCLUDED.path,
+    component = EXCLUDED.component,
+    query_param = EXCLUDED.query_param,
+    is_frame = EXCLUDED.is_frame,
+    is_cache = EXCLUDED.is_cache,
+    menu_type = EXCLUDED.menu_type,
+    visible = EXCLUDED.visible,
+    status = EXCLUDED.status,
+    perms = EXCLUDED.perms,
+    icon = EXCLUDED.icon,
+    remark = EXCLUDED.remark;
+
+INSERT INTO sys_menu (
+    menu_id, menu_name, parent_id, order_num, path, component, query_param,
+    is_frame, is_cache, menu_type, visible, status, perms, icon,
+    create_dept, create_by, create_time, remark
+)
+VALUES
+    (4001, '题库管理', 4000, 1, 'questions', 'admin/required-knowledge/questions/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:question:list', 'question', 103, 1, now(), '应知应会题库管理'),
+    (4002, '考试配置', 4000, 2, 'exams', 'admin/required-knowledge/exams/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:exam:list', 'education', 103, 1, now(), '应知应会考试配置'),
+    (4003, 'OCR 导入', 4000, 3, 'ocr', 'admin/required-knowledge/ocr/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:ocr:list', 'upload', 103, 1, now(), '应知应会材料识别导入')
 ON CONFLICT (menu_id) DO UPDATE
 SET menu_name = EXCLUDED.menu_name,
     parent_id = EXCLUDED.parent_id,
@@ -123,6 +148,20 @@ INSERT INTO sys_role_menu (role_id, menu_id)
 SELECT DISTINCT role_id, 2099
 FROM sys_role_menu
 WHERE menu_id IN (2090, 2091, 2092, 2093)
+ON CONFLICT (role_id, menu_id) DO NOTHING;
+
+-- 如果存量角色已被授予“应知应会”一级入口，迁移后补齐二级菜单。
+INSERT INTO sys_role_menu (role_id, menu_id)
+SELECT DISTINCT rm.role_id, m.menu_id
+FROM sys_role_menu rm
+CROSS JOIN (VALUES (4001), (4002), (4003)) AS m(menu_id)
+WHERE rm.menu_id = 4000
+ON CONFLICT (role_id, menu_id) DO NOTHING;
+
+INSERT INTO sys_role_menu (role_id, menu_id)
+SELECT DISTINCT role_id, 4000
+FROM sys_role_menu
+WHERE menu_id IN (4001, 4002, 4003)
 ON CONFLICT (role_id, menu_id) DO NOTHING;
 
 -- 旧版 2000 是“门户应用管理”父目录。只保留真正拥有工具即用子菜单的角色，避免资源/论坛管理员看到空工具菜单。
