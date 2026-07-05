@@ -96,11 +96,11 @@ const goHome = () => {
   gap: 13px;
   box-sizing: border-box;
   border: 1px solid var(--tool-border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 16px;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(183, 121, 31, 0.13), transparent 42%), linear-gradient(180deg, #fff 0%, #f8fafc 100%);
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+  background: linear-gradient(135deg, var(--tool-accent-soft), transparent 42%), var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .side-brand::after {
@@ -110,8 +110,8 @@ const goHome = () => {
   bottom: -34px;
   width: 110px;
   height: 72px;
-  border: 1px solid rgba(183, 121, 31, 0.22);
-  border-radius: 8px;
+  border: 1px solid var(--ip-mod-appcenter-border);
+  border-radius: 10px;
   transform: rotate(-14deg);
   pointer-events: none;
 }
@@ -134,9 +134,9 @@ const goHome = () => {
 
 .side-brand strong {
   color: var(--tool-title);
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.15;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .side-brand span {
@@ -154,12 +154,12 @@ const goHome = () => {
   justify-content: center;
   gap: 7px;
   border: 1px solid var(--tool-border);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0 14px;
-  background: #fff;
+  background: var(--ip-neutral-0);
   color: var(--tool-text);
   line-height: 1;
-  font-weight: 850;
+  font-weight: 700;
   cursor: pointer;
   transition:
     border-color 0.18s ease,
@@ -191,11 +191,11 @@ const goHome = () => {
   flex-direction: column;
   gap: 10px;
   border: 1px solid var(--tool-border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 14px;
   overflow: auto;
   background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .nav-title {
@@ -213,7 +213,7 @@ const goHome = () => {
 .nav-title span {
   color: var(--tool-title);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .nav-title em {
@@ -231,12 +231,12 @@ const goHome = () => {
   align-items: center;
   gap: 10px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.98)), #f8fafc;
+  background: var(--ip-neutral-50);
   color: var(--tool-text);
   font-size: 15px;
-  font-weight: 850;
+  font-weight: 700;
   text-align: left;
   cursor: pointer;
   transition:
@@ -252,8 +252,8 @@ const goHome = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 6px;
+  background: var(--ip-neutral-0);
   color: var(--tool-accent);
   box-shadow: 0 0 0 1px var(--tool-input-border) inset;
 }
@@ -263,7 +263,7 @@ const goHome = () => {
   overflow: hidden;
   color: var(--tool-title);
   line-height: 1.2;
-  font-weight: 850;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -278,13 +278,13 @@ const goHome = () => {
 }
 
 .side-link:hover {
-  border-color: #b8c9d9;
-  background: #f8fafc;
+  border-color: var(--ip-neutral-300);
+  background: var(--ip-neutral-100);
   transform: translateX(2px);
 }
 
 .side-link.active {
-  border-color: #b8c9d9;
+  border-color: var(--ip-mod-appcenter-border);
   background: var(--tool-accent-soft);
   box-shadow: inset 3px 0 0 var(--tool-accent);
 }
@@ -295,8 +295,8 @@ const goHome = () => {
 
 .side-link.active .nav-icon {
   background: var(--tool-accent);
-  color: #fff;
-  box-shadow: 0 10px 20px rgba(183, 121, 31, 0.2);
+  color: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-md);
 }
 
 @media (max-width: 1120px) {
