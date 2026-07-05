@@ -1,10 +1,10 @@
 <template>
   <aside class="tools-sidebar">
     <div class="side-brand">
-      <img :src="logoUrl" alt="工具即用" />
+      <img :src="logoUrl" alt="应用中心" />
       <div>
-        <strong>工具即用</strong>
-        <span>即开即用 · 提升效率</span>
+        <strong>应用中心</strong>
+        <span>自研 · 开源 · 离线</span>
       </div>
     </div>
 
@@ -13,46 +13,61 @@
       <span>返回首页</span>
     </button>
 
-    <nav class="side-nav" aria-label="工具即用导航">
+    <nav class="side-nav" aria-label="应用中心导航">
       <div class="nav-title">
-        <span>工具导航</span>
-        <em>{{ navItems.length }} 项</em>
+        <span>应用分类</span>
+        <em>{{ categories.length }} 项</em>
       </div>
       <button
-        v-for="item in navItems"
-        :key="item.key"
-        :class="['side-link', { active: viewMode === item.key }]"
+        v-for="category in categories"
+        :key="category.categoryCode"
+        :class="['side-link', { active: viewMode === 'market' && categoryCode === category.categoryCode }]"
         type="button"
-        @click="switchMode(item.key)"
+        @click="selectCategory(category.categoryCode)"
       >
         <span class="nav-icon">
-          <el-icon><component :is="item.icon" /></el-icon>
+          <el-icon><component :is="categoryIcon(category.categoryCode)" /></el-icon>
         </span>
-        <strong>{{ item.label }}</strong>
+        <strong>{{ category.categoryName }}</strong>
+        <em class="side-count">{{ category.appCount || 0 }}</em>
+      </button>
+
+      <div class="nav-title secondary">
+        <span>个人</span>
+      </div>
+      <button :class="['side-link', { active: viewMode === 'favorites' }]" type="button" @click="switchMode('favorites')">
+        <span class="nav-icon">
+          <el-icon><Star /></el-icon>
+        </span>
+        <strong>收藏应用</strong>
+        <em class="side-count">{{ favoriteTotal || 0 }}</em>
       </button>
     </nav>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { Grid, House, Star } from '@element-plus/icons-vue';
+import { Collection, Connection, Download, Grid, House, Star } from '@element-plus/icons-vue';
+import type { PortalCategory } from '@/api/appcenter/types';
 import logoUrl from '@/assets/portal/home-logo.png';
 
 type ViewMode = 'market' | 'favorites';
 
-defineProps<{ viewMode: ViewMode }>();
-const emit = defineEmits<{ (e: 'switch-mode', mode: ViewMode): void }>();
+defineProps<{ viewMode: ViewMode; categoryCode: string; categories: PortalCategory[]; favoriteTotal?: number }>();
+const emit = defineEmits<{ (e: 'switch-mode', mode: ViewMode): void; (e: 'select-category', code: string): void }>();
 
 const router = useRouter();
 
-const navItems = computed(() => [
-  { key: 'market' as const, label: '应用中心', icon: Grid },
-  { key: 'favorites' as const, label: '收藏应用', icon: Star }
-]);
-
 const switchMode = (mode: ViewMode) => emit('switch-mode', mode);
+const selectCategory = (code: string) => emit('select-category', code);
+
+const categoryIcon = (code: string) => {
+  if (code === 'self_hosted') return Collection;
+  if (code === 'open_source') return Connection;
+  if (code === 'offline') return Download;
+  return Grid;
+};
 
 const goHome = () => {
   router.push('/portal');
@@ -191,6 +206,10 @@ const goHome = () => {
   padding: 2px 2px 6px;
 }
 
+.nav-title.secondary {
+  padding-top: 10px;
+}
+
 .nav-title span {
   color: var(--tool-title);
   font-size: 15px;
@@ -208,7 +227,7 @@ const goHome = () => {
   position: relative;
   min-height: 58px;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   border: 1px solid transparent;
@@ -249,6 +268,15 @@ const goHome = () => {
   white-space: nowrap;
 }
 
+.side-count {
+  min-width: 24px;
+  color: var(--tool-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  text-align: right;
+}
+
 .side-link:hover {
   border-color: #b8c9d9;
   background: #f8fafc;
@@ -259,6 +287,10 @@ const goHome = () => {
   border-color: #b8c9d9;
   background: var(--tool-accent-soft);
   box-shadow: inset 3px 0 0 var(--tool-accent);
+}
+
+.side-link.active .side-count {
+  color: var(--tool-primary-deep);
 }
 
 .side-link.active .nav-icon {

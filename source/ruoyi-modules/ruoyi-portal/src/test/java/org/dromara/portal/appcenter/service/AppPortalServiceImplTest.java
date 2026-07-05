@@ -83,17 +83,23 @@ class AppPortalServiceImplTest {
         AppCategory cat = new AppCategory();
         cat.setCategoryId(1L);
         cat.setCategoryName("Tools");
+        AppApplication app = new AppApplication();
+        app.setCategoryId(1L);
+        when(applicationMapper.selectList(any())).thenReturn(List.of(app));
         when(categoryMapper.selectList(any())).thenReturn(List.of(cat));
 
         List<AppCategoryVo> result = service.categories();
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getCategoryName()).isEqualTo("Tools");
+        assertThat(result.get(0).getAppCount()).isEqualTo(1);
+        verify(applicationMapper).selectList(any());
         verify(categoryMapper).selectList(any());
     }
 
     @Test
     void categories_shouldReturnEmptyWhenNoEnabledCategories() {
+        when(applicationMapper.selectList(any())).thenReturn(Collections.emptyList());
         when(categoryMapper.selectList(any())).thenReturn(Collections.emptyList());
 
         List<AppCategoryVo> result = service.categories();

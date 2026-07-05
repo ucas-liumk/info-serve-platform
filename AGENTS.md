@@ -23,7 +23,7 @@
   - 内核对内容 BC **只可依赖其 `service` 接口**（domain/mapper/impl 全禁）；
   - 内容 BC 不得依赖内核实现类。
   - 以上由 ArchUnit（`ruoyi-portal/src/test/.../BcBoundaryTest`）强制，测试不过=不许提交。
-- 表前缀归属：`app_`（工具即用）、`info_/res_`（资料）、`forum_`（论坛）、`portal_`（内核）。**跨域取数走对方 service 接口，禁止跨界 SQL。**
+- 表前缀归属：`app_`（应用中心）、`info_/res_`（资料）、`forum_`（论坛）、`portal_`（内核）。**跨域取数走对方 service 接口，禁止跨界 SQL。**
 - 门户公共能力（消息通知、收藏、统计聚合、模块注册表）只存在于 kernel，**禁止在 BC 内复制一套**。
 - 新增门户模块必须：注册 `portal_module` + 提供 BC 契约（元数据 / 入口路由 / 权限码 / `my-*` 查询 / 统计接口 / 消息 scene）。
 

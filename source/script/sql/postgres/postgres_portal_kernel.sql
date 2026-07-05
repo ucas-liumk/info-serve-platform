@@ -23,7 +23,7 @@ COMMENT ON TABLE portal_module IS '门户模块注册表';
 INSERT INTO portal_module (module_id, module_code, module_name, description, entry_path, status, sort_order, create_time)
 VALUES
     (1, 'resources', '资料共享', '数据汇聚  共享共用', '/portal/resources', '0', 1, now()),
-    (2, 'appcenter', '工具即用', '开箱即用  提升效率', '/portal/tools',     '0', 2, now()),
+    (2, 'appcenter', '应用中心', '应用聚合  即取即用', '/portal/tools',     '0', 2, now()),
     (3, 'qa',        '智能问答', '智慧问答  快速响应', NULL,               '1', 3, now()),
     (4, 'news',      '时事热点', '热点速递  洞察先机', NULL,               '1', 4, now()),
     (5, 'forum',     '服务论坛', '交流互动  共建共治', '/portal/forum',    '0', 5, now())
