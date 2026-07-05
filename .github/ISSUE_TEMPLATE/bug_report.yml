@@ -1,0 +1,64 @@
+name: Bug 修复
+description: 报告一个可复现的问题
+title: "fix: "
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题描述
+      description: 说明发生了什么，以及这和预期行为有什么不同。
+      placeholder: "例如：AppCenter 下载按钮点击后没有发起请求。"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 写出从干净状态到触发问题的最短路径。
+      placeholder: |
+        1. 打开 ...
+        2. 点击 ...
+        3. 看到 ...
+    validations:
+      required: true
+  - type: dropdown
+    id: bounded_context
+    attributes:
+      label: 影响 BC
+      multiple: true
+      options:
+        - kernel
+        - appcenter
+        - resources
+        - forum
+        - deploy
+        - docs
+        - unknown
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果
+      description: 修复后用户、接口或部署流程应该表现为什么样。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 证据
+      description: 粘贴截图、日志、接口响应、环境信息或相关链接。
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 列出 PR 合并前必须满足的检查。
+      placeholder: |
+        - [ ] 问题可复现并已修复
+        - [ ] 相关端点 curl 通过
+        - [ ] npm run build:prod 通过
+    validations:
+      required: true
