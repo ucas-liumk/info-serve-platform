@@ -1,7 +1,7 @@
 <template>
   <main class="portal-home">
     <section class="home-shell">
-      <HomeTopbar @command="handleUserCommand" />
+      <HomeTopbar @command="handleUserCommand" @open-manual="openManualDialog" />
 
       <ModuleGrid :modules="featuredModules" :total="modules.length" @open="openModule" @more="openModuleDialog" />
 
@@ -91,6 +91,7 @@
     </el-dialog>
 
     <AllModuleDialog v-model="moduleDialog.visible" :modules="modules" :saving="moduleDialog.saving" @open="openModule" @reorder="saveModuleOrder" />
+    <SystemManualDialog v-model="manualDialogVisible" />
   </main>
 </template>
 
@@ -110,6 +111,7 @@ import AllModuleDialog from './components/AllModuleDialog.vue';
 import HomeTopbar from './components/HomeTopbar.vue';
 import ModuleGrid from './components/ModuleGrid.vue';
 import StatsBand from './components/StatsBand.vue';
+import SystemManualDialog from './components/SystemManualDialog.vue';
 import moduleResource from '@/assets/portal/module-resource.png';
 import moduleTools from '@/assets/portal/module-tools.png';
 import moduleQa from '@/assets/portal/module-qa.png';
@@ -130,6 +132,7 @@ const userStore = useUserStore();
 const loading = ref(false);
 const profileFormRef = ref<ElFormInstance>();
 const passwordFormRef = ref<ElFormInstance>();
+const manualDialogVisible = ref(false);
 
 type PortalProfileForm = Partial<UserForm> & {
   userName?: string;
@@ -282,6 +285,10 @@ const openModule = (item: HomeModule) => {
 
 const openModuleDialog = () => {
   moduleDialog.visible = true;
+};
+
+const openManualDialog = () => {
+  manualDialogVisible.value = true;
 };
 
 const saveModuleOrder = async (orderedModules: HomeModule[]) => {

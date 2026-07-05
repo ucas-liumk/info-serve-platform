@@ -16,10 +16,10 @@
 
 > 完整开发规约（含架构边界、验证门禁、多代理并行规则）见根目录 [AGENTS.md](./AGENTS.md)，对所有开发者与 AI 代理强制生效。
 
-- 唯一真相源：Windows 裸仓库 `E:/git/info-serve.git`；工作副本为 Windows `E:\gallant-dev\active\info-serve` 与 Mac `/Users/macmini/info-serve`；GitHub 为备份镜像（定版后从 Mac 推送）。
+- 唯一真相源：GitHub 仓库 `origin`（当前为 `https://github.com/ucas-liumk/info-serve-platform.git`），`origin/main` 是稳定主线。Mac `/Users/macmini/windows-info-serve` 与 Windows `E:\gallant-dev\active\info-serve` 都是普通工作副本。
 - `main` 只进合并，禁止直接提交；每个工作线程一个分支 `feat/<bc>-<topic>`，按 `docs/architecture/bounded-contexts.md` 的限界上下文认领。
-- 开工第一步 `git fetch` 并新开分支；收工最后一步 push——**未 push 的工作视为不存在**。
-- 定版流程：更新 `VERSION` → 提交 → 打 `git tag v<版本>` → 从 tag 构建更新包（迁移 SQL 见 `deploy/updates/MANIFEST.md`）→ 推送 GitHub 镜像。
+- 开工第一步从最新 `origin/main` 新开分支；收工最后一步 push 当前任务分支——**未 push 的工作视为不存在**。
+- 定版流程：更新 `VERSION` → 提交 → 打 `git tag v<版本>` → push 分支与 tag 到 GitHub → 从 tag 构建更新包（迁移 SQL 见 `deploy/updates/MANIFEST.md`）。
 
 ## 数据库架构（PostgreSQL 迁移）
 
@@ -46,13 +46,13 @@
 生成初始化脚本（产出 `deploy/initdb-mysql/` 与 `deploy/initdb-postgres/`；两目录为生成产物不入库，**新 clone 首次启动容器前必须先执行**）：
 
 ```bash
-cd /Users/macmini/info-serve/deploy
+cd /Users/macmini/windows-info-serve/deploy
 python3 scripts/generate-initdb.py
 ```
 
 > 只改业务代码时，按需重建对应服务（其余沿用旧镜像），例如业务模块：
 > ```bash
-> cd /Users/macmini/info-serve/source
+> cd /Users/macmini/windows-info-serve/source
 > docker run --rm -v "$PWD":/workspace -v /Users/macmini/.m2:/root/.m2 -w /workspace \
 >   -e MAVEN_OPTS="-Xmx1280m -XX:MaxMetaspaceSize=384m" \
 >   maven:3.9-eclipse-temurin-17 mvn -ntp -Pprod -DskipTests \
@@ -64,7 +64,7 @@ python3 scripts/generate-initdb.py
 后端首次完整构建（含全部服务）使用 Docker Maven/JDK 17：
 
 ```bash
-cd /Users/macmini/info-serve/source
+cd /Users/macmini/windows-info-serve/source
 docker run --rm \
   -v "$PWD":/workspace \
   -v /Users/macmini/.m2:/root/.m2 \
@@ -79,7 +79,7 @@ docker run --rm \
 
 ```bash
 docker run --rm \
-  -v /Users/macmini/info-serve/source:/workspace \
+  -v /Users/macmini/windows-info-serve/source:/workspace \
   -v /Users/macmini/.m2:/root/.m2 \
   -w /workspace \
   -e MAVEN_OPTS="-Xmx768m -XX:MaxMetaspaceSize=256m" \
@@ -87,7 +87,7 @@ docker run --rm \
   mvn -o -ntp -Pprod -DskipTests -pl ruoyi-modules/ruoyi-portal -am package
 
 docker run --rm \
-  -v /Users/macmini/info-serve/source:/workspace \
+  -v /Users/macmini/windows-info-serve/source:/workspace \
   -v /Users/macmini/.m2:/root/.m2 \
   -w /workspace \
   -e MAVEN_OPTS="-Xmx768m -XX:MaxMetaspaceSize=256m" \
@@ -98,7 +98,7 @@ docker run --rm \
 前端：
 
 ```bash
-cd /Users/macmini/info-serve/plus-ui
+cd /Users/macmini/windows-info-serve/plus-ui
 npm install
 npm run build:prod
 ```
@@ -106,14 +106,14 @@ npm run build:prod
 构建本地镜像：
 
 ```bash
-cd /Users/macmini/info-serve/deploy
+cd /Users/macmini/windows-info-serve/deploy
 ./build-images.sh
 ```
 
 ## 启停
 
 ```bash
-cd /Users/macmini/info-serve/deploy
+cd /Users/macmini/windows-info-serve/deploy
 docker compose --env-file .env up -d
 docker compose --env-file .env stop
 docker compose --env-file .env down
