@@ -23,7 +23,7 @@ COMMENT ON TABLE portal_module IS '门户模块注册表';
 
 INSERT INTO portal_module (module_id, module_code, module_name, description, entry_path, status, sort_order, create_time)
 VALUES
-    (6, 'usage-dashboard', '应用态势', '洞察系统应用  透明运行态势', '/portal/usage-dashboard', '0', 6, now())
+    (6, 'dashboard', '应用态势', '洞察系统应用  透明运行态势', '/portal/usage-dashboard', '0', 6, now())
 ON CONFLICT (module_id) DO UPDATE
 SET module_code = EXCLUDED.module_code,
     module_name = EXCLUDED.module_name,

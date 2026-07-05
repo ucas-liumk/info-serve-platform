@@ -217,6 +217,7 @@ const stats = ref<PortalStats>({
 const MODULE_ART: Record<string, string> = {
   resources: moduleResource,
   appcenter: moduleTools,
+  dashboard: moduleTools,
   'usage-dashboard': moduleTools,
   qa: moduleQa,
   news: moduleHot,

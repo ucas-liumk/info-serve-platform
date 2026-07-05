@@ -27,7 +27,7 @@ VALUES
     (3, 'qa',        '智能问答', '智慧问答  快速响应', NULL,               '1', 3, now()),
     (4, 'news',      '时事热点', '热点速递  洞察先机', NULL,               '1', 4, now()),
     (5, 'forum',     '服务论坛', '交流互动  共建共治', '/portal/forum',    '0', 5, now()),
-    (6, 'usage-dashboard', '应用态势', '洞察系统应用  透明运行态势', '/portal/usage-dashboard', '0', 6, now())
+    (6, 'dashboard', '应用态势', '洞察系统应用  透明运行态势', '/portal/usage-dashboard', '0', 6, now())
 ON CONFLICT (module_id) DO NOTHING;
 
 -- 管理后台菜单：门户模块注册表（挂在 2000 门户应用管理 目录下）
