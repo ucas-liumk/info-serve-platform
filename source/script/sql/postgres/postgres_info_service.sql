@@ -163,17 +163,19 @@ VALUES
  1, '管理员', 0, 0, 0, '1', '0', '0', '000000', now())
 ON CONFLICT (topic_id) DO NOTHING;
 
--- 资料共享和服务论坛归入后台的“门户应用管理”，与门户 App 板块保持一致。
+-- 资源共享和服务论坛在后台作为一级模块展示，便于按模块授权管理员。
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
-VALUES (2000, '门户应用管理', 0, 5, 'portal-apps', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now())
+VALUES
+(3000, '资源共享', 0, 6, 'resources', NULL, '', '1', '0', 'M', '0', '0', '', 'documentation', 103, 1, now()),
+(3050, '服务论坛', 0, 7, 'forum', NULL, '', '1', '0', 'M', '0', '0', '', 'message', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
 VALUES
-(3010, '资料共享', 2000, 3, 'resource', 'admin/resources/resource/index', '', '1', '0', 'C', '0', '0', 'infoservice:resource:list', 'document', 103, 1, now()),
-(3020, '资料分类', 2000, 4, 'resource-category', 'admin/resources/category/index', '', '1', '0', 'C', '0', '0', 'infoservice:resourceCategory:list', 'tree', 103, 1, now()),
-(3030, '论坛主题', 2000, 5, 'forum-topic', 'admin/forum/topic/index', '', '1', '0', 'C', '0', '0', 'infoservice:forumTopic:list', 'message', 103, 1, now()),
-(3040, '论坛版块', 2000, 6, 'forum-board', 'admin/forum/board/index', '', '1', '0', 'C', '0', '0', 'infoservice:forumBoard:list', 'list', 103, 1, now())
+(3010, '资源管理', 3000, 1, 'resource', 'admin/resources/resource/index', '', '1', '0', 'C', '0', '0', 'infoservice:resource:list', 'document', 103, 1, now()),
+(3020, '资源分类', 3000, 2, 'category', 'admin/resources/category/index', '', '1', '0', 'C', '0', '0', 'infoservice:resourceCategory:list', 'tree', 103, 1, now()),
+(3030, '论坛主题', 3050, 1, 'topic', 'admin/forum/topic/index', '', '1', '0', 'C', '0', '0', 'infoservice:forumTopic:list', 'message', 103, 1, now()),
+(3040, '论坛版块', 3050, 2, 'board', 'admin/forum/board/index', '', '1', '0', 'C', '0', '0', 'infoservice:forumBoard:list', 'list', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
