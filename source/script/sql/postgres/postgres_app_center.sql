@@ -190,13 +190,26 @@ VALUES
  '白板,草图,协作', 'http://127.0.0.1:18090', 'online', '0', '0', 84, 24, 3, now());
 
 -- ----------------------------------------------------------------
--- sys_menu: 门户应用管理目录 + 应用中心菜单 + 按钮权限
+-- sys_menu: 工具即用后台菜单 + 按钮权限
 -- 幂等: ON CONFLICT (menu_id) DO NOTHING
 -- ----------------------------------------------------------------
 
--- 门户应用管理 目录 (menu_id=2000)
+-- 工具即用 目录 (menu_id=2000)
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
-VALUES (2000, '门户应用管理', 0, 5, 'portal-apps', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now())
+VALUES (2000, '工具即用', 0, 5, 'appcenter', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now())
+ON CONFLICT (menu_id) DO NOTHING;
+
+-- 应知应会 目录 (menu_id=4000)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
+VALUES (4000, '应知应会', 0, 9, 'required-knowledge', NULL, '', '1', '0', 'M', '0', '0', '', 'education', 103, 1, now())
+ON CONFLICT (menu_id) DO NOTHING;
+
+-- 应知应会管理 菜单 (menu_id=4001-4003)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
+VALUES
+(4001, '题库管理', 4000, 1, 'questions', 'admin/required-knowledge/questions/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:question:list', 'question', 103, 1, now()),
+(4002, '考试配置', 4000, 2, 'exams', 'admin/required-knowledge/exams/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:exam:list', 'education', 103, 1, now()),
+(4003, 'OCR 导入', 4000, 3, 'ocr', 'admin/required-knowledge/ocr/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:ocr:list', 'upload', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
 -- 应用管理 菜单 (menu_id=2010)

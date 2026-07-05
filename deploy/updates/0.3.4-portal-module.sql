@@ -30,10 +30,11 @@ VALUES
     (5, 'forum',     '服务论坛', '交流互动  共建共治', '/portal/forum',    '0', 5, now())
 ON CONFLICT (module_id) DO NOTHING;
 
--- 管理后台菜单：门户模块注册表（挂在 2000 门户应用管理 目录下）
+-- 管理后台菜单：门户配置
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time, remark)
 VALUES
-    (2090, '模块注册表', 2000, 9, 'module', 'portal/module/index', '', '1', '0', 'C', '0', '0', 'portal:module:list', 'component', 103, 1, now(), '门户模块启停/排序/权限配置'),
+    (2099, '门户配置', 0, 8, 'portal', NULL, '', '1', '0', 'M', '0', '0', '', 'component', 103, 1, now(), '门户公共配置'),
+    (2090, '模块注册表', 2099, 1, 'module', 'admin/portal/module/index', '', '1', '0', 'C', '0', '0', 'portal:module:list', 'component', 103, 1, now(), '门户模块启停/排序/权限配置'),
     (2091, '模块新增', 2090, 1, '', '', '', '1', '0', 'F', '0', '0', 'portal:module:add', '#', 103, 1, now(), ''),
     (2092, '模块修改', 2090, 2, '', '', '', '1', '0', 'F', '0', '0', 'portal:module:edit', '#', 103, 1, now(), ''),
     (2093, '模块删除', 2090, 3, '', '', '', '1', '0', 'F', '0', '0', 'portal:module:remove', '#', 103, 1, now(), '')
