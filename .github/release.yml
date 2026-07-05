@@ -1,0 +1,37 @@
+changelog:
+  exclude:
+    labels:
+      - duplicate
+      - invalid
+      - question
+      - wontfix
+    authors:
+      - dependabot
+      - dependabot[bot]
+  categories:
+    - title: 新功能
+      labels:
+        - type:feature
+        - enhancement
+    - title: 缺陷修复
+      labels:
+        - type:bug
+        - bug
+    - title: 架构与重构
+      labels:
+        - type:refactor
+    - title: 文档
+      labels:
+        - type:docs
+        - documentation
+    - title: 依赖与安全
+      labels:
+        - type:dependencies
+        - type:security
+        - dependencies
+    - title: 工程任务
+      labels:
+        - type:task
+    - title: 其他变更
+      labels:
+        - "*"
