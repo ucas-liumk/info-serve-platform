@@ -22,7 +22,7 @@ public class PortalModule implements Serializable {
     /** 唯一编码: resources/appcenter/forum/qa/news */
     private String moduleCode;
 
-    /** 展示名: 资料共享/工具即用/… */
+    /** 展示名: 资料共享/应用中心/… */
     private String moduleName;
 
     /** 卡片副标题 */

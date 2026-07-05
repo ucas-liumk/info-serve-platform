@@ -10,6 +10,11 @@ export interface AppApplicationVo extends BaseEntity {
   description: string;
   tags: string;
   accessUrl: string;
+  appType: string;
+  packageOssId?: number | string;
+  packageName?: string;
+  packageSize?: number;
+  packageUrl?: string;
   isSecurity: string;
   status: string;
   useCount: number;
@@ -29,6 +34,11 @@ export interface AppApplicationForm {
   description: string;
   tags: string;
   accessUrl: string;
+  appType: string;
+  packageOssId?: number | string;
+  packageName?: string;
+  packageSize?: number;
+  packageUrl?: string;
   isSecurity: string;
   status: string;
   orderNum: number;
@@ -38,6 +48,14 @@ export interface AppApplicationForm {
 export interface AppApplicationQuery extends PageQuery {
   keyword: string;
   categoryId: number | string | undefined;
+  appType: string;
   status: string;
   isSecurity: string;
+}
+
+export interface AppPackageUploadVo {
+  packageOssId: number | string;
+  packageName: string;
+  packageSize: number;
+  packageUrl?: string;
 }

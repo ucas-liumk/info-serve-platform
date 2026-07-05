@@ -1,6 +1,13 @@
 <template>
   <div class="tools-market">
-    <ToolsSidebar :view-mode="viewMode" @switch-mode="switchMode" />
+    <ToolsSidebar
+      :view-mode="viewMode"
+      :category-code="categoryCode"
+      :categories="categories"
+      :favorite-total="favoriteTotal"
+      @switch-mode="switchMode"
+      @select-category="selectCategory"
+    />
 
     <main class="market-main">
       <header class="market-top">
@@ -15,7 +22,7 @@
               v-model="searchDraft"
               class="market-search"
               clearable
-              placeholder="搜索工具名称、描述或标签"
+              placeholder="搜索应用名称、描述或标签"
               @keyup.enter="onSearch"
               @clear="onSearch"
             >
@@ -26,6 +33,12 @@
             <button class="search-button" type="button" @click="onSearch">搜索</button>
           </div>
 
+          <el-select v-if="viewMode === 'market'" v-model="sort" class="sort-select" size="large" teleported @change="onSortChange">
+            <el-option label="最新上架" value="latest" />
+            <el-option label="最多收藏" value="hot" />
+            <el-option label="最多使用" value="use" />
+          </el-select>
+
           <button class="demand-btn" type="button" @click="openDemandDialog">
             <el-icon><DocumentAdd /></el-icon>
             <span>需求反馈</span>
@@ -35,17 +48,10 @@
         </div>
       </header>
 
-      <CategoryTabs
-        v-model:model="categoryCode"
-        v-model:sort="sort"
-        :categories="categories"
-        :total="viewMode === 'market' ? total : favoriteTotal"
-      />
-
       <section v-loading="loading" class="app-grid">
         <AppCard v-for="app in apps" :key="app.appId" :app="app" @changed="reload" />
       </section>
-      <el-empty v-if="!loading && apps.length === 0" class="empty" description="暂无工具" />
+      <el-empty v-if="!loading && apps.length === 0" class="empty" description="暂无应用" />
 
       <el-pagination
         class="pager"
@@ -63,14 +69,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { DocumentAdd, Search } from '@element-plus/icons-vue';
-import CategoryTabs from './components/CategoryTabs.vue';
 import AppCard from './components/AppCard.vue';
 import ToolsSidebar from './components/ToolsSidebar.vue';
 import DemandDialog from './components/DemandDialog.vue';
 import { listApps, listCategories, listFavorites } from '@/api/portal/appcenter';
-import { PortalApp, PortalCategory } from '@/api/appcenter/types';
+import type { PortalApp, PortalCategory } from '@/api/appcenter/types';
 import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
 
 type ViewMode = 'market' | 'favorites';
@@ -91,7 +96,7 @@ const demandDialogRef = ref<InstanceType<typeof DemandDialog>>();
 
 const currentToolTotal = computed(() => (viewMode.value === 'market' ? total.value : favoriteTotal.value));
 const activeToolCategory = computed(() => categories.value.find((item) => item.categoryCode === categoryCode.value));
-const activeToolCategoryName = computed(() => (categoryCode.value === 'all' ? '全部工具' : activeToolCategory.value?.categoryName || '当前分类'));
+const activeToolCategoryName = computed(() => activeToolCategory.value?.categoryName || '应用分类');
 
 const pageTitle = computed(() => {
   if (viewMode.value === 'favorites') return '收藏应用';
@@ -99,8 +104,8 @@ const pageTitle = computed(() => {
 });
 
 const pageSubtitle = computed(() => {
-  if (viewMode.value === 'favorites') return `${activeToolCategoryName.value} · 共 ${currentToolTotal.value} 个收藏应用`;
-  return `${activeToolCategoryName.value} · 共 ${currentToolTotal.value} 个工具`;
+  if (viewMode.value === 'favorites') return `全部收藏 · 共 ${currentToolTotal.value} 个收藏应用`;
+  return `${activeToolCategoryName.value} · 共 ${currentToolTotal.value} 个应用`;
 });
 
 const reloadApps = async () => {
@@ -143,9 +148,22 @@ const onPage = (page: number) => {
 const switchMode = (mode: ViewMode) => {
   viewMode.value = mode;
   pageNum.value = 1;
-  if (mode !== 'market') {
-    categoryCode.value = 'all';
+  reload();
+};
+
+const selectCategory = (code: string) => {
+  viewMode.value = 'market';
+  pageNum.value = 1;
+  if (categoryCode.value === code) {
+    reload();
+    return;
   }
+  categoryCode.value = code;
+  reload();
+};
+
+const onSortChange = () => {
+  pageNum.value = 1;
   reload();
 };
 
@@ -153,14 +171,10 @@ const openDemandDialog = () => {
   demandDialogRef.value?.open();
 };
 
-watch([categoryCode, sort], () => {
-  pageNum.value = 1;
-  reload();
-});
-
 onMounted(async () => {
   const res: any = await listCategories();
   categories.value = res.data || [];
+  categoryCode.value = categories.value[0]?.categoryCode || 'all';
   await reload();
 });
 </script>
@@ -280,6 +294,20 @@ onMounted(async () => {
   color: var(--tool-text);
   font-size: 14px;
   font-weight: 700;
+}
+
+.sort-select {
+  width: 132px;
+  flex: 0 0 132px;
+}
+
+:deep(.sort-select .el-select__wrapper) {
+  min-height: 40px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--tool-input-border) inset;
+  color: var(--tool-text);
+  font-weight: 800;
 }
 
 .search-button,
@@ -615,6 +643,11 @@ onMounted(async () => {
 
   .market-search {
     min-width: 0;
+  }
+
+  .sort-select {
+    width: 100%;
+    flex-basis: auto;
   }
 
   .demand-btn {

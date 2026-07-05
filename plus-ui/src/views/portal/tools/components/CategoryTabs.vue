@@ -2,7 +2,7 @@
   <section class="cat-tabs">
     <div class="tab-scroll">
       <button :class="['tab', { on: model === 'all' }]" type="button" @click="select('all')">
-        <span>全部工具</span>
+        <span>全部应用</span>
         <b>{{ totalCount }}</b>
       </button>
       <button
@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { PortalCategory } from '@/api/appcenter/types';
+import type { PortalCategory } from '@/api/appcenter/types';
 
 const props = defineProps<{ categories: PortalCategory[]; model: string; sort: string; total?: number }>();
 const emit = defineEmits<{ (e: 'update:model', value: string): void; (e: 'update:sort', value: string): void }>();

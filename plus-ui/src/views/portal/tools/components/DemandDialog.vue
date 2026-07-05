@@ -20,13 +20,13 @@
               <el-radio-button value="new_app">
                 <span class="demand-type-option">
                   <strong>希望上架应用</strong>
-                  <em>补充新的内部工具</em>
+                  <em>补充新的内部应用</em>
                 </span>
               </el-radio-button>
               <el-radio-button value="suggestion">
                 <span class="demand-type-option">
                   <strong>现有应用建议</strong>
-                  <em>优化已有工具体验</em>
+                  <em>优化已有应用体验</em>
                 </span>
               </el-radio-button>
             </el-radio-group>
@@ -104,7 +104,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { DocumentAdd } from '@element-plus/icons-vue';
 import MyDemandList from './MyDemandList.vue';
 import { listApps, submitDemand } from '@/api/portal/appcenter';
-import { PortalApp, PortalDemandForm } from '@/api/appcenter/types';
+import type { PortalApp, PortalDemandForm } from '@/api/appcenter/types';
 
 const visible = ref(false);
 const demandActiveTab = ref<'submit' | 'mine'>('submit');
