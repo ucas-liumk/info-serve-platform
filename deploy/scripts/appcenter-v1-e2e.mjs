@@ -25,7 +25,7 @@ const categories = [
 ];
 
 const localApps = [
-  { appName: '应知应会', appCode: 'required-knowledge', version: 'v1', categoryCode: 'self_hosted', appType: 'business', icon: 'education', accent: '#2563eb', description: '内部学习、题库、考试与材料导入的自研应用入口。', tags: '自研应用,题库,考试', accessUrl: '/portal/required-knowledge', orderNum: 1 },
+  { appName: '应知应会', appCode: 'required-knowledge', version: 'v1', categoryCode: 'self_hosted', appType: 'business', icon: 'education', accent: '#2563eb', description: '内部学习、题库、考试与材料导入的自研应用入口。', tags: '自研应用,题库,考试', accessUrl: '/portal/required-knowledge', accessMode: 'user', userIds: [1], orderNum: 1 },
   { appName: 'Stirling PDF', appCode: 'openapps-stirling-pdf', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'PDF', accent: 'blue', description: '开源 PDF 应用，支持拆分、合并、压缩、转换等常用文档处理。', tags: 'PDF,文档处理,转换', accessUrl: 'http://127.0.0.1:18080', orderNum: 101 },
   { appName: 'Memos', appCode: 'openapps-memos', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'M', accent: 'green', description: '轻量级开源备忘录和知识记录应用，适合个人知识沉淀。', tags: '备忘录,知识协作,记录', accessUrl: 'http://127.0.0.1:18081', orderNum: 102 },
   { appName: 'Draw.io', appCode: 'openapps-drawio', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'D', accent: 'orange', description: '在线流程图、架构图和业务图绘制应用。', tags: '流程图,绘图,架构图', accessUrl: 'http://127.0.0.1:18082', orderNum: 103 },
@@ -245,6 +245,9 @@ async function ensureLocalApps(token, categoryMap) {
       tags: local.tags,
       accessUrl: local.accessUrl,
       appType: local.appType || 'online',
+      accessMode: local.accessMode || 'all',
+      roleIds: local.roleIds || [],
+      userIds: local.userIds || [],
       isSecurity: '0',
       status: '0',
       orderNum: local.orderNum,

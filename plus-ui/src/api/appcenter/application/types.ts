@@ -66,3 +66,10 @@ export interface AppPackageUploadVo {
   packageSize: number;
   packageUrl?: string;
 }
+
+export interface AppPackageUploadVo {
+  packageOssId: number | string;
+  packageName: string;
+  packageSize: number;
+  packageUrl?: string;
+}
