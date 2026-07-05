@@ -24,6 +24,16 @@ function* walk(dir) {
 }
 
 const tokenHex = new Set((readFileSync(TOKEN_FILE, 'utf8').match(/#[0-9a-fA-F]{3,8}\b/g) || []).map((s) => s.toLowerCase()));
+const tokenVars = new Set(readFileSync(TOKEN_FILE, 'utf8').match(/--ip-(?:font|radius)-[\w-]+/g) || []);
+
+function normalizeCssValue(value) {
+  return value.replace(/\s+/g, '');
+}
+
+function isTokenVarRef(value, prefix) {
+  const match = normalizeCssValue(value).match(/^var\((--ip-[\w-]+)\)$/);
+  return Boolean(match && match[1].startsWith(prefix) && tokenVars.has(match[1]));
+}
 
 const hex = new Set();
 const rgba = new Set();
@@ -47,8 +57,12 @@ for (const dir of SCAN_DIRS) {
       if (!tokenHex.has(v)) hex.add(v); // 与令牌同值的硬编码同样计数？——迁移期先豁免同值，聚焦真离散
     }
     for (const m of text.match(/rgba?\([^)]+\)/g) || []) rgba.add(m.replace(/\s+/g, ''));
-    for (const m of text.match(/font-size:\s*([^;]+);/g) || []) fontSizes.add(m.replace(/\s+/g, ''));
-    for (const m of text.match(/border-radius:\s*([^;]+);/g) || []) radii.add(m.replace(/\s+/g, ''));
+    for (const m of text.matchAll(/font-size:\s*([^;]+);/g)) {
+      if (!isTokenVarRef(m[1], '--ip-font-')) fontSizes.add(`font-size:${normalizeCssValue(m[1])};`);
+    }
+    for (const m of text.matchAll(/border-radius:\s*([^;]+);/g)) {
+      if (!isTokenVarRef(m[1], '--ip-radius-')) radii.add(`border-radius:${normalizeCssValue(m[1])};`);
+    }
   }
 }
 

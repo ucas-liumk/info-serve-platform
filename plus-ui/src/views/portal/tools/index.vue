@@ -576,11 +576,12 @@ onMounted(async () => {
 .app-grid {
   width: 100%;
   min-width: 0;
-  min-height: 620px;
+  min-height: 0;
   box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  align-items: stretch;
+  align-content: start;
+  align-items: start;
   gap: 16px;
   margin-top: 14px;
 }

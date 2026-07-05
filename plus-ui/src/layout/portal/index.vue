@@ -15,7 +15,14 @@ import PortalSidebar from './components/PortalSidebar.vue';
 const route = useRoute();
 const isHome = computed(() => route.name === 'InfoPortalHome');
 const usesOwnShell = computed(
-  () => route.name === 'InfoTools' || route.name === 'InfoResources' || route.name === 'InfoResourcePreview' || route.name === 'InfoForum'
+  () =>
+    route.name === 'InfoTools' ||
+    route.name === 'InfoResources' ||
+    route.name === 'InfoResourcePreview' ||
+    route.name === 'InfoForum' ||
+    route.name === 'RequiredKnowledgeHome' ||
+    route.name === 'RequiredKnowledgeSubject' ||
+    route.name === 'RequiredKnowledgeExam'
 );
 </script>
 

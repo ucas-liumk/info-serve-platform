@@ -31,6 +31,7 @@ public class AppApplication extends TenantEntity {
     private String packageUrl;
     private String status;
     private String isSecurity;
+    private String accessMode;
     private Long useCount;
     private Long recommendCount;
     private Integer orderNum;

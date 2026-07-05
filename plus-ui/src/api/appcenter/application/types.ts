@@ -17,6 +17,9 @@ export interface AppApplicationVo extends BaseEntity {
   packageUrl?: string;
   isSecurity: string;
   status: string;
+  accessMode: string;
+  roleIds?: Array<number | string>;
+  userIds?: Array<number | string>;
   useCount: number;
   recommendCount: number;
   orderNum: number;
@@ -41,6 +44,9 @@ export interface AppApplicationForm {
   packageUrl?: string;
   isSecurity: string;
   status: string;
+  accessMode: string;
+  roleIds: Array<number | string>;
+  userIds: Array<number | string>;
   orderNum: number;
   remark: string;
 }
@@ -51,6 +57,14 @@ export interface AppApplicationQuery extends PageQuery {
   appType: string;
   status: string;
   isSecurity: string;
+  accessMode: string;
+}
+
+export interface AppPackageUploadVo {
+  packageOssId: number | string;
+  packageName: string;
+  packageSize: number;
+  packageUrl?: string;
 }
 
 export interface AppPackageUploadVo {
