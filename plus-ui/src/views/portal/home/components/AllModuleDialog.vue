@@ -5,23 +5,19 @@
       <span>拖拽调整当前用户的首页服务顺序，前 6 项进入首屏。</span>
     </div>
 
-    <div class="all-module-order" :aria-busy="saving">
-      <div class="order-boundary">
-        <span>首页展示</span>
-        <em>1-{{ homeLimit }}</em>
-      </div>
-
-      <div
+    <div class="all-module-grid" :aria-busy="saving">
+      <button
         v-for="(item, index) in localModules"
         :key="moduleKey(item)"
         class="all-module-card"
         :class="{
           'is-featured': index < homeLimit,
           'is-dragging': dragIndex === index,
-          'is-over': overIndex === index,
-          'has-boundary': index === homeLimit - 1 && localModules.length > homeLimit
+          'is-over': overIndex === index
         }"
+        type="button"
         draggable="true"
+        @click="openModule(item)"
         @dragstart="startDrag($event, index)"
         @dragenter.prevent="overIndex = index"
         @dragover.prevent
@@ -29,10 +25,11 @@
         @drop.prevent="dropModule(index)"
         @dragend="resetDrag"
       >
-        <button class="drag-handle" type="button" aria-label="拖拽排序">
+        <span class="drag-handle" aria-hidden="true">
           <IconDragIndicator />
-        </button>
+        </span>
         <span class="module-rank">{{ index + 1 }}</span>
+        <span class="module-scope">{{ index < homeLimit ? '首页' : '更多' }}</span>
         <span class="all-module-icon">
           <img :src="item.image" :alt="item.title" />
         </span>
@@ -40,16 +37,10 @@
           <strong>{{ item.title }}</strong>
           <em>{{ item.desc || '暂无模块说明' }}</em>
         </span>
-        <span class="module-scope">{{ index < homeLimit ? '首页展示' : '更多服务' }}</span>
-        <button class="all-module-action" type="button" :aria-label="`打开${item.title}`" @click="openModule(item)">
+        <span class="all-module-action" aria-hidden="true">
           <IconArrowRight />
-        </button>
-
-        <div v-if="index === homeLimit - 1 && localModules.length > homeLimit" class="more-boundary">
-          <span>更多服务</span>
-          <em>第 {{ homeLimit + 1 }} 项起</em>
-        </div>
-      </div>
+        </span>
+      </button>
     </div>
 
     <template #footer>

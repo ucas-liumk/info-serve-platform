@@ -31,45 +31,24 @@
   text-align: right;
 }
 
-.all-module-order {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.order-boundary {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 1px solid var(--ip-primary-100);
-  border-radius: 10px;
-  padding: 0 12px;
-  background: var(--ip-primary-50);
-  color: var(--ip-primary-700);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.order-boundary em,
-.more-boundary em {
-  color: var(--ip-neutral-500);
-  font-style: normal;
-  font-weight: 600;
+.all-module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .all-module-card {
   position: relative;
   min-width: 0;
-  min-height: 84px;
+  min-height: 118px;
   display: grid;
-  grid-template-columns: 30px 34px 54px minmax(0, 1fr) 84px 32px;
+  grid-template-columns: 54px minmax(0, 1fr) 28px;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   box-sizing: border-box;
   border: 1px solid var(--ip-neutral-200);
   border-radius: 10px;
-  padding: 12px;
+  padding: 18px 14px 14px;
   background: var(--ip-neutral-0);
   color: var(--ip-neutral-900);
   box-shadow: var(--ip-shadow-sm);
@@ -90,7 +69,7 @@
 
 .all-module-card.is-featured {
   border-color: var(--ip-primary-200);
-  background: linear-gradient(90deg, var(--ip-primary-50), var(--ip-neutral-0));
+  background: linear-gradient(180deg, var(--ip-neutral-0), var(--ip-primary-50));
 }
 
 .all-module-card.is-dragging {
@@ -103,31 +82,38 @@
   box-shadow: var(--ip-focus-ring);
 }
 
-.all-module-card.has-boundary {
-  margin-bottom: 18px;
-}
-
 .drag-handle {
-  width: 30px;
-  height: 30px;
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  width: 22px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
   border-radius: 6px;
-  background: var(--ip-neutral-100);
+  background: var(--ip-neutral-50);
   color: var(--ip-neutral-500);
-  cursor: grab;
+  opacity: 0;
+  transition: opacity var(--ip-motion-base) var(--ip-motion-ease);
+}
+
+.all-module-card:hover .drag-handle,
+.all-module-card.is-dragging .drag-handle {
+  opacity: 1;
 }
 
 .drag-handle svg {
-  width: 20px;
-  height: 20px;
+  width: 17px;
+  height: 17px;
 }
 
 .module-rank {
-  width: 34px;
-  height: 34px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -136,6 +122,26 @@
   color: var(--ip-primary-700);
   font-size: 14px;
   font-weight: 800;
+}
+
+.module-scope {
+  position: absolute;
+  right: 38px;
+  top: 10px;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: var(--ip-neutral-50);
+  color: var(--ip-neutral-600);
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.is-featured .module-scope {
+  border-color: var(--ip-primary-200);
+  background: var(--ip-primary-100);
+  color: var(--ip-primary-700);
 }
 
 .all-module-icon {
@@ -183,59 +189,20 @@
   -webkit-line-clamp: 2;
 }
 
-.module-scope {
-  justify-self: end;
-  border: 1px solid var(--ip-neutral-200);
-  border-radius: 999px;
-  padding: 6px 10px;
-  background: var(--ip-neutral-50);
-  color: var(--ip-neutral-600);
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.is-featured .module-scope {
-  border-color: var(--ip-primary-200);
-  background: var(--ip-primary-100);
-  color: var(--ip-primary-700);
-}
-
 .all-module-action {
   width: 28px;
   height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
   border-radius: 999px;
   background: var(--ip-primary-50);
   color: var(--ip-primary-600);
-  cursor: pointer;
 }
 
 .all-module-action svg {
   width: 17px;
   height: 17px;
-}
-
-.more-boundary {
-  position: absolute;
-  right: 12px;
-  bottom: -26px;
-  z-index: 1;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 999px;
-  padding: 0 10px;
-  background: var(--ip-neutral-700);
-  color: var(--ip-neutral-0);
-  font-size: 12px;
-  font-weight: 700;
-  box-shadow: var(--ip-shadow-sm);
 }
 
 .save-state {
@@ -257,11 +224,11 @@
     text-align: left;
   }
 
-  .all-module-card {
-    grid-template-columns: 30px 30px 50px minmax(0, 1fr) 30px;
+  .all-module-grid {
+    grid-template-columns: 1fr;
   }
 
-  .module-scope {
-    display: none;
+  .all-module-card {
+    min-height: 104px;
   }
 }
