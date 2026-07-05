@@ -72,8 +72,7 @@ const dateText = computed(() => {
 const timeText = computed(() => {
   const hour = `${now.value.getHours()}`.padStart(2, '0');
   const minute = `${now.value.getMinutes()}`.padStart(2, '0');
-  const second = `${now.value.getSeconds()}`.padStart(2, '0');
-  return `${hour}:${minute}:${second}`;
+  return `${hour}:${minute}`;
 });
 
 const weekText = computed(() => ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.value.getDay()]);
@@ -83,7 +82,7 @@ const handleUserCommand = (command: string | number | object) => emit('command',
 onMounted(() => {
   timer = setInterval(() => {
     now.value = new Date();
-  }, 1000);
+  }, 60000);
 });
 
 onBeforeUnmount(() => {
@@ -118,18 +117,18 @@ onBeforeUnmount(() => {
 
 .brand-copy h1 {
   margin: 0 0 8px;
-  color: var(--portal-blue);
+  color: var(--ip-primary-900);
   font-size: 38px;
   line-height: 1.12;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   text-shadow: 0 2px 10px rgba(255, 255, 255, 0.62);
 }
 
 .brand-copy p {
   margin: 0;
-  color: rgba(8, 43, 104, 0.78);
-  font-size: 21px;
+  color: var(--ip-neutral-600);
+  font-size: 20px;
   line-height: 1.25;
   font-weight: 600;
 }
@@ -137,19 +136,17 @@ onBeforeUnmount(() => {
 .status-panel {
   width: 390px;
   padding: 14px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.74);
-  border-radius: 20px;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: 16px;
   background: rgba(230, 244, 255, 0.74);
-  box-shadow:
-    0 16px 42px rgba(44, 112, 184, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  box-shadow: var(--ip-shadow-md);
   backdrop-filter: blur(14px);
 }
 
 .status-row {
   display: flex;
   align-items: center;
-  color: #09285d;
+  color: var(--ip-neutral-800);
   white-space: nowrap;
 }
 
@@ -157,7 +154,7 @@ onBeforeUnmount(() => {
   height: 28px;
   justify-content: center;
   gap: 12px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -165,7 +162,7 @@ onBeforeUnmount(() => {
   width: 1px;
   height: 22px;
   display: inline-block;
-  background: rgba(48, 96, 151, 0.36);
+  background: var(--ip-neutral-300);
 }
 
 .user-row {
@@ -173,19 +170,19 @@ onBeforeUnmount(() => {
   gap: 14px;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid rgba(52, 100, 151, 0.16);
+  border-top: 1px solid var(--ip-neutral-200);
 }
 
 .weather {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
 }
 
 .weather .el-icon {
-  color: #ffb31c;
+  color: var(--ip-warning);
   font-size: 25px;
   filter: drop-shadow(0 5px 9px rgba(255, 173, 35, 0.28));
 }
@@ -203,15 +200,15 @@ onBeforeUnmount(() => {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--portal-blue);
-  font-size: 17px;
+  color: var(--ip-primary-900);
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .user-pill:hover,
 .user-pill:focus-visible {
-  color: #1257c8;
+  color: var(--ip-primary-600);
   outline: none;
 }
 
@@ -222,8 +219,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(180deg, #6fb1ff 0%, #1f68e3 100%);
-  color: #fff;
+  background: var(--ip-primary-600);
+  color: var(--ip-neutral-0);
   box-shadow: 0 8px 14px rgba(33, 103, 220, 0.24);
 }
 
@@ -260,7 +257,7 @@ onBeforeUnmount(() => {
   .status-panel {
     width: 336px;
     padding: 12px 16px;
-    border-radius: 18px;
+    border-radius: 16px;
   }
 }
 

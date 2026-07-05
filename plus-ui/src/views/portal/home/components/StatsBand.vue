@@ -24,10 +24,9 @@
 import { computed } from 'vue';
 import { Calendar, ChatLineRound, Collection, Connection, Service, UserFilled } from '@element-plus/icons-vue';
 import { PortalStats } from '@/api/infoservice/types';
+import { formatStat } from '@/utils/format';
 
 const props = defineProps<{ stats: PortalStats; loading: boolean }>();
-
-const formatNumber = (value: number) => Number(value || 0).toLocaleString('en-US');
 
 const statsItems = computed(() => {
   const serviceTotal =
@@ -37,12 +36,12 @@ const statsItems = computed(() => {
     Number(props.stats.todayVisitCount || 0);
 
   return [
-    { label: '数据资源总量', value: formatNumber(props.stats.resourceCount), unit: '个', icon: Collection },
-    { label: '服务调用总量', value: formatNumber(serviceTotal), unit: '次', icon: Service },
-    { label: '活跃用户数', value: formatNumber(props.stats.activeUserCount), unit: '人', icon: UserFilled },
-    { label: '论坛话题数', value: formatNumber(props.stats.topicCount), unit: '个', icon: ChatLineRound },
-    { label: '今日访问量', value: formatNumber(props.stats.todayVisitCount), unit: '次', icon: Calendar },
-    { label: '在线服务数', value: formatNumber(props.stats.toolCount), unit: '个', icon: Connection }
+    { label: '数据资源总量', value: formatStat(props.stats.resourceCount), unit: '个', icon: Collection },
+    { label: '服务调用总量', value: formatStat(serviceTotal), unit: '次', icon: Service },
+    { label: '活跃用户数', value: formatStat(props.stats.activeUserCount), unit: '人', icon: UserFilled },
+    { label: '论坛话题数', value: formatStat(props.stats.topicCount), unit: '个', icon: ChatLineRound },
+    { label: '今日访问量', value: formatStat(props.stats.todayVisitCount), unit: '次', icon: Calendar },
+    { label: '在线服务数', value: formatStat(props.stats.toolCount), unit: '个', icon: Connection }
   ];
 });
 </script>
@@ -57,12 +56,10 @@ const statsItems = computed(() => {
   gap: 24px;
   margin: 24px auto 0;
   padding: 18px 28px;
-  border: 1px solid rgba(211, 226, 244, 0.96);
-  border-radius: 22px;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.86);
-  box-shadow:
-    0 20px 46px rgba(35, 85, 146, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  box-shadow: var(--ip-shadow-md);
   backdrop-filter: blur(10px);
 }
 
@@ -71,19 +68,19 @@ const statsItems = computed(() => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border-right: 1px solid rgba(70, 113, 160, 0.3);
+  border-right: 1px solid var(--ip-neutral-200);
 }
 
 .stats-heading strong {
-  color: #0a54aa;
-  font-size: 22px;
+  color: var(--ip-primary-700);
+  font-size: 20px;
   line-height: 1.1;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .stats-heading span {
   margin-top: 10px;
-  color: rgba(7, 31, 75, 0.56);
+  color: var(--ip-neutral-500);
   font-size: 14px;
   line-height: 1;
   font-weight: 500;
@@ -100,7 +97,7 @@ const statsItems = computed(() => {
   align-items: center;
   gap: 12px;
   padding: 0 14px;
-  border-right: 1px solid rgba(70, 113, 160, 0.24);
+  border-right: 1px solid var(--ip-neutral-200);
 }
 
 .stat-item:last-child {
@@ -115,11 +112,9 @@ const statsItems = computed(() => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(180deg, #eff8ff 0%, #cfe9ff 100%);
-  color: #1f74e8;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.88),
-    0 10px 20px rgba(42, 114, 206, 0.12);
+  background: var(--ip-primary-50);
+  color: var(--ip-primary-600);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .stat-icon .el-icon {
@@ -134,7 +129,7 @@ const statsItems = computed(() => {
 }
 
 .stat-copy em {
-  color: rgba(7, 31, 75, 0.72);
+  color: var(--ip-neutral-600);
   font-size: 14px;
   line-height: 1;
   font-style: normal;
@@ -143,17 +138,17 @@ const statsItems = computed(() => {
 }
 
 .stat-copy strong {
-  color: var(--portal-blue);
+  color: var(--ip-neutral-900);
   font-size: 24px;
   line-height: 1;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .stat-copy small {
   margin-left: 6px;
-  color: var(--portal-blue);
-  font-size: 15px;
+  color: var(--ip-neutral-600);
+  font-size: 14px;
   font-weight: 650;
 }
 
@@ -194,12 +189,12 @@ const statsItems = computed(() => {
     min-height: auto;
     padding-bottom: 14px;
     border-right: 0;
-    border-bottom: 1px solid rgba(70, 113, 160, 0.22);
+    border-bottom: 1px solid var(--ip-neutral-200);
   }
 
   .stat-item {
     min-height: 76px;
-    border-bottom: 1px solid rgba(70, 113, 160, 0.18);
+    border-bottom: 1px solid var(--ip-neutral-200);
   }
 
   .stat-item:nth-child(3n) {
@@ -217,7 +212,7 @@ const statsItems = computed(() => {
   }
 
   .stat-item:nth-child(3n) {
-    border-right: 1px solid rgba(70, 113, 160, 0.24);
+    border-right: 1px solid var(--ip-neutral-200);
   }
 
   .stat-item:nth-child(2n) {
@@ -228,7 +223,7 @@ const statsItems = computed(() => {
 @media (max-width: 640px) {
   .stats-band {
     padding: 20px;
-    border-radius: 18px;
+    border-radius: 16px;
   }
 }
 

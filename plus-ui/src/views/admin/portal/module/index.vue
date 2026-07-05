@@ -3,13 +3,13 @@
     <el-card shadow="never">
       <template #header>
         <div class="flex justify-between items-center">
-          <span>门户模块注册表（启停 / 排序 / 权限可见性，门户首页卡片按此渲染）</span>
+          <span>门户模块注册表（排序靠前 6 项显示在首页首屏，其余进入更多服务）</span>
           <el-button v-hasPermi="['portal:module:add']" type="primary" plain icon="Plus" @click="openDialog()">新增模块</el-button>
         </div>
       </template>
 
       <el-table v-loading="loading" :data="moduleList" border>
-        <el-table-column label="排序" prop="sortOrder" width="70" align="center" />
+        <el-table-column label="首页排序" prop="sortOrder" width="90" align="center" />
         <el-table-column label="编码" prop="moduleCode" width="120" />
         <el-table-column label="名称" prop="moduleName" width="140" />
         <el-table-column label="副标题" prop="description" min-width="160" show-overflow-tooltip />
@@ -58,8 +58,9 @@
             <el-radio value="2">隐藏</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="排序" prop="sortOrder">
+        <el-form-item label="首页排序" prop="sortOrder">
           <el-input-number v-model="form.sortOrder" :min="0" :max="999" />
+          <div class="form-tip">数值越小越靠前，前 6 项进入首页首屏。</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -133,3 +134,13 @@ const handleDelete = async (row: PortalModuleItem) => {
 
 onMounted(loadList);
 </script>
+
+<style scoped>
+.form-tip {
+  width: 100%;
+  margin-top: 6px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+</style>
