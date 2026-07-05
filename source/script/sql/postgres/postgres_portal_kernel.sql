@@ -20,6 +20,22 @@ CREATE TABLE IF NOT EXISTS portal_module (
 CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_module_code ON portal_module (module_code);
 COMMENT ON TABLE portal_module IS '门户模块注册表';
 
+CREATE TABLE IF NOT EXISTS portal_user_module_preference (
+    preference_id int8        NOT NULL,
+    tenant_id     varchar(20) DEFAULT '000000' NOT NULL,
+    user_id       int8        NOT NULL,
+    module_code   varchar(50) NOT NULL,
+    sort_order    int4        DEFAULT 0 NOT NULL,
+    create_time   timestamp   DEFAULT NULL,
+    update_time   timestamp   DEFAULT NULL,
+    CONSTRAINT pk_portal_user_module_preference PRIMARY KEY (preference_id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_portal_user_module_preference_user_code ON portal_user_module_preference (tenant_id, user_id, module_code);
+CREATE INDEX IF NOT EXISTS idx_portal_user_module_preference_order ON portal_user_module_preference (tenant_id, user_id, sort_order);
+COMMENT ON TABLE portal_user_module_preference IS '门户首页用户模块排序偏好';
+COMMENT ON COLUMN portal_user_module_preference.module_code IS '模块编码，对应 portal_module.module_code';
+COMMENT ON COLUMN portal_user_module_preference.sort_order IS '用户自定义排序，前 6 项进入首页首屏';
+
 INSERT INTO portal_module (module_id, module_code, module_name, description, entry_path, status, sort_order, create_time)
 VALUES
     (1, 'resources', '资料共享', '数据汇聚  共享共用', '/portal/resources', '0', 1, now()),

@@ -20,6 +20,11 @@ export function listPortalModules(): AxiosPromise<PortalModuleItem[]> {
   return request({ url: '/infoservice/portal/modules', method: 'get' });
 }
 
+/** 门户端：保存当前用户的首页模块排序 */
+export function updatePortalModuleOrder(moduleCodes: string[]) {
+  return request({ url: '/infoservice/portal/modules/order', method: 'put', data: { moduleCodes } });
+}
+
 /** 管理端：全部模块 */
 export function listModules(): AxiosPromise<PortalModuleItem[]> {
   return request({ url: '/infoservice/module/list', method: 'get' });

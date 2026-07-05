@@ -18,6 +18,7 @@
 | 0.3.4 | `0.3.4-appcenter-offline-package.sql` | PG `ry-cloud` | ⚠️ **已被提前打进 0.3.3 包**（包内文件名 `update_appcenter_offline_package_20260701.sql`）。0.3.4 定版时注意已升级主机勿重复投放（脚本本身幂等，可重跑） |
 | 0.3.4 | `0.3.4-portal-merge.sql` | PG `ry-cloud` | 待投放。服务合并配套：防御性清理三张幻影表 |
 | 0.3.4 | `0.3.4-portal-module.sql` | PG `ry-cloud` | 待投放。门户模块注册表建表+5 模块种子（与 postgres_portal_kernel.sql 同步维护） |
+| 0.3.4 | `0.3.4-portal-user-module-preference.sql` | PG `ry-cloud` | 待投放。门户首页模块按用户保存显示顺序，前 6 项进入首屏（与 postgres_portal_kernel.sql 同步维护） |
 
 ### 0.3.4 更新包非 SQL 操作清单（服务合并 + ruoyi-file 改名）
 

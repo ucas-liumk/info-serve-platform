@@ -90,7 +90,7 @@
       </template>
     </el-dialog>
 
-    <AllModuleDialog v-model="moduleDialog.visible" :modules="modules" @open="openModule" />
+    <AllModuleDialog v-model="moduleDialog.visible" :modules="modules" :saving="moduleDialog.saving" @open="openModule" @reorder="saveModuleOrder" />
   </main>
 </template>
 
@@ -100,7 +100,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getPortalStats } from '@/api/portal/stats';
 import { PortalStats } from '@/api/infoservice/types';
-import { listPortalModules } from '@/api/portal/module';
+import { listPortalModules, updatePortalModuleOrder } from '@/api/portal/module';
 import { getUserProfile, updateUserProfile, updateUserPwd } from '@/api/system/user';
 import type { UserForm } from '@/api/system/user/types';
 import { PORTAL_HOME_PATH } from '@/constants/router';
@@ -153,7 +153,8 @@ const passwordDialog = reactive({
 });
 
 const moduleDialog = reactive({
-  visible: false
+  visible: false,
+  saving: false
 });
 
 const profileForm = reactive<PortalProfileForm>({
@@ -277,6 +278,24 @@ const openModule = (item: HomeModule) => {
 
 const openModuleDialog = () => {
   moduleDialog.visible = true;
+};
+
+const saveModuleOrder = async (orderedModules: HomeModule[]) => {
+  modules.value = orderedModules;
+  const moduleCodes = orderedModules.map((item) => item.code).filter((code): code is string => Boolean(code));
+  if (moduleCodes.length === 0) {
+    return;
+  }
+
+  moduleDialog.saving = true;
+  try {
+    await updatePortalModuleOrder(moduleCodes);
+    ElMessage.success('首页服务顺序已保存');
+  } catch {
+    ElMessage.error('顺序已调整，但保存失败，请稍后重试');
+  } finally {
+    moduleDialog.saving = false;
+  }
 };
 
 const openProfile = () => {
