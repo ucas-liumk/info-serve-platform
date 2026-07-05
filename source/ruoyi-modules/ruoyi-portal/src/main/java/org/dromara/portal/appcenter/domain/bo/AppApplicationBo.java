@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.dromara.common.mybatis.core.domain.BaseEntity;
 
+import java.util.List;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AppApplicationBo extends BaseEntity {
@@ -21,7 +23,7 @@ public class AppApplicationBo extends BaseEntity {
     @Size(max = 255, message = "描述不能超过255字")
     private String description;
     private String tags;
-    @Pattern(regexp = "^$|^https?://.*|^/.*", message = "访问地址必须以 http(s):// 或 / 开头")
+    @Pattern(regexp = "^$|^https?://.*|^/(?!/).*", message = "访问地址必须以 http(s):// 或 / 开头")
     private String accessUrl;
     private String appType;
     private Long packageOssId;
@@ -30,6 +32,9 @@ public class AppApplicationBo extends BaseEntity {
     private String packageUrl;
     private String status;
     private String isSecurity;
+    private String accessMode;
+    private List<Long> roleIds;
+    private List<Long> userIds;
     private Integer orderNum;
     private String remark;
     // 列表查询条件

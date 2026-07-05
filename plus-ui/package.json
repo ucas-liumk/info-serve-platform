@@ -21,9 +21,9 @@
     "url": "https://gitee.com/JavaLionLi/plus-ui.git"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "2.3.2",
     "@embedpdf/pdfium": "2.14.4",
     "@embedpdf/vue-pdf-viewer": "2.14.4",
-    "@element-plus/icons-vue": "2.3.2",
     "@highlightjs/vue-plugin": "2.1.2",
     "@vueup/vue-quill": "1.2.0",
     "@vueuse/core": "14.2.1",
@@ -41,6 +41,7 @@
     "nprogress": "0.2.0",
     "pdfjs-dist": "^6.1.200",
     "pinia": "3.0.4",
+    "read-excel-file": "^5.8.8",
     "screenfull": "6.0.2",
     "vue": "3.5.30",
     "vue-cropper": "1.1.4",

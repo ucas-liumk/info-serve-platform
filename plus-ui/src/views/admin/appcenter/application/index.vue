@@ -25,6 +25,13 @@
                 <el-option label="下架" value="1" />
               </el-select>
             </el-form-item>
+            <el-form-item label="开放范围" prop="accessMode">
+              <el-select v-model="queryParams.accessMode" placeholder="请选择范围" clearable style="width: 130px">
+                <el-option label="全部用户" value="all" />
+                <el-option label="指定角色" value="role" />
+                <el-option label="指定用户" value="user" />
+              </el-select>
+            </el-form-item>
             <el-form-item>
               <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -87,6 +94,11 @@
             />
           </template>
         </el-table-column>
+        <el-table-column label="开放范围" align="center" prop="accessMode" width="100">
+          <template #default="scope">
+            <el-tag :type="getAccessModeTag(scope.row.accessMode)">{{ getAccessModeLabel(scope.row.accessMode) }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="使用数" align="center" prop="useCount" width="80" />
         <el-table-column label="推荐数" align="center" prop="recommendCount" width="80" />
         <el-table-column label="排序" align="center" prop="orderNum" width="70" />
@@ -106,7 +118,7 @@
     </el-card>
 
     <!-- 添加或修改应用对话框 -->
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="620px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="760px" append-to-body>
       <el-form ref="appFormRef" :model="form" :rules="rules" label-width="90px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -194,6 +206,34 @@
               </el-radio-group>
             </el-form-item>
           </el-col>
+          <el-col :span="24">
+            <el-form-item label="开放范围" prop="accessMode">
+              <el-radio-group v-model="form.accessMode" @change="handleAccessModeChange">
+                <el-radio value="all">全部用户</el-radio>
+                <el-radio value="role">指定角色</el-radio>
+                <el-radio value="user">指定用户</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col v-if="form.accessMode === 'role'" :span="24">
+            <el-form-item label="开放角色" prop="roleIds">
+              <el-select v-model="form.roleIds" multiple filterable placeholder="请选择可访问该应用的角色" style="width: 100%">
+                <el-option v-for="item in roleOptions" :key="item.roleId" :label="item.roleName" :value="item.roleId" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col v-if="form.accessMode === 'user'" :span="24">
+            <el-form-item label="开放用户" prop="userIds">
+              <el-select v-model="form.userIds" multiple filterable placeholder="请选择可访问该应用的用户" style="width: 100%">
+                <el-option
+                  v-for="item in userOptions"
+                  :key="item.userId"
+                  :label="`${item.nickName || item.userName}（${item.userName}）`"
+                  :value="item.userId"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="排序" prop="orderNum">
               <el-input-number v-model="form.orderNum" controls-position="right" :min="0" />
@@ -229,6 +269,10 @@ import {
 import { AppApplicationVo, AppApplicationForm, AppApplicationQuery } from '@/api/appcenter/application/types';
 import { listCategory } from '@/api/appcenter/category/index';
 import { AppCategoryVo } from '@/api/appcenter/category/types';
+import { listRole } from '@/api/system/role/index';
+import { RoleVO } from '@/api/system/role/types';
+import { listUser } from '@/api/system/user/index';
+import { UserVO } from '@/api/system/user/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -240,6 +284,8 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const categoryOptions = ref<AppCategoryVo[]>([]);
+const roleOptions = ref<RoleVO[]>([]);
+const userOptions = ref<UserVO[]>([]);
 
 const appFormRef = ref<ElFormInstance>();
 const queryFormRef = ref<ElFormInstance>();
@@ -267,14 +313,17 @@ const initFormData: AppApplicationForm = {
   packageUrl: '',
   isSecurity: '0',
   status: '0',
+  accessMode: 'all',
+  roleIds: [],
+  userIds: [],
   orderNum: 0,
   remark: ''
 };
 
-const urlPattern = /^(https?:\/\/.+|\/.+)/;
+const urlPattern = /^(https?:\/\/.+|\/(?!\/).*)$/;
 
 const data = reactive<PageData<AppApplicationForm, AppApplicationQuery>>({
-  form: { ...initFormData },
+  form: { ...initFormData, roleIds: [], userIds: [] },
   queryParams: {
     pageNum: 1,
     pageSize: 10,
@@ -282,13 +331,17 @@ const data = reactive<PageData<AppApplicationForm, AppApplicationQuery>>({
     categoryId: undefined,
     appType: '',
     status: '',
-    isSecurity: ''
+    isSecurity: '',
+    accessMode: ''
   },
   rules: {
     appName: [{ required: true, message: '应用名称不能为空', trigger: 'blur' }],
     appCode: [{ required: true, message: '应用编码不能为空', trigger: 'blur' }],
     categoryId: [{ required: true, message: '请选择所属分类', trigger: 'change' }],
     appType: [{ required: true, message: '请选择应用类型', trigger: 'change' }],
+    accessMode: [{ required: true, message: '请选择开放范围', trigger: 'change' }],
+    roleIds: [{ validator: validateRoleScope, trigger: 'change' }],
+    userIds: [{ validator: validateUserScope, trigger: 'change' }],
     accessUrl: [{ validator: validateAccessUrl, trigger: 'blur' }],
     packageOssId: [{ validator: validatePackage, trigger: 'change' }]
   }
@@ -327,6 +380,22 @@ function validatePackage(_rule: unknown, value: number | string | undefined, cal
   callback();
 }
 
+function validateRoleScope(_rule: unknown, value: Array<number | string>, callback: (error?: Error) => void) {
+  if (form.value.accessMode === 'role' && (!value || !value.length)) {
+    callback(new Error('请选择开放角色'));
+    return;
+  }
+  callback();
+}
+
+function validateUserScope(_rule: unknown, value: Array<number | string>, callback: (error?: Error) => void) {
+  if (form.value.accessMode === 'user' && (!value || !value.length)) {
+    callback(new Error('请选择开放用户'));
+    return;
+  }
+  callback();
+}
+
 const getAppTypeLabel = (appType?: string) => {
   if (appType === 'business') return '自研';
   if (appType === 'offline') return '离线';
@@ -339,9 +408,30 @@ const getAppTypeTag = (appType?: string) => {
   return 'primary';
 };
 
+const getAccessModeLabel = (accessMode?: string) => {
+  if (accessMode === 'role') return '指定角色';
+  if (accessMode === 'user') return '指定用户';
+  return '全部用户';
+};
+
+const getAccessModeTag = (accessMode?: string) => {
+  if (accessMode === 'role') return 'warning';
+  if (accessMode === 'user') return 'danger';
+  return 'success';
+};
+
 const loadCategories = async () => {
   const res = await listCategory();
   categoryOptions.value = (res as any).data ?? (res as any).rows ?? [];
+};
+
+const loadAccessOptions = async () => {
+  const [roleRes, userRes] = await Promise.all([
+    listRole({ pageNum: 1, pageSize: 100, roleName: '', roleKey: '', status: '0' }),
+    listUser({ pageNum: 1, pageSize: 100, status: '0' })
+  ]);
+  roleOptions.value = (roleRes as any).rows ?? [];
+  userOptions.value = (userRes as any).rows ?? [];
 };
 
 const getList = async () => {
@@ -358,8 +448,17 @@ const cancel = () => {
 };
 
 const reset = () => {
-  form.value = { ...initFormData };
+  form.value = { ...initFormData, roleIds: [], userIds: [] };
   appFormRef.value?.resetFields();
+};
+
+const handleAccessModeChange = () => {
+  if (form.value.accessMode !== 'role') {
+    form.value.roleIds = [];
+  }
+  if (form.value.accessMode !== 'user') {
+    form.value.userIds = [];
+  }
 };
 
 const handleQuery = () => {
@@ -391,6 +490,9 @@ const handleUpdate = async (row?: AppApplicationVo) => {
   const res = await getApplication(appId);
   Object.assign(form.value, (res as any).data);
   form.value.appType = form.value.appType || 'online';
+  form.value.accessMode = form.value.accessMode || 'all';
+  form.value.roleIds = form.value.roleIds || [];
+  form.value.userIds = form.value.userIds || [];
   dialog.visible = true;
   dialog.title = '修改应用';
 };
@@ -444,6 +546,7 @@ const handleDelete = async (row?: AppApplicationVo) => {
 
 onMounted(() => {
   loadCategories();
+  loadAccessOptions();
   getList();
 });
 </script>

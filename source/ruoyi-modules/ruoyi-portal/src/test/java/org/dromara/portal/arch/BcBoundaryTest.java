@@ -10,7 +10,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
  * 限界上下文边界纪律（docs/architecture/bounded-contexts.md §7），构建期强制：
- * 1. 内容 BC（appcenter/resources/forum）之间禁止相互依赖；
+ * 1. 内容 BC（appcenter/resources/forum/requiredknowledge）之间禁止相互依赖；
  * 2. 内核对内容 BC 只允许依赖其 service 接口（聚合统计），禁止触碰 domain/mapper/impl；
  * 3. 任何内容 BC 不得依赖内核的 service.impl。
  * 运行方式：mvn -pl ruoyi-modules/ruoyi-portal -am -DskipTests=false test
@@ -30,7 +30,8 @@ class BcBoundaryTest {
     void appcenter_should_not_depend_on_other_content_bcs() {
         noClasses().that().resideInAPackage("org.dromara.portal.appcenter..")
             .should().dependOnClassesThat().resideInAnyPackage(
-                "org.dromara.portal.resources..", "org.dromara.portal.forum..")
+                "org.dromara.portal.resources..", "org.dromara.portal.forum..",
+                "org.dromara.portal.requiredknowledge..")
             .check(classes);
     }
 
@@ -38,7 +39,8 @@ class BcBoundaryTest {
     void resources_should_not_depend_on_other_content_bcs() {
         noClasses().that().resideInAPackage("org.dromara.portal.resources..")
             .should().dependOnClassesThat().resideInAnyPackage(
-                "org.dromara.portal.appcenter..", "org.dromara.portal.forum..")
+                "org.dromara.portal.appcenter..", "org.dromara.portal.forum..",
+                "org.dromara.portal.requiredknowledge..")
             .check(classes);
     }
 
@@ -46,7 +48,17 @@ class BcBoundaryTest {
     void forum_should_not_depend_on_other_content_bcs() {
         noClasses().that().resideInAPackage("org.dromara.portal.forum..")
             .should().dependOnClassesThat().resideInAnyPackage(
-                "org.dromara.portal.appcenter..", "org.dromara.portal.resources..")
+                "org.dromara.portal.appcenter..", "org.dromara.portal.resources..",
+                "org.dromara.portal.requiredknowledge..")
+            .check(classes);
+    }
+
+    @Test
+    void requiredknowledge_should_not_depend_on_other_content_bcs() {
+        noClasses().that().resideInAPackage("org.dromara.portal.requiredknowledge..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                "org.dromara.portal.appcenter..", "org.dromara.portal.resources..",
+                "org.dromara.portal.forum..")
             .check(classes);
     }
 
@@ -56,14 +68,17 @@ class BcBoundaryTest {
             .should().dependOnClassesThat().resideInAnyPackage(
                 "org.dromara.portal.appcenter.domain..", "org.dromara.portal.appcenter.mapper..", "org.dromara.portal.appcenter.service.impl..",
                 "org.dromara.portal.resources.domain..", "org.dromara.portal.resources.mapper..", "org.dromara.portal.resources.service.impl..",
-                "org.dromara.portal.forum.domain..", "org.dromara.portal.forum.mapper..", "org.dromara.portal.forum.service.impl..")
+                "org.dromara.portal.forum.domain..", "org.dromara.portal.forum.mapper..", "org.dromara.portal.forum.service.impl..",
+                "org.dromara.portal.requiredknowledge.domain..", "org.dromara.portal.requiredknowledge.mapper..",
+                "org.dromara.portal.requiredknowledge.service.impl..")
             .check(classes);
     }
 
     @Test
     void content_bcs_should_not_depend_on_kernel_impl() {
         noClasses().that().resideInAnyPackage(
-                "org.dromara.portal.appcenter..", "org.dromara.portal.resources..", "org.dromara.portal.forum..")
+                "org.dromara.portal.appcenter..", "org.dromara.portal.resources..",
+                "org.dromara.portal.forum..", "org.dromara.portal.requiredknowledge..")
             .should().dependOnClassesThat().resideInAPackage("org.dromara.portal.kernel.service.impl..")
             .check(classes);
     }

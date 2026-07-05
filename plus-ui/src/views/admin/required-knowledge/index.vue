@@ -24,9 +24,11 @@
 </template>
 
 <script setup lang="ts" name="RequiredKnowledgeAdmin">
-import { Document, Files, Finished } from '@element-plus/icons-vue';
+import { Collection, Document, Files, Finished, Reading } from '@element-plus/icons-vue';
 
 const moduleCards = [
+  { title: '栏目科目', desc: '学习栏目和科目配置', icon: Collection, to: '/admin/required-knowledge/subjects' },
+  { title: '知识点管理', desc: '维护学习页知识点内容', icon: Reading, to: '/admin/required-knowledge/knowledge' },
   { title: '题库管理', desc: '题目录入、编辑与发布', icon: Document, to: '/admin/required-knowledge/questions' },
   { title: '考试配置', desc: '试卷、题量、时长与分值', icon: Finished, to: '/admin/required-knowledge/exams' },
   { title: 'OCR 导入', desc: 'PDF 和截图材料识别', icon: Files, to: '/admin/required-knowledge/ocr' }

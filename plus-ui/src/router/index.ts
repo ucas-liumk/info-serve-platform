@@ -52,6 +52,24 @@ export const constantRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/portal/resources/preview.vue'),
         meta: { title: '资料预览' }
       },
+      {
+        path: 'required-knowledge',
+        name: 'RequiredKnowledgeHome',
+        component: () => import('@/views/portal/required-knowledge/index.vue'),
+        meta: { title: '应知应会' }
+      },
+      {
+        path: 'required-knowledge/:subjectCode',
+        name: 'RequiredKnowledgeSubject',
+        component: () => import('@/views/portal/required-knowledge/subject.vue'),
+        meta: { title: '科目学习' }
+      },
+      {
+        path: 'required-knowledge/:subjectCode/exam',
+        name: 'RequiredKnowledgeExam',
+        component: () => import('@/views/portal/required-knowledge/exam.vue'),
+        meta: { title: '模拟考试' }
+      },
       { path: 'tools', name: 'InfoTools', component: () => import('@/views/portal/tools/index.vue'), meta: { title: '应用中心' } },
       { path: 'forum', name: 'InfoForum', component: () => import('@/views/portal/forum/index.vue'), meta: { title: '服务论坛' } }
     ]

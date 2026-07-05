@@ -50,7 +50,7 @@
         <el-form-item label="考试名称"><el-input v-model="form.name" /></el-form-item>
         <el-form-item label="科目">
           <el-select v-model="form.subject" style="width: 100%">
-            <el-option v-for="subject in subjects" :key="subject.code" :label="subject.name" :value="subject.name" />
+            <el-option v-for="subject in subjectOptions" :key="subject.subjectId" :label="subject.subjectName" :value="subject.subjectName" />
           </el-select>
         </el-form-item>
         <el-form-item label="题量"><el-input-number v-model="form.questionCount" :min="1" /></el-form-item>
@@ -66,11 +66,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import AdminNav from '../components/AdminNav.vue';
-import { subjects } from '../data';
+import { listSubjectOptions } from '@/api/required-knowledge';
+import { RkSubject } from '@/api/required-knowledge/types';
 
 const dialogVisible = ref(false);
+const subjectOptions = ref<RkSubject[]>([]);
 const exams = ref([
   { name: '高项基础模拟卷 A', subject: '软考高项', questionCount: 45, duration: 90, score: 75, status: '启用' },
   { name: '408 基础模拟卷 A', subject: '考研 408', questionCount: 40, duration: 120, score: 150, status: '启用' }
@@ -81,6 +83,16 @@ const saveExam = () => {
   exams.value.unshift({ ...form, status: '启用' });
   dialogVisible.value = false;
 };
+
+const loadSubjects = async () => {
+  const res = await listSubjectOptions({ status: '0' });
+  subjectOptions.value = (res as any).data ?? [];
+  form.subject = subjectOptions.value[0]?.subjectName || '软考高项';
+};
+
+onMounted(() => {
+  loadSubjects();
+});
 </script>
 
 <style scoped>

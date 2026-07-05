@@ -25,7 +25,7 @@ const categories = [
 ];
 
 const localApps = [
-  { appName: '应知应会', appCode: 'required-knowledge', version: 'latest', categoryCode: 'self_hosted', appType: 'business', icon: 'education', accent: '#2563eb', description: '内部学习、题库、考试与材料导入的自研应用入口。', tags: '自研应用,题库,考试', accessUrl: '/admin/required-knowledge', orderNum: 1 },
+  { appName: '应知应会', appCode: 'required-knowledge', version: 'v1', categoryCode: 'self_hosted', appType: 'business', icon: 'education', accent: '#2563eb', description: '内部学习、题库、考试与材料导入的自研应用入口。', tags: '自研应用,题库,考试', accessUrl: '/portal/required-knowledge', orderNum: 1 },
   { appName: 'Stirling PDF', appCode: 'openapps-stirling-pdf', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'PDF', accent: 'blue', description: '开源 PDF 应用，支持拆分、合并、压缩、转换等常用文档处理。', tags: 'PDF,文档处理,转换', accessUrl: 'http://127.0.0.1:18080', orderNum: 101 },
   { appName: 'Memos', appCode: 'openapps-memos', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'M', accent: 'green', description: '轻量级开源备忘录和知识记录应用，适合个人知识沉淀。', tags: '备忘录,知识协作,记录', accessUrl: 'http://127.0.0.1:18081', orderNum: 102 },
   { appName: 'Draw.io', appCode: 'openapps-drawio', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'D', accent: 'orange', description: '在线流程图、架构图和业务图绘制应用。', tags: '流程图,绘图,架构图', accessUrl: 'http://127.0.0.1:18082', orderNum: 103 },
@@ -244,7 +244,7 @@ async function ensureLocalApps(token, categoryMap) {
       description: local.description,
       tags: local.tags,
       accessUrl: local.accessUrl,
-      appType: local.appType,
+      appType: local.appType || 'online',
       isSecurity: '0',
       status: '0',
       orderNum: local.orderNum,
@@ -301,7 +301,7 @@ async function main() {
   assert(savedPhone === phonenumber, 'AUTH-PHONE-SAVED', savedPhone);
 
   const portalData = await getPortalApps(userToken);
-  assert(portalData.total >= 11, 'DATA-APP-TOTAL-11', `total=${portalData.total}`);
+  assert(portalData.total >= 12, 'DATA-APP-TOTAL-12', `total=${portalData.total}`);
   for (const local of localApps) {
     assert(portalData.rows.some((item) => item.appName === local.appName), `PORTAL-HAS-${local.appCode}`, local.appName);
   }

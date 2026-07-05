@@ -4,6 +4,14 @@
       <IconQuestion />
       <span>题目录入</span>
     </router-link>
+    <router-link to="/admin/required-knowledge/subjects">
+      <IconSubjects />
+      <span>栏目科目</span>
+    </router-link>
+    <router-link to="/admin/required-knowledge/knowledge">
+      <IconKnowledge />
+      <span>知识点</span>
+    </router-link>
     <router-link to="/admin/required-knowledge/exams">
       <IconExam />
       <span>考试配置</span>
@@ -17,7 +25,9 @@
 
 <script setup lang="ts">
 import IconExam from '~icons/material-symbols/assignment-outline-rounded';
+import IconKnowledge from '~icons/material-symbols/menu-book-outline-rounded';
 import IconQuestion from '~icons/material-symbols/help-outline-rounded';
+import IconSubjects from '~icons/material-symbols/account-tree-outline-rounded';
 import IconUpload from '~icons/material-symbols/upload-file-outline-rounded';
 </script>
 
