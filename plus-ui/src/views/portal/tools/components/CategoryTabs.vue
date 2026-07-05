@@ -48,15 +48,17 @@ const select = (code: string) => emit('update:model', code);
 
 <style scoped>
 .cat-tabs {
+  min-width: 0;
   min-height: 72px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 18px;
   padding: 0 18px;
-  border: 1px solid #e1e9f6;
+  border: 1px solid var(--ip-neutral-200);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 24px rgba(42, 87, 160, 0.06);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .tab-scroll {
@@ -79,13 +81,13 @@ const select = (code: string) => emit('update:model', code);
   gap: 10px;
   flex: 0 0 auto;
   border: 0;
-  border-radius: 7px;
+  border-radius: 6px;
   padding: 0 14px;
   background: transparent;
-  color: #101d3b;
-  font-size: 15px;
+  color: var(--ip-neutral-800);
+  font-size: 14px;
   line-height: 1;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -94,23 +96,23 @@ const select = (code: string) => emit('update:model', code);
 }
 
 .tab b {
-  color: #31507f;
+  color: var(--ip-neutral-600);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .tab.on {
-  background: #edf4ff;
-  color: #1260e8;
+  background: var(--ip-mod-appcenter-soft);
+  color: var(--ip-mod-appcenter);
 }
 
 .tab.on b {
-  color: #1260e8;
+  color: var(--ip-mod-appcenter);
 }
 
 .tab:hover:not(.on) {
-  background: #f4f8ff;
-  color: #1260e8;
+  background: var(--ip-primary-50);
+  color: var(--ip-primary-600);
 }
 
 .sort {
@@ -121,10 +123,10 @@ const select = (code: string) => emit('update:model', code);
 
 :deep(.sort .el-select__wrapper) {
   min-height: 42px;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 0 0 1px #dbe5f4 inset;
-  color: #102044;
+  border-radius: 6px;
+  background: var(--ip-neutral-0);
+  box-shadow: 0 0 0 1px var(--ip-neutral-200) inset;
+  color: var(--ip-neutral-800);
   font-weight: 700;
 }
 

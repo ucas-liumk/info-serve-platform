@@ -31,32 +31,30 @@ const openModule = (item: HomeModule) => emit('open', item);
 
 <style scoped>
 .module-grid {
-  max-width: 1440px;
+  max-width: var(--portal-max);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 20px;
-  margin: 248px auto 0;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 190px auto 0;
 }
 
 .module-card {
   position: relative;
-  height: 340px;
+  min-height: 292px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 18px 20px 20px;
-  border: 1px solid rgba(207, 224, 245, 0.92);
-  border-radius: 22px;
+  padding: 18px 18px 20px;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: 16px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 252, 255, 0.94) 100%);
-  box-shadow:
-    0 18px 42px rgba(35, 90, 151, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  box-shadow: var(--ip-shadow-md);
   color: var(--portal-blue);
   cursor: pointer;
   transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease;
+    transform var(--ip-motion-base) var(--ip-motion-ease),
+    box-shadow var(--ip-motion-base) var(--ip-motion-ease),
+    border-color var(--ip-motion-base) var(--ip-motion-ease);
 }
 
 .module-card::before {
@@ -64,18 +62,16 @@ const openModule = (item: HomeModule) => emit('open', item);
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle at 50% 18%, rgba(54, 142, 255, 0.16), transparent 46%);
+  background: radial-gradient(circle at 50% 18%, rgba(54, 142, 255, 0.12), transparent 46%);
   opacity: 0;
   transition: opacity 0.18s ease;
   pointer-events: none;
 }
 
 .module-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(122, 179, 244, 0.92);
-  box-shadow:
-    0 28px 58px rgba(32, 98, 180, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-3px);
+  border-color: var(--ip-primary-200);
+  box-shadow: var(--ip-shadow-lg);
 }
 
 .module-card:hover::before {
@@ -83,10 +79,10 @@ const openModule = (item: HomeModule) => emit('open', item);
 }
 
 .module-visual {
-  width: 166px;
-  height: 166px;
+  width: 148px;
+  height: 148px;
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .module-visual img {
@@ -99,17 +95,17 @@ const openModule = (item: HomeModule) => emit('open', item);
 .module-title {
   position: relative;
   z-index: 1;
-  color: var(--portal-blue);
-  font-size: 28px;
+  color: var(--ip-primary-900);
+  font-size: 24px;
   line-height: 1.15;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .module-desc {
   position: relative;
   z-index: 1;
   margin-top: 10px;
-  color: var(--portal-muted);
+  color: var(--ip-neutral-600);
   font-size: 16px;
   line-height: 1.35;
   font-weight: 600;
@@ -128,20 +124,20 @@ const openModule = (item: HomeModule) => emit('open', item);
   justify-content: center;
   margin-top: 14px;
   box-sizing: border-box;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #4fb0ff 0%, #2e86f5 52%, #1f6fe5 100%);
-  color: #fff;
+  border-radius: 999px;
+  background: var(--ip-primary-600);
+  color: var(--ip-neutral-0);
   line-height: 0;
   box-shadow:
     inset 0 1px 2px rgba(255, 255, 255, 0.72),
     inset 0 -4px 7px rgba(20, 91, 204, 0.36),
-    0 8px 13px rgba(36, 116, 236, 0.28);
+    var(--ip-shadow-md);
 }
 
 .module-action svg {
   width: 21px;
   height: 21px;
-  color: #fff;
+  color: var(--ip-neutral-0);
   transform: translateX(1px);
   filter: drop-shadow(0 1px 1px rgba(7, 61, 148, 0.2));
 }
@@ -149,11 +145,11 @@ const openModule = (item: HomeModule) => emit('open', item);
 @media (max-width: 1460px) {
   .module-grid {
     gap: 16px;
-    margin-top: 128px;
+    margin-top: 112px;
   }
 
   .module-card {
-    height: 318px;
+    min-height: 276px;
     padding-top: 16px;
   }
 
@@ -163,11 +159,11 @@ const openModule = (item: HomeModule) => emit('open', item);
   }
 
   .module-title {
-    font-size: 25px;
+    font-size: 20px;
   }
 
   .module-desc {
-    font-size: 15px;
+    font-size: 14px;
   }
 }
 
@@ -177,7 +173,7 @@ const openModule = (item: HomeModule) => emit('open', item);
   }
 
   .module-card {
-    height: 288px;
+    min-height: 260px;
     padding: 14px 14px 18px;
   }
 
@@ -187,7 +183,7 @@ const openModule = (item: HomeModule) => emit('open', item);
   }
 
   .module-title {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .module-desc {
@@ -206,12 +202,12 @@ const openModule = (item: HomeModule) => emit('open', item);
 
 @media (max-width: 1023px) {
   .module-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
     margin-top: 64px;
   }
 
   .module-card {
-    height: 252px;
+    min-height: 236px;
   }
 
   .module-visual {
@@ -221,7 +217,7 @@ const openModule = (item: HomeModule) => emit('open', item);
   }
 
   .module-title {
-    font-size: 21px;
+    font-size: 20px;
   }
 }
 
@@ -257,7 +253,7 @@ const openModule = (item: HomeModule) => emit('open', item);
   }
 
   .module-card {
-    height: 232px;
+    min-height: 232px;
   }
 }
 </style>

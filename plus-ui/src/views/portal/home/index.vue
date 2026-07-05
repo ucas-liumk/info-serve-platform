@@ -388,16 +388,16 @@ onMounted(async () => {
 
 <style scoped>
 .portal-home {
-  --portal-max: 1544px;
-  --portal-blue: #082b68;
-  --portal-text: #071f4b;
-  --portal-muted: rgba(7, 31, 75, 0.72);
+  --portal-max: var(--ip-layout-max);
+  --portal-blue: var(--ip-primary-900);
+  --portal-text: var(--ip-neutral-900);
+  --portal-muted: var(--ip-neutral-600);
 
   min-height: 100vh;
   overflow: hidden;
   color: var(--portal-text);
   background-image:
-    linear-gradient(180deg, rgba(247, 252, 255, 0.04) 0%, rgba(247, 252, 255, 0.1) 44%, rgba(247, 252, 255, 0.68) 78%, #f7fbff 100%),
+    linear-gradient(180deg, rgba(247, 252, 255, 0.04) 0%, rgba(247, 252, 255, 0.1) 44%, rgba(247, 252, 255, 0.72) 78%, var(--ip-neutral-50) 100%),
     url('@/assets/portal/portal-home-bg.png');
   background-position:
     center top,
@@ -435,14 +435,14 @@ onMounted(async () => {
 .profile-avatar-field :deep(.img-lg) {
   width: 112px;
   height: 112px;
-  border: 1px solid rgba(8, 43, 104, 0.18);
-  border-radius: 50%;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: 999px;
   object-fit: cover;
-  box-shadow: 0 10px 24px rgba(8, 43, 104, 0.12);
+  box-shadow: var(--ip-shadow-md);
 }
 
 .profile-avatar-tip {
-  color: rgba(7, 31, 75, 0.56);
+  color: var(--ip-neutral-500);
   font-size: 13px;
 }
 
