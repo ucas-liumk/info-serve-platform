@@ -48,7 +48,7 @@ cd deploy/situation/budibase
 docker compose --env-file .env -f docker-compose.yml --profile ai up -d
 ```
 
-门户不再提供 `/portal/lowcode` 顶层入口。Budibase 管理入口由 `0.3.5-portal-budibase-integration.sql` 写入应用中心，默认 `required_role_key=superadmin`，后续可改为数据治理工程师角色键。
+门户不再提供 `/portal/lowcode` 顶层入口。Budibase 管理入口由 `0.3.5-portal-budibase-integration.sql` 写入应用中心，默认采用指定角色开放范围并授权超级管理员角色，后续可在应用管理中改为数据治理工程师角色。
 
 ## 离线部署
 

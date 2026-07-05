@@ -62,6 +62,7 @@
 import { computed, markRaw, ref } from 'vue';
 import { Clock, Download, Star, StarFilled } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router';
 import type { PortalApp } from '@/api/appcenter/types';
 import { useApp, favorite, unfavorite } from '@/api/portal/appcenter';
 import { formatStat } from '@/utils/format';
@@ -90,6 +91,7 @@ import IconPdf from '~icons/material-symbols/picture-as-pdf-outline-rounded';
 const props = defineProps<{ app: PortalApp }>();
 const emit = defineEmits<{ (e: 'changed'): void }>();
 const favoritePending = ref(false);
+const router = useRouter();
 
 const iconMap = {
   dify: markRaw(IconDify),
@@ -115,6 +117,8 @@ const iconMap = {
   excalidraw: markRaw(IconExcalidraw),
   stirlingpdf: markRaw(IconPdf),
   pdf: markRaw(IconPdf),
+  education: markRaw(IconEducation),
+  school: markRaw(IconEducation),
   requiredknowledge: markRaw(IconEducation)
 } as const;
 
@@ -137,7 +141,8 @@ const normalizeKey = (value?: string | number) =>
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '');
 const appKey = computed(() => normalizeKey((props.app as any).appCode || props.app.appName));
-const iconComponent = computed(() => iconMap[appKey.value as keyof typeof iconMap]);
+const iconKey = computed(() => normalizeKey(props.app.icon));
+const iconComponent = computed(() => iconMap[appKey.value as keyof typeof iconMap] || iconMap[iconKey.value as keyof typeof iconMap]);
 const tagList = computed(() =>
   (props.app.tags || '')
     .split(',')
@@ -171,11 +176,35 @@ const normalizeToolUrl = (raw: string) => {
   }
 };
 
+const resolveInternalRoute = (raw: string) => {
+  const value = raw.trim();
+  if (value.startsWith('/') && !value.startsWith('//')) {
+    return value;
+  }
+  try {
+    const url = new URL(value);
+    if (['127.0.0.1', 'localhost'].includes(url.hostname)) {
+      url.hostname = window.location.hostname;
+    }
+    if (url.origin === window.location.origin) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {
+    return '';
+  }
+  return '';
+};
+
 const onUse = async () => {
   const res: any = await useApp(props.app.appId);
   const url = res.data;
   if (url) {
-    window.open(normalizeToolUrl(url), '_blank');
+    const internalRoute = resolveInternalRoute(url);
+    if (internalRoute) {
+      await router.push(internalRoute);
+    } else {
+      window.open(normalizeToolUrl(url), '_blank');
+    }
   } else {
     ElMessage.warning('该应用暂未配置访问地址');
   }

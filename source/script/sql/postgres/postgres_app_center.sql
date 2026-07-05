@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS app_message;
 DROP TABLE IF EXISTS app_demand;
 DROP TABLE IF EXISTS app_recommend;
 DROP TABLE IF EXISTS app_favorite;
+DROP TABLE IF EXISTS app_access_scope;
 DROP TABLE IF EXISTS app_application;
 DROP TABLE IF EXISTS app_category;
 
@@ -51,13 +52,13 @@ CREATE TABLE app_application (
     tags            varchar(255) DEFAULT NULL,
     access_url      varchar(500) NOT NULL,
     app_type        varchar(20)  DEFAULT 'online' NOT NULL,
-    required_role_key varchar(100) DEFAULT NULL,
     package_oss_id  int8         DEFAULT NULL,
     package_name    varchar(255) DEFAULT NULL,
     package_size    int8         DEFAULT NULL,
     package_url     varchar(500) DEFAULT NULL,
     status          char(1)      DEFAULT '0',
     is_security     char(1)      DEFAULT '0',
+    access_mode     varchar(20)  DEFAULT 'all' NOT NULL,
     use_count       int8         DEFAULT 0,
     recommend_count int8         DEFAULT 0,
     order_num       int4         DEFAULT 0,
@@ -74,9 +75,28 @@ CREATE TABLE app_application (
 CREATE UNIQUE INDEX uk_app_application_code ON app_application (tenant_id, app_code) WHERE del_flag = '0';
 CREATE INDEX idx_app_application_category ON app_application (category_id);
 CREATE INDEX idx_app_application_status ON app_application (status, is_security);
-CREATE INDEX idx_app_application_required_role ON app_application (tenant_id, required_role_key) WHERE del_flag = '0';
 COMMENT ON TABLE app_application IS '应用';
-COMMENT ON COLUMN app_application.required_role_key IS '可见角色键；空为登录用户可见，非空时需匹配当前用户角色键';
+
+-- ----------------------------------------------------------------
+-- 应用开放范围
+-- ----------------------------------------------------------------
+CREATE TABLE app_access_scope (
+    scope_id    int8        NOT NULL,
+    app_id      int8        NOT NULL,
+    target_type varchar(20) NOT NULL,
+    target_id   int8        NOT NULL,
+    tenant_id   varchar(20) DEFAULT '000000',
+    create_dept int8        DEFAULT NULL,
+    create_by   int8        DEFAULT NULL,
+    create_time timestamp   DEFAULT NULL,
+    update_by   int8        DEFAULT NULL,
+    update_time timestamp   DEFAULT NULL,
+    remark      varchar(500) DEFAULT NULL,
+    CONSTRAINT pk_app_access_scope PRIMARY KEY (scope_id)
+);
+CREATE UNIQUE INDEX uk_app_access_scope_target ON app_access_scope (tenant_id, app_id, target_type, target_id);
+CREATE INDEX idx_app_access_scope_app ON app_access_scope (tenant_id, app_id);
+COMMENT ON TABLE app_access_scope IS '应用开放范围';
 
 -- ----------------------------------------------------------------
 -- 应用收藏
@@ -167,7 +187,7 @@ CREATE INDEX idx_app_demand_requester ON app_demand (requester_id, create_time);
 COMMENT ON TABLE app_demand IS '应用需求反馈';
 
 -- ----------------------------------------------------------------
--- 种子数据：分类 (4条)
+-- 种子数据：分类
 -- ----------------------------------------------------------------
 INSERT INTO app_category (category_id, category_name, category_code, icon, order_num, create_time) VALUES
 (1, '自研应用', 'self_hosted', 'component', 1, now()),
@@ -180,30 +200,38 @@ INSERT INTO app_category (category_id, category_name, category_code, icon, order
 -- ----------------------------------------------------------------
 INSERT INTO app_application
     (app_id, app_name, app_code, version, category_id, icon, accent,
-     description, tags, access_url, app_type, required_role_key, status, is_security,
-     use_count, recommend_count, order_num, create_time)
+     description, tags, access_url, app_type, status, is_security,
+     access_mode, use_count, recommend_count, order_num, create_time)
 VALUES
-(1, '应知应会', 'required-knowledge', 'latest', 1, 'education', '#2563eb',
+(1, '应知应会', 'required-knowledge', 'v1', 1, 'education', '#2563eb',
  '面向内部学习、题库、考试与材料导入的自研应用入口。',
- '自研应用,题库,考试', '/admin/required-knowledge', 'business', NULL, '0', '1', 0, 0, 1, now()),
+ '自研应用,题库,考试', '/portal/required-knowledge', 'business', '0', '0', 'user', 0, 0, 1, now()),
 (2, 'Stirling PDF', 'stirling-pdf', 'latest', 2, 'PDF', '#2563eb',
  'PDF 合并、拆分、压缩、转换与页面处理应用，即开即用。',
- 'PDF,文档处理,转换', 'http://127.0.0.1:18080', 'online', NULL, '0', '0', 128, 36, 2, now()),
+ 'PDF,文档处理,转换', 'http://127.0.0.1:18080', 'online', '0', '0', 'all', 128, 36, 2, now()),
 (3, 'draw.io', 'drawio', 'latest', 2, 'DIO', '#0f766e',
  '流程图、架构图、网络拓扑和业务图示绘制应用。',
- '流程图,架构图,绘图', 'http://127.0.0.1:18082', 'online', NULL, '0', '0', 96, 28, 3, now()),
+ '流程图,架构图,绘图', 'http://127.0.0.1:18082', 'online', '0', '0', 'all', 96, 28, 3, now()),
 (4, 'Excalidraw', 'excalidraw', 'latest', 2, 'EX', '#c2410c',
  '轻量白板和草图协作应用，适合快速表达方案和讨论。',
- '白板,草图,协作', 'http://127.0.0.1:18090', 'online', NULL, '0', '0', 84, 24, 4, now()),
+ '白板,草图,协作', 'http://127.0.0.1:18090', 'online', '0', '0', 'all', 84, 24, 4, now()),
 (5001, 'DataEase 态势后台', 'dataease-admin', 'latest', 4, 'DE', '#2563eb',
  '态势大屏制作、数据集配置与可视化发布后台，仅面向管理员开放。',
- '态势大屏,BI,DataEase', 'http://127.0.0.1:8100', 'online', 'superadmin', '0', '1', 0, 0, 41, now()),
+ '态势大屏,BI,DataEase', 'http://127.0.0.1:8100', 'online', '0', '1', 'role', 0, 0, 41, now()),
 (5002, 'Apache Hop 数据加工', 'apache-hop', 'latest', 4, 'HOP', '#0f766e',
  '门户态势分析层数据加工、清洗与作业验证入口，仅面向管理员开放。',
- '数据治理,ETL,Hop', 'http://127.0.0.1:18091/ui', 'online', 'superadmin', '0', '1', 0, 0, 42, now()),
+ '数据治理,ETL,Hop', 'http://127.0.0.1:18091/ui', 'online', '0', '1', 'role', 0, 0, 42, now()),
 (5003, 'Budibase 低代码工厂', 'budibase', 'latest', 4, 'BB', '#c2410c',
  '快速搭建需求台账、任务推进、问题闭环等内部低代码应用，仅面向管理员开放。',
- '低代码,应用工厂,Budibase', 'http://127.0.0.1:18100', 'online', 'superadmin', '0', '1', 0, 0, 43, now());
+ '低代码,应用工厂,Budibase', 'http://127.0.0.1:18100', 'online', '0', '1', 'role', 0, 0, 43, now());
+
+INSERT INTO app_access_scope
+    (scope_id, app_id, target_type, target_id, tenant_id, create_time)
+VALUES
+    (2073005000000000901, 1, 'user', 1, '000000', now()),
+    (2073005000000005001, 5001, 'role', 1, '000000', now()),
+    (2073005000000005002, 5002, 'role', 1, '000000', now()),
+    (2073005000000005003, 5003, 'role', 1, '000000', now());
 
 -- ----------------------------------------------------------------
 -- sys_menu: 应用中心后台菜单 + 按钮权限
@@ -223,9 +251,9 @@ ON CONFLICT (menu_id) DO NOTHING;
 -- 应知应会管理 菜单 (menu_id=4001-4003)
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
 VALUES
-(4001, '题库管理', 4000, 1, 'questions', 'admin/required-knowledge/questions/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:question:list', 'question', 103, 1, now()),
-(4002, '考试配置', 4000, 2, 'exams', 'admin/required-knowledge/exams/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:exam:list', 'education', 103, 1, now()),
-(4003, 'OCR 导入', 4000, 3, 'ocr', 'admin/required-knowledge/ocr/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:ocr:list', 'upload', 103, 1, now())
+(4001, '题库管理', 4000, 3, 'questions', 'admin/required-knowledge/questions/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:question:list', 'question', 103, 1, now()),
+(4002, '考试配置', 4000, 4, 'exams', 'admin/required-knowledge/exams/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:exam:list', 'education', 103, 1, now()),
+(4003, 'OCR 导入', 4000, 5, 'ocr', 'admin/required-knowledge/ocr/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:ocr:list', 'upload', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
 -- 应用管理 菜单 (menu_id=2010)

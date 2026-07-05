@@ -25,13 +25,13 @@ public class AppApplication extends TenantEntity {
     private String tags;
     private String accessUrl;
     private String appType;
-    private String requiredRoleKey;
     private Long packageOssId;
     private String packageName;
     private Long packageSize;
     private String packageUrl;
     private String status;
     private String isSecurity;
+    private String accessMode;
     private Long useCount;
     private Long recommendCount;
     private Integer orderNum;

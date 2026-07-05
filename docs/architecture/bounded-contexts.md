@@ -15,6 +15,7 @@
 | 资料共享 Resources | 资料共享 | `resources` | `res_`（现 `info_resource_*`） | 业务"资料"，**不是**框架文件服务 |
 | 应用中心 AppCenter | 应用中心 | `appcenter`（**已决**；兼容保留前端历史路由 `/portal/tools` 与 `/appcenter` 重定向） | `app_` | 原"工具即用"统一更名为"应用中心" |
 | 服务论坛 Forum | 服务论坛 | `forum` | `forum_`（现 `info_forum_*`） | — |
+| 应知应会 RequiredKnowledge | 应知应会 | `requiredknowledge` | `rk_` | 学习栏目、科目、题库、考试配置 |
 | 智能问答 QA | 智能问答 | `qa` | `qa_` | 未开发；首页卡片无路由 |
 | 时事热点 News | 时事热点 | `news` | `news_` | 未开发；首页卡片无路由 |
 | 门户内核 Portal Kernel | —（不对用户暴露） | `portal` | `portal_` | 门户用户身份、消息通知、收藏、统计、上传适配 |
@@ -30,6 +31,7 @@
 | └ 文档转换（技术子域） | 支撑 | 内嵌于 InfoResourceServiceImpl | LibreOffice 转 PDF、缩略图、预览缓存 | 转换量增长后独立为 worker |
 | 应用中心 | 支撑域 | 独立服务（错拆） | 应用目录/离线包/需求收集 | 平稳 CRUD |
 | 服务论坛 | 支撑域 | infoservice 内 | 版块/主题/回复 | 平稳 CRUD |
+| 应知应会 | 支撑域 | ruoyi-portal 内 | 学习栏目、科目、题库、考试配置、OCR 草稿 | 考试记录、错题本、材料解析 |
 | 智能问答 | 核心域 | 未开发 | LLM/RAG 问答 | 向量库、流式响应、外部模型 API |
 | 时事热点 | 支撑域 | 未开发 | 热点聚合与展示 | 定时抓取（调度型负载） |
 | 门户内核 | 通用域 | **被复制两份（病灶）** | 门户身份、消息、收藏、统计、**模块注册表** | 随内容域与入口增多参数化扩展 |
@@ -44,6 +46,7 @@
 | 门户内核 | ✗ | ✗ | ✗ | ✗ | 共享模块，永不独立成服务 |
 | 应用中心 | ✗ | ✗ | ✗ | ✗ | 并入门户服务（BC 模块） |
 | 服务论坛 | ✗ | ✗ | ✗ | ✗ | 门户服务 BC 模块 |
+| 应知应会 | ✗ | ✗ | ✗ | ✗ | 门户服务 BC 模块；OCR 先作为导入能力，不拆服务 |
 | 时事热点(展示) | ✗ | ✗ | ✗ | ✗ | 门户服务 BC 模块；抓取先用服务内调度 |
 | 资料共享 | 暂✗ | ✗ | 可能 | 转换部分✓ | 门户服务 BC 模块，**头号晋升候选**；转换子域先经 RabbitMQ 异步化 |
 | 智能问答 | ✓ | ✓✓ | ✓ | ✓ | **出生即独立服务** `ruoyi-ai-qa` |
@@ -58,7 +61,8 @@ appcenter   ┐            ruoyi-portal                  ruoyi-portal
 infoservice ┘             ├─ portal-kernel              ├─ kernel/appcenter/forum/news
                           ├─ portal-appcenter           └─ resources*
                           ├─ portal-resources          ruoyi-ai-qa      ← 新建即独立
-                          └─ portal-forum              preview-worker  ← 转换量大时
+                          ├─ portal-forum              preview-worker  ← 转换量大时
+                          └─ portal-requiredknowledge
 ```
 
 阶段 1 合并要点：同库零数据迁移（`app_*` 表照旧）；网关将 `/appcenter/**` 路由指向合并服务，前端 API 路径兼容零改动；消息统一至一张表（顺带修复通知黑洞，删除 `info_portal_message` 及复制代码）；compose 减一个服务、发布包减一个镜像。

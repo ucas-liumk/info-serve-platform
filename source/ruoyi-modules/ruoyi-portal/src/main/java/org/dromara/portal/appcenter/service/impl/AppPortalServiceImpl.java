@@ -26,6 +26,7 @@ import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.file.api.RemoteFileService;
 import org.dromara.file.api.domain.RemoteFile;
 import org.dromara.system.api.model.LoginUser;
+import org.dromara.system.api.model.RoleDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +38,14 @@ import java.util.stream.Collectors;
 @Service
 public class AppPortalServiceImpl implements IAppPortalService {
 
+    private static final String ACCESS_MODE_ALL = "all";
+    private static final String ACCESS_MODE_ROLE = "role";
+    private static final String ACCESS_MODE_USER = "user";
+    private static final String TARGET_ROLE = "role";
+    private static final String TARGET_USER = "user";
+
     private final AppApplicationMapper applicationMapper;
+    private final AppAccessScopeMapper accessScopeMapper;
     private final AppCategoryMapper categoryMapper;
     private final AppFavoriteMapper favoriteMapper;
     private final AppRecommendMapper recommendMapper;
@@ -49,7 +57,10 @@ public class AppPortalServiceImpl implements IAppPortalService {
 
     @Override
     public List<AppCategoryVo> categories() {
-        Map<Long, Long> appCounts = applicationMapper.selectList(visibleApplicationWrapper())
+        LambdaQueryWrapper<AppApplication> appCountWrapper = Wrappers.<AppApplication>lambdaQuery()
+            .eq(AppApplication::getStatus, "0");
+        applyCurrentUserAccessFilter(appCountWrapper);
+        Map<Long, Long> appCounts = applicationMapper.selectList(appCountWrapper)
             .stream()
             .collect(Collectors.groupingBy(AppApplication::getCategoryId, Collectors.counting()));
         return categoryMapper.selectList(
@@ -61,7 +72,9 @@ public class AppPortalServiceImpl implements IAppPortalService {
 
     @Override
     public TableDataInfo<PortalAppVo> apps(String categoryCode, String keyword, String appType, String sort, PageQuery pageQuery) {
-        LambdaQueryWrapper<AppApplication> w = visibleApplicationWrapper();
+        LambdaQueryWrapper<AppApplication> w = Wrappers.lambdaQuery();
+        w.eq(AppApplication::getStatus, "0");
+        applyCurrentUserAccessFilter(w);
         if (StringUtils.isNotBlank(appType) && !"all".equals(appType)) {
             w.eq(AppApplication::getAppType, appType);
         }
@@ -136,9 +149,10 @@ public class AppPortalServiceImpl implements IAppPortalService {
     @Override
     public String use(Long appId) {
         AppApplication app = applicationMapper.selectById(appId);
-        if (!isVisibleApp(app)) {
+        if (app == null || !"0".equals(app.getStatus())) {
             throw new ServiceException("应用不存在或已下架");
         }
+        assertCurrentUserCanAccess(app);
         if ("offline".equals(resolveAppType(app.getAppType()))) {
             throw new ServiceException("离线应用请下载安装包后使用");
         }
@@ -150,9 +164,10 @@ public class AppPortalServiceImpl implements IAppPortalService {
     @Override
     public void downloadPackage(Long appId, HttpServletResponse response) throws IOException {
         AppApplication app = applicationMapper.selectById(appId);
-        if (!isVisibleApp(app)) {
+        if (app == null || !"0".equals(app.getStatus())) {
             throw new ServiceException("应用不存在或已下架");
         }
+        assertCurrentUserCanAccess(app);
         if (!"offline".equals(resolveAppType(app.getAppType())) || app.getPackageOssId() == null) {
             throw new ServiceException("该应用未配置离线安装包");
         }
@@ -174,9 +189,10 @@ public class AppPortalServiceImpl implements IAppPortalService {
     public void favorite(Long appId, boolean add) {
         if (add) {
             AppApplication app = applicationMapper.selectById(appId);
-            if (!isVisibleApp(app)) {
+            if (app == null || !"0".equals(app.getStatus())) {
                 throw new ServiceException("应用不存在或已下架");
             }
+            assertCurrentUserCanAccess(app);
         }
         Long userId = LoginHelper.getUserId();
         Long exist = favoriteMapper.selectCount(Wrappers.<AppFavorite>lambdaQuery()
@@ -198,9 +214,10 @@ public class AppPortalServiceImpl implements IAppPortalService {
     public void recommend(Long appId, boolean add) {
         if (add) {
             AppApplication app = applicationMapper.selectById(appId);
-            if (!isVisibleApp(app)) {
+            if (app == null || !"0".equals(app.getStatus())) {
                 throw new ServiceException("应用不存在或已下架");
             }
+            assertCurrentUserCanAccess(app);
         }
         Long userId = LoginHelper.getUserId();
         Long exist = recommendMapper.selectCount(Wrappers.<AppRecommend>lambdaQuery()
@@ -233,9 +250,11 @@ public class AppPortalServiceImpl implements IAppPortalService {
             info.setTotal(0);
             return info;
         }
-        Page<AppApplication> page = applicationMapper.selectPage(pageQuery.build(),
-            visibleApplicationWrapper()
-                .in(AppApplication::getAppId, appIds));
+        LambdaQueryWrapper<AppApplication> wrapper = Wrappers.<AppApplication>lambdaQuery()
+            .in(AppApplication::getAppId, appIds)
+            .eq(AppApplication::getStatus, "0");
+        applyCurrentUserAccessFilter(wrapper);
+        Page<AppApplication> page = applicationMapper.selectPage(pageQuery.build(), wrapper);
         info.setRows(toPortalVos(page.getRecords()));
         info.setTotal(page.getTotal());
         return info;
@@ -333,44 +352,78 @@ public class AppPortalServiceImpl implements IAppPortalService {
         return appType;
     }
 
-    private LambdaQueryWrapper<AppApplication> visibleApplicationWrapper() {
-        LambdaQueryWrapper<AppApplication> w = Wrappers.<AppApplication>lambdaQuery()
-            .eq(AppApplication::getStatus, "0");
-        appendVisibleScope(w);
-        return w;
+    private String resolveAccessMode(String accessMode) {
+        if (StringUtils.isBlank(accessMode)) {
+            return ACCESS_MODE_ALL;
+        }
+        return accessMode;
     }
 
-    private void appendVisibleScope(LambdaQueryWrapper<AppApplication> w) {
-        if (LoginHelper.isSuperAdmin()) {
+    private void assertCurrentUserCanAccess(AppApplication app) {
+        if (currentUserCanAccess(app)) {
             return;
         }
-        Set<String> roleKeys = currentRoleKeys();
-        w.and(q -> {
-            q.isNull(AppApplication::getRequiredRoleKey)
-                .or().eq(AppApplication::getRequiredRoleKey, "");
-            if (!roleKeys.isEmpty()) {
-                q.or().in(AppApplication::getRequiredRoleKey, roleKeys);
+        throw new ServiceException("暂无该应用使用权限");
+    }
+
+    private boolean currentUserCanAccess(AppApplication app) {
+        if (app == null) {
+            return false;
+        }
+        if (LoginHelper.isSuperAdmin() || LoginHelper.isTenantAdmin()) {
+            return true;
+        }
+        String accessMode = resolveAccessMode(app.getAccessMode());
+        if (ACCESS_MODE_ALL.equals(accessMode)) {
+            return true;
+        }
+        Long userId = LoginHelper.getUserId();
+        if (ACCESS_MODE_USER.equals(accessMode)) {
+            return accessScopeMapper.exists(Wrappers.<AppAccessScope>lambdaQuery()
+                .eq(AppAccessScope::getAppId, app.getAppId())
+                .eq(AppAccessScope::getTargetType, TARGET_USER)
+                .eq(AppAccessScope::getTargetId, userId));
+        }
+        if (ACCESS_MODE_ROLE.equals(accessMode)) {
+            List<Long> roleIds = currentRoleIds();
+            return !roleIds.isEmpty() && accessScopeMapper.exists(Wrappers.<AppAccessScope>lambdaQuery()
+                .eq(AppAccessScope::getAppId, app.getAppId())
+                .eq(AppAccessScope::getTargetType, TARGET_ROLE)
+                .in(AppAccessScope::getTargetId, roleIds));
+        }
+        return false;
+    }
+
+    private void applyCurrentUserAccessFilter(LambdaQueryWrapper<AppApplication> wrapper) {
+        if (LoginHelper.isSuperAdmin() || LoginHelper.isTenantAdmin()) {
+            return;
+        }
+        Long userId = LoginHelper.getUserId();
+        List<Long> roleIds = currentRoleIds();
+        String userExists = "SELECT 1 FROM app_access_scope aas WHERE aas.app_id = app_application.app_id"
+            + " AND aas.tenant_id = app_application.tenant_id AND aas.target_type = 'user' AND aas.target_id = " + userId;
+        wrapper.and(q -> {
+            q.isNull(AppApplication::getAccessMode)
+                .or().eq(AppApplication::getAccessMode, ACCESS_MODE_ALL)
+                .or(s -> s.eq(AppApplication::getAccessMode, ACCESS_MODE_USER).exists(userExists));
+            if (!roleIds.isEmpty()) {
+                String roleExists = "SELECT 1 FROM app_access_scope aas WHERE aas.app_id = app_application.app_id"
+                    + " AND aas.tenant_id = app_application.tenant_id AND aas.target_type = 'role' AND aas.target_id IN ("
+                    + roleIds.stream().map(String::valueOf).collect(Collectors.joining(",")) + ")";
+                q.or(s -> s.eq(AppApplication::getAccessMode, ACCESS_MODE_ROLE).exists(roleExists));
             }
         });
     }
 
-    private boolean isVisibleApp(AppApplication app) {
-        if (app == null || !"0".equals(app.getStatus())) {
-            return false;
-        }
-        String requiredRoleKey = StringUtils.trimToEmpty(app.getRequiredRoleKey());
-        if (StringUtils.isBlank(requiredRoleKey)) {
-            return true;
-        }
-        return LoginHelper.isSuperAdmin() || currentRoleKeys().contains(requiredRoleKey);
-    }
-
-    private Set<String> currentRoleKeys() {
+    private List<Long> currentRoleIds() {
         LoginUser loginUser = LoginHelper.getLoginUser();
-        if (loginUser == null || loginUser.getRolePermission() == null) {
-            return Collections.emptySet();
+        if (loginUser == null || loginUser.getRoles() == null) {
+            return Collections.emptyList();
         }
-        return loginUser.getRolePermission();
+        return loginUser.getRoles().stream()
+            .map(RoleDTO::getRoleId)
+            .filter(id -> id != null && id > 0)
+            .toList();
     }
 
     private OssClient resolveStorage(RemoteFile remoteFile) {

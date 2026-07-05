@@ -107,7 +107,8 @@
 }
 
 /* 全站统一可见焦点态（规范 §9）：禁止 outline:none 裸移除 */
-:where(a, button, [role='button'], input, select, textarea, .el-button):focus-visible {
+:where(a, button, [role='button'], .el-button):focus-visible,
+:where(input, select, textarea):not(.el-input__inner, .el-textarea__inner):focus-visible {
   outline: none;
   box-shadow: var(--ip-focus-ring);
   border-radius: var(--ip-radius-sm);

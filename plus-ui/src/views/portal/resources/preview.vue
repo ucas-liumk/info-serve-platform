@@ -5,6 +5,7 @@
         <div class="stage-body">
           <PdfPreviewer
             v-if="previewMode === 'pdf' && previewSrc"
+            class="pdf-preview-surface"
             :src="previewSrc"
             :title="resource?.title || resource?.originalName || '资料预览'"
             :file-name="resource?.originalName || resource?.title || '资料预览'"
@@ -48,35 +49,50 @@
                 </button>
               </div>
             </header>
-            <iframe v-if="previewMode === 'iframe'" :src="previewSrc" title="资料预览" @error="handlePreviewFrameError"></iframe>
-            <img
-              v-else-if="previewMode === 'image'"
-              class="preview-image"
-              :src="previewSrc"
-              :alt="resource?.title || '资料预览'"
-              @error="handlePreviewFrameError"
-            />
-            <video
-              v-else-if="previewMode === 'video'"
-              class="preview-media"
-              :src="previewSrc"
-              controls
-              preload="metadata"
-              @error="handlePreviewFrameError"
-            ></video>
-            <audio v-else-if="previewMode === 'audio'" class="preview-audio" :src="previewSrc" controls preload="metadata" @error="handlePreviewFrameError"></audio>
+            <div class="native-preview-body">
+              <iframe v-if="previewMode === 'iframe'" :src="previewSrc" title="资料预览" @error="handlePreviewFrameError"></iframe>
+              <img
+                v-else-if="previewMode === 'image'"
+                class="preview-image"
+                :src="previewSrc"
+                :alt="resource?.title || '资料预览'"
+                @error="handlePreviewFrameError"
+              />
+              <video
+                v-else-if="previewMode === 'video'"
+                class="preview-media"
+                :src="previewSrc"
+                controls
+                preload="metadata"
+                @error="handlePreviewFrameError"
+              ></video>
+              <audio
+                v-else-if="previewMode === 'audio'"
+                class="preview-audio"
+                :src="previewSrc"
+                controls
+                preload="metadata"
+                @error="handlePreviewFrameError"
+              ></audio>
+            </div>
           </div>
           <div v-else class="stage-empty">
-            <el-empty :image-size="110" :description="previewError || '暂无可预览内容'" />
+            <el-empty :image-size="110" :description="previewError || '暂无可预览内容'">
+              <button class="ghost-button" type="button" @click="goResourceList">
+                <el-icon><Back /></el-icon>
+                返回资料列表
+              </button>
+            </el-empty>
           </div>
         </div>
       </section>
+      <ResourcePreviewContextPanel v-if="resource" :resource="resource" :resource-id="resourceId" :type-label="typeLabel" />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Back, Close, Download } from '@element-plus/icons-vue';
@@ -85,6 +101,7 @@ import type { InfoResource } from '@/api/infoservice/types';
 import { getToken } from '@/utils/auth';
 import { downloadPortalResource } from './download';
 import PdfPreviewer from './components/PdfPreviewer.vue';
+import ResourcePreviewContextPanel from './components/ResourcePreviewContextPanel.vue';
 
 type PreviewMode = 'none' | 'pdf' | 'iframe' | 'image' | 'video' | 'audio';
 
@@ -102,6 +119,7 @@ const TEXT_SUFFIXES = ['txt', 'md', 'csv', 'tsv', 'json', 'xml', 'log', 'ini', '
 const VIDEO_SUFFIXES = ['mp4', 'webm', 'ogg', 'mov', 'm4v'];
 const AUDIO_SUFFIXES = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'];
 const PDF_CONVERT_PREVIEW_TYPES = ['office'];
+const PDF_MAGIC_HEADER = '%PDF-';
 const PDF_CONVERT_SUFFIXES = [
   'doc',
   'docx',
@@ -133,6 +151,8 @@ const PDF_CONVERT_SUFFIXES = [
   'csv',
   'tsv'
 ];
+
+let previewObjectUrl = '';
 
 const unwrapResponseData = <T,>(payload: any): T | undefined => {
   const body = payload?.data !== undefined ? payload.data : payload;
@@ -168,6 +188,51 @@ const withAuthQuery = (url: string) => {
   }
   target.searchParams.set('clientid', import.meta.env.VITE_APP_CLIENT_ID);
   return target.toString();
+};
+
+const releasePreviewObjectUrl = () => {
+  if (!previewObjectUrl) return;
+  URL.revokeObjectURL(previewObjectUrl);
+  previewObjectUrl = '';
+};
+
+const readPreviewErrorMessage = async (blob: Blob) => {
+  const text = (await blob.text().catch(() => '')).trim();
+  if (!text) return 'PDF 预览服务暂不可用，请下载后查看';
+
+  try {
+    const body = JSON.parse(text);
+    return body?.msg || body?.message || 'PDF 预览服务暂不可用，请下载后查看';
+  } catch (error) {
+    return text.slice(0, 120);
+  }
+};
+
+const preparePdfPreviewSrc = async (url: string) => {
+  releasePreviewObjectUrl();
+  const response = await fetch(url, { credentials: 'include' });
+  const blob = await response.blob();
+  const header = await blob
+    .slice(0, PDF_MAGIC_HEADER.length)
+    .text()
+    .catch(() => '');
+
+  if (!response.ok || header !== PDF_MAGIC_HEADER) {
+    throw new Error(await readPreviewErrorMessage(blob));
+  }
+
+  previewObjectUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+  return previewObjectUrl;
+};
+
+const usePdfPreview = async () => {
+  const previewUrl = normalizePreviewSrc(withAuthQuery(resourcePdfPreviewUrl(resourceId.value)));
+  if (!previewUrl) {
+    previewError.value = '暂未获取到 PDF 预览地址';
+    return;
+  }
+  previewMode.value = 'pdf';
+  previewSrc.value = await preparePdfPreviewSrc(previewUrl);
 };
 
 const getSuffix = (item?: InfoResource) =>
@@ -222,7 +287,7 @@ const isOfdResource = (item?: InfoResource) => {
 
 const typeLabel = computed(() => {
   const suffix = resource.value?.fileSuffix || resource.value?.previewType || 'FILE';
-  return suffix.toUpperCase().slice(0, 5);
+  return String(suffix).replace(/^\./, '').toUpperCase().slice(0, 6);
 });
 
 const loadResource = async () => {
@@ -234,6 +299,7 @@ const loadResource = async () => {
   previewError.value = '';
   previewMode.value = 'none';
   previewSrc.value = '';
+  releasePreviewObjectUrl();
   try {
     const resourceRes: any = await getResource(resourceId.value);
     const currentResource = unwrapResponseData<InfoResource>(resourceRes);
@@ -241,9 +307,12 @@ const loadResource = async () => {
 
     const nativeMode = resolveNativePreviewMode(currentResource);
     if (nativeMode !== 'none') {
-      previewMode.value = isPdfResource(currentResource) ? 'pdf' : nativeMode;
-      const previewUrl = isPdfResource(currentResource) ? resourcePdfPreviewUrl(resourceId.value) : resourcePreviewUrl(resourceId.value);
-      previewSrc.value = normalizePreviewSrc(withAuthQuery(previewUrl));
+      if (isPdfResource(currentResource)) {
+        await usePdfPreview();
+        return;
+      }
+      previewMode.value = nativeMode;
+      previewSrc.value = normalizePreviewSrc(withAuthQuery(resourcePreviewUrl(resourceId.value)));
       if (!previewSrc.value) {
         previewError.value = '暂未获取到预览地址';
       }
@@ -256,11 +325,7 @@ const loadResource = async () => {
     }
 
     if (shouldUsePdfPreview(currentResource)) {
-      previewMode.value = 'pdf';
-      previewSrc.value = normalizePreviewSrc(withAuthQuery(resourcePdfPreviewUrl(resourceId.value)));
-      if (!previewSrc.value) {
-        previewError.value = '暂未获取到 PDF 预览地址';
-      }
+      await usePdfPreview();
       return;
     }
 
@@ -268,8 +333,8 @@ const loadResource = async () => {
   } catch (error) {
     previewMode.value = 'none';
     previewSrc.value = '';
-    previewError.value = '资料暂时无法预览';
-    ElMessage.error('资料暂时无法预览');
+    previewError.value = error instanceof Error && error.message ? error.message : '资料暂时无法预览';
+    ElMessage.error(previewError.value);
   } finally {
     if (!previewSrc.value) {
       previewMode.value = 'none';
@@ -281,6 +346,7 @@ const loadResource = async () => {
 const handlePreviewFrameError = () => {
   previewMode.value = 'none';
   previewSrc.value = '';
+  releasePreviewObjectUrl();
   previewError.value = '资料暂时无法预览';
 };
 
@@ -309,6 +375,7 @@ const formatSize = (size?: number) => {
 };
 
 onMounted(loadResource);
+onBeforeUnmount(releasePreviewObjectUrl);
 </script>
 
 <style scoped>
@@ -329,63 +396,11 @@ onMounted(loadResource);
   font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-.preview-topbar,
-.preview-stage,
-.info-card,
-.meta-card,
-.metric-card {
+.preview-stage {
   border: 1px solid var(--resource-border);
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 14px 34px rgba(31, 54, 76, 0.07);
-}
-
-.preview-topbar {
-  min-height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 14px 16px;
-}
-
-.brand-block {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.brand-block img {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
-
-.brand-block div {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.brand-block strong {
-  color: var(--resource-title);
-  font-size: 21px;
-  line-height: 1.1;
-  font-weight: 900;
-}
-
-.brand-block span {
-  color: var(--resource-muted);
-  font-size: 13px;
-  font-weight: 750;
-}
-
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
 }
 
 .ghost-button,
@@ -437,10 +452,11 @@ onMounted(loadResource);
 }
 
 .preview-shell {
+  min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
+  grid-template-columns: minmax(620px, 1fr) 392px;
+  gap: 10px;
 }
 
 .preview-stage {
@@ -451,77 +467,29 @@ onMounted(loadResource);
   overflow: hidden;
 }
 
-.stage-head {
-  min-height: 68px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  border-bottom: 1px solid var(--resource-border);
-  padding: 14px 18px;
-}
-
-.stage-head div {
-  min-width: 0;
-  display: grid;
-  gap: 5px;
-}
-
-.stage-head span {
-  color: var(--resource-primary);
-  font-size: 12px;
-  font-weight: 850;
-}
-
-.stage-head strong {
-  overflow: hidden;
-  color: var(--resource-title);
-  font-size: 18px;
-  line-height: 1.2;
-  font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stage-head em {
-  flex: 0 0 auto;
-  border-radius: 6px;
-  padding: 5px 8px;
-  background: var(--resource-primary-soft);
-  color: var(--resource-primary);
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 900;
-}
-
 .stage-body {
+  width: 100%;
+  height: 100%;
   min-height: 0;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  display: grid;
   background: #f2f6fc;
 }
 
+.pdf-preview-surface {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+}
+
 .stage-empty {
-  min-height: 620px;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.stage-body iframe {
-  flex: 1 1 auto;
-  align-self: stretch;
-  width: 100%;
-  height: 100%;
-  min-height: 620px;
-  display: block;
-  border: 0;
-  background: #fff;
-}
-
 .native-preview {
-  width: 100%;
+  min-width: 0;
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -594,9 +562,25 @@ onMounted(loadResource);
   gap: 8px;
 }
 
+.native-preview-body {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.native-preview-body iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: block;
+  border: 0;
+  background: #fff;
+}
+
 .preview-image {
-  max-width: calc(100% - 48px);
-  max-height: calc(100vh - 230px);
+  max-width: 100%;
+  max-height: 100%;
   display: block;
   border-radius: 8px;
   object-fit: contain;
@@ -604,140 +588,21 @@ onMounted(loadResource);
 }
 
 .preview-media {
-  width: min(980px, calc(100% - 48px));
-  max-height: calc(100vh - 230px);
+  width: min(980px, 100%);
+  max-height: 100%;
   border-radius: 8px;
   background: #14243a;
   box-shadow: 0 16px 34px rgba(20, 36, 67, 0.12);
 }
 
 .preview-audio {
-  width: min(720px, calc(100% - 48px));
+  width: min(720px, 100%);
 }
 
-.info-panel {
-  min-width: 0;
-  display: grid;
-  align-content: start;
-  gap: 14px;
-}
-
-.info-card,
-.meta-card,
-.metric-card {
-  padding: 16px;
-}
-
-.info-card {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  gap: 14px;
-}
-
-.file-mark {
-  width: 72px;
-  height: 90px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #d7e5fb;
-  border-radius: 8px;
-  background: var(--resource-primary-soft);
-  color: var(--resource-primary);
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.file-title {
-  min-width: 0;
-}
-
-.file-title h1 {
-  margin: 0;
-  color: var(--resource-title);
-  font-size: 19px;
-  line-height: 1.3;
-  font-weight: 900;
-}
-
-.file-title p {
-  margin: 9px 0 0;
-  display: -webkit-box;
-  overflow: hidden;
-  color: var(--resource-muted);
-  font-size: 13px;
-  line-height: 1.55;
-  font-weight: 700;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-}
-
-.meta-card h2 {
-  margin: 0 0 14px;
-  color: var(--resource-title);
-  font-size: 17px;
-  font-weight: 900;
-}
-
-.meta-card dl {
-  margin: 0;
-  display: grid;
-  gap: 12px;
-}
-
-.meta-card dl div {
-  display: grid;
-  gap: 5px;
-}
-
-.meta-card dt {
-  color: var(--resource-weak);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.meta-card dd {
-  min-width: 0;
-  margin: 0;
-  overflow-wrap: anywhere;
-  color: var(--resource-text);
-  font-size: 14px;
-  line-height: 1.45;
-  font-weight: 760;
-}
-
-.metric-card {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.metric-card div {
-  border-radius: 8px;
-  padding: 14px 10px;
-  background: #f5f7fa;
-  text-align: center;
-}
-
-.metric-card strong {
-  display: block;
-  color: var(--resource-title);
-  font-size: 24px;
-  line-height: 1.1;
-  font-weight: 900;
-}
-
-.metric-card span {
-  display: block;
-  margin-top: 5px;
-  color: var(--resource-muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-@media (max-width: 1080px) {
+@media (max-width: 1180px) {
   .preview-shell {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(560px, 1fr) minmax(420px, auto);
   }
 
   .preview-stage {

@@ -152,6 +152,32 @@ export interface ResourcePortalPayload {
   remark?: string;
 }
 
+export interface ResourceNote {
+  noteId: number | string;
+  resourceId: number | string;
+  userId: number | string;
+  authorName: string;
+  content: string;
+  visibility: 'private' | 'public';
+  mine?: boolean;
+  createTime: string;
+  updateTime?: string;
+}
+
+export interface ResourceViewRecord {
+  recordId: number | string;
+  resourceId: number | string;
+  userId: number | string;
+  userName: string;
+  actionType: string;
+  createTime: string;
+}
+
+export interface ResourceNotePayload {
+  content: string;
+  visibility: 'private' | 'public';
+}
+
 export interface ResourceCategoryForm {
   categoryId: number | string | undefined;
   categoryName: string;

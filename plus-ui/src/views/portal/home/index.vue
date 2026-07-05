@@ -1,7 +1,7 @@
 <template>
   <main class="portal-home">
     <section class="home-shell">
-      <HomeTopbar @command="handleUserCommand" />
+      <HomeTopbar @command="handleUserCommand" @open-manual="openManualDialog" />
 
       <ModuleGrid :modules="featuredModules" :total="modules.length" @open="openModule" @more="openModuleDialog" />
 
@@ -91,6 +91,7 @@
     </el-dialog>
 
     <AllModuleDialog v-model="moduleDialog.visible" :modules="modules" :saving="moduleDialog.saving" @open="openModule" @reorder="saveModuleOrder" />
+    <SystemManualDialog v-model="manualDialogVisible" />
   </main>
 </template>
 
@@ -110,11 +111,16 @@ import AllModuleDialog from './components/AllModuleDialog.vue';
 import HomeTopbar from './components/HomeTopbar.vue';
 import ModuleGrid from './components/ModuleGrid.vue';
 import StatsBand from './components/StatsBand.vue';
+import SystemManualDialog from './components/SystemManualDialog.vue';
 import moduleResource from '@/assets/portal/module-resource.png';
 import moduleTools from '@/assets/portal/module-tools.png';
 import moduleQa from '@/assets/portal/module-qa.png';
 import moduleHot from '@/assets/portal/module-hot.png';
 import moduleForum from '@/assets/portal/module-forum.png';
+import moduleLowcode from '@/assets/portal/module-lowcode.png';
+import moduleAnalysis from '@/assets/portal/module-analysis.png';
+import moduleUsageDashboard from '@/assets/portal/module-usage-dashboard.png';
+import moduleDashboard from '@/assets/portal/module-dashboard.png';
 
 interface HomeModule {
   code?: string;
@@ -130,6 +136,7 @@ const userStore = useUserStore();
 const loading = ref(false);
 const profileFormRef = ref<ElFormInstance>();
 const passwordFormRef = ref<ElFormInstance>();
+const manualDialogVisible = ref(false);
 
 type PortalProfileForm = Partial<UserForm> & {
   userName?: string;
@@ -227,10 +234,20 @@ const stats = ref<PortalStats>({
 const MODULE_ART: Record<string, string> = {
   resources: moduleResource,
   appcenter: moduleTools,
-  'usage-dashboard': moduleHot,
+  lowcode: moduleLowcode,
+  analysis: moduleAnalysis,
+  'usage-dashboard': moduleUsageDashboard,
+  dashboard: moduleDashboard,
   qa: moduleQa,
   news: moduleHot,
   forum: moduleForum
+};
+
+const MODULE_NAME_ART: Record<string, string> = {
+  低代码: moduleLowcode,
+  运行分析: moduleAnalysis,
+  应用态势: moduleUsageDashboard,
+  态势: moduleDashboard
 };
 
 const HOME_MODULE_LIMIT = 6;
@@ -239,7 +256,7 @@ const HOME_MODULE_LIMIT = 6;
 const DEFAULT_MODULES: HomeModule[] = [
   { code: 'resources', title: '资料共享', desc: '数据汇聚  共享共用', image: moduleResource, path: '/portal/resources', sortOrder: 10 },
   { code: 'appcenter', title: '应用中心', desc: '应用聚合  即取即用', image: moduleTools, path: '/portal/tools', sortOrder: 20 },
-  { code: 'usage-dashboard', title: '应用态势', desc: '运行洞察  转型透明', image: moduleHot, path: '/portal/usage-dashboard', sortOrder: 30 },
+  { code: 'usage-dashboard', title: '应用态势', desc: '运行洞察  转型透明', image: moduleUsageDashboard, path: '/portal/usage-dashboard', sortOrder: 30 },
   { code: 'forum', title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum', sortOrder: 40 },
   { code: 'qa', title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa, sortOrder: 80 },
   { code: 'news', title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot, sortOrder: 90 }
@@ -259,7 +276,7 @@ const loadModules = async () => {
           code: row.moduleCode,
           title: row.moduleName,
           desc: row.description || '',
-          image: row.image || MODULE_ART[row.moduleCode] || moduleTools,
+          image: row.image || resolveModuleImage(row.moduleCode, row.moduleName),
           path: row.status === '0' && row.entryPath ? row.entryPath : undefined,
           sortOrder: Number(row.sortOrder || 0)
         }))
@@ -268,6 +285,14 @@ const loadModules = async () => {
   } catch {
     // 注册表不可用时保留兜底卡片，不阻塞首页
   }
+};
+
+const resolveModuleImage = (moduleCode?: string, moduleName?: string) => {
+  if (moduleCode && MODULE_ART[moduleCode]) {
+    return MODULE_ART[moduleCode];
+  }
+  const matchedName = Object.keys(MODULE_NAME_ART).find((keyword) => moduleName?.includes(keyword));
+  return matchedName ? MODULE_NAME_ART[matchedName] : moduleTools;
 };
 
 const openModule = (item: HomeModule) => {
@@ -284,6 +309,10 @@ const openModule = (item: HomeModule) => {
 
 const openModuleDialog = () => {
   moduleDialog.visible = true;
+};
+
+const openManualDialog = () => {
+  manualDialogVisible.value = true;
 };
 
 const saveModuleOrder = async (orderedModules: HomeModule[]) => {

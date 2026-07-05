@@ -32,7 +32,7 @@ VITE_APP_DATAEASE_DASHBOARD_URL="http://127.0.0.1:8100/#/de-link/your-dashboard"
 
 DataEase 公共链接必须使用前端 hash 路由，例如 `/#/de-link/infoserve001`。不要直接使用物理路径 `/de-link/infoserve001`，否则会被 DataEase 后端鉴权拦截。
 
-DataEase 管理后台、Apache Hop Web、Budibase 低代码工厂作为治理工具写入应用中心 `治理工具` 分类，`required_role_key=superadmin`。普通门户用户只看到业务应用；管理员从应用中心打开这些独立产品后台。后续新增“数据治理工程师”角色时，可把对应应用的 `required_role_key` 改为新角色键。
+DataEase 管理后台、Apache Hop Web、Budibase 低代码工厂作为治理工具写入应用中心 `治理工具` 分类，默认 `access_mode=role` 并授权超级管理员角色。普通门户用户只看到业务应用；管理员从应用中心打开这些独立产品后台。后续新增“数据治理工程师”角色时，可在应用管理中把这些工具的开放角色调整为新角色。
 
 Budibase 只作为低代码应用工厂，不直接维护门户核心业务表。
 

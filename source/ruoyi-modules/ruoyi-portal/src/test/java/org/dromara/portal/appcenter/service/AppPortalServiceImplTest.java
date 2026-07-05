@@ -13,7 +13,6 @@ import org.dromara.portal.appcenter.domain.vo.PortalAppVo;
 import org.dromara.portal.appcenter.mapper.*;
 import org.dromara.portal.kernel.mapper.AppMessageMapper;
 import org.dromara.portal.kernel.domain.AppMessage;
-import org.dromara.portal.kernel.domain.vo.AppMessageVo;
 import org.dromara.portal.appcenter.service.impl.AppPortalServiceImpl;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -42,6 +41,8 @@ class AppPortalServiceImplTest {
 
     @Mock
     private AppApplicationMapper applicationMapper;
+    @Mock
+    private AppAccessScopeMapper accessScopeMapper;
     @Mock
     private AppCategoryMapper categoryMapper;
     @Mock
@@ -296,6 +297,45 @@ class AppPortalServiceImplTest {
         app.setStatus("0");
         app.setAccessUrl("https://example.com/app");
         when(applicationMapper.selectById(1L)).thenReturn(app);
+        when(applicationMapper.update(isNull(), any())).thenReturn(1);
+
+        String result = service.use(1L);
+
+        assertThat(result).isEqualTo("https://example.com/app");
+
+        ArgumentCaptor<LambdaUpdateWrapper<AppApplication>> cap =
+            ArgumentCaptor.forClass(LambdaUpdateWrapper.class);
+        verify(applicationMapper).update(isNull(), cap.capture());
+        assertThat(cap.getValue().getSqlSet()).contains("use_count = COALESCE(use_count, 0) + 1");
+    }
+
+    @Test
+    void use_userScopedAppWithoutScope_shouldThrowServiceException() {
+        AppApplication app = new AppApplication();
+        app.setAppId(1L);
+        app.setStatus("0");
+        app.setAccessMode("user");
+        app.setAccessUrl("https://example.com/app");
+        when(applicationMapper.selectById(1L)).thenReturn(app);
+        when(accessScopeMapper.exists(any())).thenReturn(false);
+
+        assertThatThrownBy(() -> service.use(1L))
+            .isInstanceOf(ServiceException.class)
+            .hasMessageContaining("暂无该应用使用权限");
+
+        verify(applicationMapper, never()).update(any(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void use_userScopedAppWithScope_shouldReturnAccessUrlAndIncrementUseCount() {
+        AppApplication app = new AppApplication();
+        app.setAppId(1L);
+        app.setStatus("0");
+        app.setAccessMode("user");
+        app.setAccessUrl("https://example.com/app");
+        when(applicationMapper.selectById(1L)).thenReturn(app);
+        when(accessScopeMapper.exists(any())).thenReturn(true);
         when(applicationMapper.update(isNull(), any())).thenReturn(1);
 
         String result = service.use(1L);

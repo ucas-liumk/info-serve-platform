@@ -141,6 +141,45 @@ CREATE INDEX IF NOT EXISTS idx_info_resource_fav_resource ON info_resource_favor
 CREATE INDEX IF NOT EXISTS idx_info_resource_fav_tenant ON info_resource_favorite (tenant_id);
 COMMENT ON TABLE info_resource_favorite IS '信息中心资料收藏';
 
+CREATE TABLE IF NOT EXISTS info_resource_note (
+    note_id     int8          NOT NULL,
+    resource_id int8          NOT NULL,
+    user_id     int8          NOT NULL,
+    author_name varchar(80)   DEFAULT NULL,
+    content     varchar(2000) NOT NULL,
+    visibility  varchar(20)   DEFAULT 'private' NOT NULL,
+    tenant_id   varchar(20)   DEFAULT '000000',
+    del_flag    char(1)       DEFAULT '0',
+    create_dept int8          DEFAULT NULL,
+    create_by   int8          DEFAULT NULL,
+    create_time timestamp     DEFAULT NULL,
+    update_by   int8          DEFAULT NULL,
+    update_time timestamp     DEFAULT NULL,
+    remark      varchar(500)  DEFAULT NULL,
+    CONSTRAINT pk_info_resource_note PRIMARY KEY (note_id)
+);
+CREATE INDEX IF NOT EXISTS idx_info_resource_note_user ON info_resource_note (resource_id, user_id, create_time);
+CREATE INDEX IF NOT EXISTS idx_info_resource_note_public ON info_resource_note (resource_id, visibility, create_time) WHERE del_flag = '0';
+COMMENT ON TABLE info_resource_note IS '信息中心资料阅读笔记';
+
+CREATE TABLE IF NOT EXISTS info_resource_view_record (
+    record_id   int8        NOT NULL,
+    resource_id int8        NOT NULL,
+    user_id     int8        NOT NULL,
+    user_name   varchar(80) DEFAULT NULL,
+    action_type varchar(30) DEFAULT 'view',
+    tenant_id   varchar(20) DEFAULT '000000',
+    create_dept int8        DEFAULT NULL,
+    create_by   int8        DEFAULT NULL,
+    create_time timestamp   DEFAULT NULL,
+    update_by   int8        DEFAULT NULL,
+    update_time timestamp   DEFAULT NULL,
+    CONSTRAINT pk_info_resource_view_record PRIMARY KEY (record_id)
+);
+CREATE INDEX IF NOT EXISTS idx_info_resource_view_record_resource ON info_resource_view_record (resource_id, create_time);
+CREATE INDEX IF NOT EXISTS idx_info_resource_view_record_user ON info_resource_view_record (user_id, create_time);
+COMMENT ON TABLE info_resource_view_record IS '信息中心资料阅看记录';
+
 INSERT INTO info_resource_category (category_id, category_name, category_code, description, icon, order_num, create_time)
 VALUES
 (300001, '政策制度', 'policy', '规章制度、流程规范和政策类资料。', 'document', 1, now()),
