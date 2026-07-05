@@ -208,10 +208,10 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
             throw new ServiceException("应用类型不正确");
         }
         if (!"offline".equals(appType) && StringUtils.isBlank(bo.getAccessUrl())) {
-            throw new ServiceException("业务应用和在线工具必须配置访问地址");
+            throw new ServiceException("自研应用和开源应用必须配置访问地址");
         }
         if ("offline".equals(appType) && bo.getPackageOssId() == null) {
-            throw new ServiceException("离线工具必须上传安装包");
+            throw new ServiceException("离线应用必须上传安装包");
         }
     }
 
@@ -222,7 +222,7 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
         String version = StringUtils.isBlank(app.getVersion()) ? "" : " " + app.getVersion();
         notificationService.sendToAllUsers(
             "应用上架：" + app.getAppName(),
-            "应用中心已上架“" + app.getAppName() + "”" + version + "，可前往应用中心中打开使用。",
+            "应用中心已上架“" + app.getAppName() + "”" + version + "，可前往应用中心打开使用。",
             "app"
         );
     }

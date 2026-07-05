@@ -1,10 +1,10 @@
 <template>
   <aside class="tools-sidebar">
     <div class="side-brand">
-      <img :src="logoUrl" alt="工具即用" />
+      <img :src="logoUrl" alt="应用中心" />
       <div>
-        <strong>工具即用</strong>
-        <span>即开即用 · 提升效率</span>
+        <strong>应用中心</strong>
+        <span>自研 · 开源 · 离线</span>
       </div>
     </div>
 
@@ -13,46 +13,61 @@
       <span>返回首页</span>
     </button>
 
-    <nav class="side-nav" aria-label="工具即用导航">
+    <nav class="side-nav" aria-label="应用中心导航">
       <div class="nav-title">
-        <span>工具导航</span>
-        <em>{{ navItems.length }} 项</em>
+        <span>应用分类</span>
+        <em>{{ categories.length }} 项</em>
       </div>
       <button
-        v-for="item in navItems"
-        :key="item.key"
-        :class="['side-link', { active: viewMode === item.key }]"
+        v-for="category in categories"
+        :key="category.categoryCode"
+        :class="['side-link', { active: viewMode === 'market' && categoryCode === category.categoryCode }]"
         type="button"
-        @click="switchMode(item.key)"
+        @click="selectCategory(category.categoryCode)"
       >
         <span class="nav-icon">
-          <el-icon><component :is="item.icon" /></el-icon>
+          <el-icon><component :is="categoryIcon(category.categoryCode)" /></el-icon>
         </span>
-        <strong>{{ item.label }}</strong>
+        <strong>{{ category.categoryName }}</strong>
+        <em class="side-count">{{ category.appCount || 0 }}</em>
+      </button>
+
+      <div class="nav-title secondary">
+        <span>个人</span>
+      </div>
+      <button :class="['side-link', { active: viewMode === 'favorites' }]" type="button" @click="switchMode('favorites')">
+        <span class="nav-icon">
+          <el-icon><Star /></el-icon>
+        </span>
+        <strong>收藏应用</strong>
+        <em class="side-count">{{ favoriteTotal || 0 }}</em>
       </button>
     </nav>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { Grid, House, Star } from '@element-plus/icons-vue';
+import { Collection, Connection, Download, Grid, House, Star } from '@element-plus/icons-vue';
+import type { PortalCategory } from '@/api/appcenter/types';
 import logoUrl from '@/assets/portal/home-logo.png';
 
 type ViewMode = 'market' | 'favorites';
 
-defineProps<{ viewMode: ViewMode }>();
-const emit = defineEmits<{ (e: 'switch-mode', mode: ViewMode): void }>();
+defineProps<{ viewMode: ViewMode; categoryCode: string; categories: PortalCategory[]; favoriteTotal?: number }>();
+const emit = defineEmits<{ (e: 'switch-mode', mode: ViewMode): void; (e: 'select-category', code: string): void }>();
 
 const router = useRouter();
 
-const navItems = computed(() => [
-  { key: 'market' as const, label: '应用中心', icon: Grid },
-  { key: 'favorites' as const, label: '收藏应用', icon: Star }
-]);
-
 const switchMode = (mode: ViewMode) => emit('switch-mode', mode);
+const selectCategory = (code: string) => emit('select-category', code);
+
+const categoryIcon = (code: string) => {
+  if (code === 'self_hosted') return Collection;
+  if (code === 'open_source') return Connection;
+  if (code === 'offline') return Download;
+  return Grid;
+};
 
 const goHome = () => {
   router.push('/portal');
@@ -81,11 +96,11 @@ const goHome = () => {
   gap: 13px;
   box-sizing: border-box;
   border: 1px solid var(--tool-border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 16px;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(183, 121, 31, 0.13), transparent 42%), linear-gradient(180deg, #fff 0%, #f8fafc 100%);
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+  background: linear-gradient(135deg, var(--tool-accent-soft), transparent 42%), var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .side-brand::after {
@@ -95,8 +110,8 @@ const goHome = () => {
   bottom: -34px;
   width: 110px;
   height: 72px;
-  border: 1px solid rgba(183, 121, 31, 0.22);
-  border-radius: 8px;
+  border: 1px solid var(--ip-mod-appcenter-border);
+  border-radius: 10px;
   transform: rotate(-14deg);
   pointer-events: none;
 }
@@ -119,9 +134,9 @@ const goHome = () => {
 
 .side-brand strong {
   color: var(--tool-title);
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.15;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .side-brand span {
@@ -139,12 +154,12 @@ const goHome = () => {
   justify-content: center;
   gap: 7px;
   border: 1px solid var(--tool-border);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0 14px;
-  background: #fff;
+  background: var(--ip-neutral-0);
   color: var(--tool-text);
   line-height: 1;
-  font-weight: 850;
+  font-weight: 700;
   cursor: pointer;
   transition:
     border-color 0.18s ease,
@@ -176,11 +191,11 @@ const goHome = () => {
   flex-direction: column;
   gap: 10px;
   border: 1px solid var(--tool-border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 14px;
   overflow: auto;
   background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .nav-title {
@@ -191,10 +206,14 @@ const goHome = () => {
   padding: 2px 2px 6px;
 }
 
+.nav-title.secondary {
+  padding-top: 10px;
+}
+
 .nav-title span {
   color: var(--tool-title);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .nav-title em {
@@ -208,16 +227,16 @@ const goHome = () => {
   position: relative;
   min-height: 58px;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.98)), #f8fafc;
+  background: var(--ip-neutral-50);
   color: var(--tool-text);
   font-size: 15px;
-  font-weight: 850;
+  font-weight: 700;
   text-align: left;
   cursor: pointer;
   transition:
@@ -233,8 +252,8 @@ const goHome = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 6px;
+  background: var(--ip-neutral-0);
   color: var(--tool-accent);
   box-shadow: 0 0 0 1px var(--tool-input-border) inset;
 }
@@ -244,27 +263,40 @@ const goHome = () => {
   overflow: hidden;
   color: var(--tool-title);
   line-height: 1.2;
-  font-weight: 850;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.side-count {
+  min-width: 24px;
+  color: var(--tool-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  text-align: right;
+}
+
 .side-link:hover {
-  border-color: #b8c9d9;
-  background: #f8fafc;
+  border-color: var(--ip-neutral-300);
+  background: var(--ip-neutral-100);
   transform: translateX(2px);
 }
 
 .side-link.active {
-  border-color: #b8c9d9;
+  border-color: var(--ip-mod-appcenter-border);
   background: var(--tool-accent-soft);
   box-shadow: inset 3px 0 0 var(--tool-accent);
 }
 
+.side-link.active .side-count {
+  color: var(--tool-primary-deep);
+}
+
 .side-link.active .nav-icon {
   background: var(--tool-accent);
-  color: #fff;
-  box-shadow: 0 10px 20px rgba(183, 121, 31, 0.2);
+  color: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-md);
 }
 
 @media (max-width: 1120px) {

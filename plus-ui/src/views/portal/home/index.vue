@@ -3,7 +3,7 @@
     <section class="home-shell">
       <HomeTopbar @command="handleUserCommand" />
 
-      <ModuleGrid :modules="modules" @open="openModule" />
+      <ModuleGrid :modules="featuredModules" :total="modules.length" @open="openModule" @more="openModuleDialog" />
 
       <StatsBand :stats="stats" :loading="loading" />
     </section>
@@ -89,21 +89,24 @@
         <el-button type="primary" :loading="passwordDialog.saving" @click="submitPassword">保存</el-button>
       </template>
     </el-dialog>
+
+    <AllModuleDialog v-model="moduleDialog.visible" :modules="modules" :saving="moduleDialog.saving" @open="openModule" @reorder="saveModuleOrder" />
   </main>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getPortalStats } from '@/api/portal/stats';
 import { PortalStats } from '@/api/infoservice/types';
-import { listPortalModules } from '@/api/portal/module';
+import { listPortalModules, updatePortalModuleOrder } from '@/api/portal/module';
 import { getUserProfile, updateUserProfile, updateUserPwd } from '@/api/system/user';
 import type { UserForm } from '@/api/system/user/types';
 import { PORTAL_HOME_PATH } from '@/constants/router';
 import { useUserStore } from '@/store/modules/user';
 import UserAvatar from '@/views/admin/system/user/profile/userAvatar.vue';
+import AllModuleDialog from './components/AllModuleDialog.vue';
 import HomeTopbar from './components/HomeTopbar.vue';
 import ModuleGrid from './components/ModuleGrid.vue';
 import StatsBand from './components/StatsBand.vue';
@@ -114,10 +117,12 @@ import moduleHot from '@/assets/portal/module-hot.png';
 import moduleForum from '@/assets/portal/module-forum.png';
 
 interface HomeModule {
+  code?: string;
   title: string;
   desc: string;
   image: string;
   path?: string;
+  sortOrder?: number;
 }
 
 const router = useRouter();
@@ -143,6 +148,11 @@ const profileDialog = reactive({
 });
 
 const passwordDialog = reactive({
+  visible: false,
+  saving: false
+});
+
+const moduleDialog = reactive({
   visible: false,
   saving: false
 });
@@ -222,16 +232,19 @@ const MODULE_ART: Record<string, string> = {
   forum: moduleForum
 };
 
+const HOME_MODULE_LIMIT = 6;
+
 /** 注册表不可用时的兜底卡片（与种子数据一致） */
 const DEFAULT_MODULES: HomeModule[] = [
-  { title: '资料共享', desc: '数据汇聚  共享共用', image: moduleResource, path: '/portal/resources' },
-  { title: '工具即用', desc: '开箱即用  提升效率', image: moduleTools, path: '/portal/tools' },
-  { title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa },
-  { title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot },
-  { title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum' }
+  { code: 'resources', title: '资料共享', desc: '数据汇聚  共享共用', image: moduleResource, path: '/portal/resources', sortOrder: 10 },
+  { code: 'appcenter', title: '应用中心', desc: '应用聚合  即取即用', image: moduleTools, path: '/portal/tools', sortOrder: 20 },
+  { code: 'qa', title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa, sortOrder: 30 },
+  { code: 'news', title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot, sortOrder: 40 },
+  { code: 'forum', title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum', sortOrder: 50 }
 ];
 
 const modules = ref<HomeModule[]>(DEFAULT_MODULES);
+const featuredModules = computed(() => modules.value.slice(0, HOME_MODULE_LIMIT));
 
 /** 首页卡片改从 portal_module 注册表渲染（后台可配启停/排序/权限） */
 const loadModules = async () => {
@@ -239,12 +252,16 @@ const loadModules = async () => {
     const res = await listPortalModules();
     const rows = res.data ?? [];
     if (rows.length > 0) {
-      modules.value = rows.map((row) => ({
-        title: row.moduleName,
-        desc: row.description || '',
-        image: row.image || MODULE_ART[row.moduleCode] || moduleTools,
-        path: row.status === '0' && row.entryPath ? row.entryPath : undefined
-      }));
+      modules.value = rows
+        .map((row) => ({
+          code: row.moduleCode,
+          title: row.moduleName,
+          desc: row.description || '',
+          image: row.image || MODULE_ART[row.moduleCode] || moduleTools,
+          path: row.status === '0' && row.entryPath ? row.entryPath : undefined,
+          sortOrder: Number(row.sortOrder || 0)
+        }))
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
     }
   } catch {
     // 注册表不可用时保留兜底卡片，不阻塞首页
@@ -253,10 +270,48 @@ const loadModules = async () => {
 
 const openModule = (item: HomeModule) => {
   if (item.path) {
+    if (/^https?:\/\//.test(item.path)) {
+      window.open(normalizeServiceUrl(item.path), '_blank');
+      return;
+    }
     router.push(item.path);
     return;
   }
   ElMessage.info(`${item.title}将在后续版本开放`);
+};
+
+const openModuleDialog = () => {
+  moduleDialog.visible = true;
+};
+
+const saveModuleOrder = async (orderedModules: HomeModule[]) => {
+  modules.value = orderedModules;
+  const moduleCodes = orderedModules.map((item) => item.code).filter((code): code is string => Boolean(code));
+  if (moduleCodes.length === 0) {
+    return;
+  }
+
+  moduleDialog.saving = true;
+  try {
+    await updatePortalModuleOrder(moduleCodes);
+    ElMessage.success('首页服务顺序已保存');
+  } catch {
+    ElMessage.error('顺序已调整，但保存失败，请稍后重试');
+  } finally {
+    moduleDialog.saving = false;
+  }
+};
+
+const normalizeServiceUrl = (raw: string) => {
+  try {
+    const url = new URL(raw);
+    if (['127.0.0.1', 'localhost'].includes(url.hostname)) {
+      url.hostname = window.location.hostname;
+    }
+    return url.toString();
+  } catch {
+    return raw;
+  }
 };
 
 const openProfile = () => {
@@ -388,16 +443,16 @@ onMounted(async () => {
 
 <style scoped>
 .portal-home {
-  --portal-max: 1544px;
-  --portal-blue: #082b68;
-  --portal-text: #071f4b;
-  --portal-muted: rgba(7, 31, 75, 0.72);
+  --portal-max: var(--ip-layout-max);
+  --portal-blue: var(--ip-primary-900);
+  --portal-text: var(--ip-neutral-900);
+  --portal-muted: var(--ip-neutral-600);
 
   min-height: 100vh;
   overflow: hidden;
   color: var(--portal-text);
   background-image:
-    linear-gradient(180deg, rgba(247, 252, 255, 0.04) 0%, rgba(247, 252, 255, 0.1) 44%, rgba(247, 252, 255, 0.68) 78%, #f7fbff 100%),
+    linear-gradient(180deg, rgba(247, 252, 255, 0.04) 0%, rgba(247, 252, 255, 0.1) 44%, rgba(247, 252, 255, 0.72) 78%, var(--ip-neutral-50) 100%),
     url('@/assets/portal/portal-home-bg.png');
   background-position:
     center top,
@@ -435,14 +490,14 @@ onMounted(async () => {
 .profile-avatar-field :deep(.img-lg) {
   width: 112px;
   height: 112px;
-  border: 1px solid rgba(8, 43, 104, 0.18);
-  border-radius: 50%;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: 999px;
   object-fit: cover;
-  box-shadow: 0 10px 24px rgba(8, 43, 104, 0.12);
+  box-shadow: var(--ip-shadow-md);
 }
 
 .profile-avatar-tip {
-  color: rgba(7, 31, 75, 0.56);
+  color: var(--ip-neutral-500);
   font-size: 13px;
 }
 

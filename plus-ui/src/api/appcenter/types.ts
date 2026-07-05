@@ -9,6 +9,9 @@ export interface PortalApp {
   description: string;
   tags: string;
   accessUrl: string;
+  appType: 'business' | 'online' | 'offline';
+  packageName?: string;
+  packageSize?: number;
   isSecurity: string;
   useCount: number;
   favoriteCount: number;

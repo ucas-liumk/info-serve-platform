@@ -1,6 +1,13 @@
 <template>
   <div class="tools-market">
-    <ToolsSidebar :view-mode="viewMode" @switch-mode="switchMode" />
+    <ToolsSidebar
+      :view-mode="viewMode"
+      :category-code="categoryCode"
+      :categories="categories"
+      :favorite-total="favoriteTotal"
+      @switch-mode="switchMode"
+      @select-category="selectCategory"
+    />
 
     <main class="market-main">
       <header class="market-top">
@@ -15,7 +22,7 @@
               v-model="searchDraft"
               class="market-search"
               clearable
-              placeholder="搜索工具名称、描述或标签"
+              placeholder="搜索应用名称、描述或标签"
               @keyup.enter="onSearch"
               @clear="onSearch"
             >
@@ -26,6 +33,12 @@
             <button class="search-button" type="button" @click="onSearch">搜索</button>
           </div>
 
+          <el-select v-if="viewMode === 'market'" v-model="sort" class="sort-select" size="large" teleported @change="onSortChange">
+            <el-option label="最新上架" value="latest" />
+            <el-option label="最多收藏" value="hot" />
+            <el-option label="最多使用" value="use" />
+          </el-select>
+
           <button class="demand-btn" type="button" @click="openDemandDialog">
             <el-icon><DocumentAdd /></el-icon>
             <span>需求反馈</span>
@@ -35,17 +48,10 @@
         </div>
       </header>
 
-      <CategoryTabs
-        v-model:model="categoryCode"
-        v-model:sort="sort"
-        :categories="categories"
-        :total="viewMode === 'market' ? total : favoriteTotal"
-      />
-
       <section v-loading="loading" class="app-grid">
         <AppCard v-for="app in apps" :key="app.appId" :app="app" @changed="reload" />
       </section>
-      <el-empty v-if="!loading && apps.length === 0" class="empty" description="暂无工具" />
+      <el-empty v-if="!loading && apps.length === 0" class="empty" :description="emptyText" />
 
       <el-pagination
         class="pager"
@@ -63,14 +69,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { DocumentAdd, Search } from '@element-plus/icons-vue';
-import CategoryTabs from './components/CategoryTabs.vue';
 import AppCard from './components/AppCard.vue';
 import ToolsSidebar from './components/ToolsSidebar.vue';
 import DemandDialog from './components/DemandDialog.vue';
 import { listApps, listCategories, listFavorites } from '@/api/portal/appcenter';
-import { PortalApp, PortalCategory } from '@/api/appcenter/types';
+import type { PortalApp, PortalCategory } from '@/api/appcenter/types';
 import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
 
 type ViewMode = 'market' | 'favorites';
@@ -91,7 +96,7 @@ const demandDialogRef = ref<InstanceType<typeof DemandDialog>>();
 
 const currentToolTotal = computed(() => (viewMode.value === 'market' ? total.value : favoriteTotal.value));
 const activeToolCategory = computed(() => categories.value.find((item) => item.categoryCode === categoryCode.value));
-const activeToolCategoryName = computed(() => (categoryCode.value === 'all' ? '全部工具' : activeToolCategory.value?.categoryName || '当前分类'));
+const activeToolCategoryName = computed(() => activeToolCategory.value?.categoryName || '应用分类');
 
 const pageTitle = computed(() => {
   if (viewMode.value === 'favorites') return '收藏应用';
@@ -99,9 +104,11 @@ const pageTitle = computed(() => {
 });
 
 const pageSubtitle = computed(() => {
-  if (viewMode.value === 'favorites') return `${activeToolCategoryName.value} · 共 ${currentToolTotal.value} 个收藏应用`;
-  return `${activeToolCategoryName.value} · 共 ${currentToolTotal.value} 个工具`;
+  if (viewMode.value === 'favorites') return `全部收藏 · 共 ${currentToolTotal.value} 个收藏应用`;
+  return `${activeToolCategoryName.value} · 共 ${currentToolTotal.value} 个应用`;
 });
+
+const emptyText = computed(() => (viewMode.value === 'favorites' ? '暂无收藏应用' : '暂无应用，稍后再试或提交需求反馈'));
 
 const reloadApps = async () => {
   const query = {
@@ -143,9 +150,22 @@ const onPage = (page: number) => {
 const switchMode = (mode: ViewMode) => {
   viewMode.value = mode;
   pageNum.value = 1;
-  if (mode !== 'market') {
-    categoryCode.value = 'all';
+  reload();
+};
+
+const selectCategory = (code: string) => {
+  viewMode.value = 'market';
+  pageNum.value = 1;
+  if (categoryCode.value === code) {
+    reload();
+    return;
   }
+  categoryCode.value = code;
+  reload();
+};
+
+const onSortChange = () => {
+  pageNum.value = 1;
   reload();
 };
 
@@ -153,14 +173,10 @@ const openDemandDialog = () => {
   demandDialogRef.value?.open();
 };
 
-watch([categoryCode, sort], () => {
-  pageNum.value = 1;
-  reload();
-});
-
 onMounted(async () => {
   const res: any = await listCategories();
   categories.value = res.data || [];
+  categoryCode.value = categories.value[0]?.categoryCode || 'all';
   await reload();
 });
 </script>
@@ -168,22 +184,22 @@ onMounted(async () => {
 <style scoped>
 .tools-market {
   min-height: 100vh;
-  --tool-primary: #245f8f;
-  --tool-primary-deep: #183f63;
-  --tool-primary-soft: #eaf2f8;
-  --tool-accent: #b7791f;
-  --tool-accent-soft: #fff3dc;
-  --tool-title: #14243a;
-  --tool-text: #32445c;
-  --tool-muted: #68788c;
-  --tool-weak: #96a1af;
-  --tool-border: #dce5ed;
-  --tool-input-border: #d3dee8;
+  --tool-primary: var(--ip-primary-600);
+  --tool-primary-deep: var(--ip-primary-700);
+  --tool-primary-soft: var(--ip-primary-50);
+  --tool-accent: var(--ip-mod-appcenter);
+  --tool-accent-soft: var(--ip-mod-appcenter-soft);
+  --tool-title: var(--ip-neutral-900);
+  --tool-text: var(--ip-neutral-700);
+  --tool-muted: var(--ip-neutral-500);
+  --tool-weak: var(--ip-neutral-400);
+  --tool-border: var(--ip-neutral-200);
+  --tool-input-border: var(--ip-neutral-300);
   display: grid;
   grid-template-columns: 276px minmax(0, 1fr);
   gap: 22px;
   padding: 18px 28px 44px;
-  background: linear-gradient(180deg, rgba(241, 244, 248, 0.95) 0%, rgba(247, 249, 252, 0.82) 320px), #f5f7fa;
+  background: linear-gradient(180deg, rgba(241, 244, 248, 0.95) 0%, rgba(247, 249, 252, 0.82) 320px), var(--ip-neutral-50);
   color: var(--tool-text);
   font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
@@ -198,6 +214,7 @@ onMounted(async () => {
 
 .market-top {
   position: relative;
+  min-width: 0;
   min-height: 86px;
   display: grid;
   grid-template-columns: minmax(220px, 390px) minmax(0, 1fr);
@@ -205,11 +222,11 @@ onMounted(async () => {
   gap: 18px;
   box-sizing: border-box;
   border: 1px solid var(--tool-border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 14px 16px 14px 20px;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .market-top::before {
@@ -230,9 +247,9 @@ onMounted(async () => {
 .title-block h1 {
   margin: 0;
   color: var(--tool-title);
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1.15;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .title-block p {
@@ -271,8 +288,8 @@ onMounted(async () => {
 
 :deep(.market-search .el-input__wrapper) {
   padding: 0 14px;
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 6px;
+  background: var(--ip-neutral-0);
   box-shadow: 0 0 0 1px var(--tool-input-border) inset;
 }
 
@@ -280,6 +297,20 @@ onMounted(async () => {
   color: var(--tool-text);
   font-size: 14px;
   font-weight: 700;
+}
+
+.sort-select {
+  width: 132px;
+  flex: 0 0 132px;
+}
+
+:deep(.sort-select .el-select__wrapper) {
+  min-height: 40px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--tool-input-border) inset;
+  color: var(--tool-text);
+  font-weight: 800;
 }
 
 .search-button,
@@ -290,13 +321,13 @@ onMounted(async () => {
   justify-content: center;
   gap: 7px;
   border: 1px solid var(--tool-primary);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 0 15px;
   background: var(--tool-primary);
-  color: #fff;
+  color: var(--ip-neutral-0);
   font-size: 14px;
   line-height: 1;
-  font-weight: 850;
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
   transition:
@@ -307,12 +338,19 @@ onMounted(async () => {
 
 .search-button {
   padding: 0 16px;
+  background: var(--ip-neutral-0);
+  color: var(--tool-primary);
 }
 
-.search-button:hover,
+.search-button:hover {
+  background: var(--tool-primary-soft);
+  box-shadow: var(--ip-shadow-md);
+  transform: translateY(-1px);
+}
+
 .demand-btn:hover {
   background: var(--tool-primary-deep);
-  box-shadow: 0 8px 20px rgba(36, 95, 143, 0.18);
+  box-shadow: var(--ip-shadow-md);
   transform: translateY(-1px);
 }
 
@@ -329,11 +367,11 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--tool-input-border);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 6px;
+  background: var(--ip-neutral-0);
   color: var(--tool-muted);
   cursor: pointer;
-  box-shadow: 0 12px 26px rgba(31, 54, 76, 0.07);
+  box-shadow: var(--ip-shadow-sm);
   transition:
     border-color 0.16s ease,
     color 0.16s ease,
@@ -342,10 +380,10 @@ onMounted(async () => {
 }
 
 .notification-btn:hover {
-  border-color: #b8c9d9;
+  border-color: var(--ip-neutral-300);
   color: var(--tool-primary);
   background: var(--tool-primary-soft);
-  box-shadow: 0 14px 28px rgba(36, 95, 143, 0.12);
+  box-shadow: var(--ip-shadow-md);
   transform: translateY(-1px);
 }
 
@@ -364,8 +402,8 @@ onMounted(async () => {
   justify-content: center;
   border-radius: 999px;
   padding: 0 5px;
-  background: #ff312a;
-  color: #fff;
+  background: var(--ip-danger);
+  color: var(--ip-neutral-0);
   font-size: 12px;
   line-height: 1;
   font-weight: 850;
@@ -373,13 +411,13 @@ onMounted(async () => {
 
 :global(.tool-notification-popper) {
   border: 1px solid var(--tool-input-border) !important;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   padding: 14px !important;
-  box-shadow: 0 18px 46px rgba(31, 54, 76, 0.16) !important;
+  box-shadow: var(--ip-shadow-lg) !important;
 }
 
 .notice-popover {
-  color: #0f1f3d;
+  color: var(--ip-neutral-900);
 }
 
 .notice-head {
@@ -536,11 +574,14 @@ onMounted(async () => {
 }
 
 .app-grid {
-  min-height: 826px;
+  width: 100%;
+  min-width: 0;
+  min-height: 620px;
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: start;
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  align-items: stretch;
+  gap: 16px;
   margin-top: 14px;
 }
 
@@ -559,7 +600,7 @@ onMounted(async () => {
 :deep(.pager .el-pager li) {
   min-width: 38px;
   height: 38px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--tool-title);
   font-size: 16px;
@@ -568,26 +609,14 @@ onMounted(async () => {
 
 :deep(.pager .el-pager li.is-active) {
   background: var(--tool-primary);
-  color: #fff;
-  box-shadow: 0 10px 22px rgba(36, 95, 143, 0.22);
+  color: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-md);
 }
 
 :deep(.pager .btn-prev),
 :deep(.pager .btn-next) {
-  background: #fff;
-  box-shadow: 0 8px 20px rgba(31, 54, 76, 0.08);
-}
-
-@media (max-width: 1720px) {
-  .app-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1500px) {
-  .app-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  background: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 @media (max-width: 1360px) {
@@ -617,16 +646,17 @@ onMounted(async () => {
     min-width: 0;
   }
 
+  .sort-select {
+    width: 100%;
+    flex-basis: auto;
+  }
+
   .demand-btn {
     justify-content: center;
   }
 
   .notification-btn {
     align-self: flex-end;
-  }
-
-  .app-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

@@ -150,9 +150,9 @@ ON CONFLICT (category_id) DO NOTHING;
 
 INSERT INTO info_forum_board (board_id, board_name, board_code, description, order_num, create_time)
 VALUES
-(310001, '服务咨询', 'consult', '平台使用、资料服务和工具服务相关咨询。', 1, now()),
+(310001, '服务咨询', 'consult', '平台使用、资料服务和应用服务相关咨询。', 1, now()),
 (310002, '经验交流', 'share', '一线经验、问题处理和改进建议交流。', 2, now()),
-(310003, '需求反馈', 'feedback', '新资料、新工具和服务改进需求反馈。', 3, now())
+(310003, '需求反馈', 'feedback', '新资料、新应用和服务改进需求反馈。', 3, now())
 ON CONFLICT (board_id) DO NOTHING;
 
 INSERT INTO info_forum_topic

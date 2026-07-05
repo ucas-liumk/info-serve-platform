@@ -8,7 +8,7 @@ INSERT INTO sys_menu (
     create_dept, create_by, create_time, remark
 )
 VALUES
-    (2000, '工具即用', 0, 5, 'appcenter', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now(), '工具即用后台管理'),
+    (2000, '应用中心', 0, 5, 'appcenter', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now(), '应用中心后台管理'),
     (3000, '资源共享', 0, 6, 'resources', NULL, '', '1', '0', 'M', '0', '0', '', 'documentation', 103, 1, now(), '资源共享后台管理'),
     (3050, '服务论坛', 0, 7, 'forum', NULL, '', '1', '0', 'M', '0', '0', '', 'message', 103, 1, now(), '服务论坛后台管理'),
     (2099, '门户配置', 0, 8, 'portal', NULL, '', '1', '0', 'M', '0', '0', '', 'component', 103, 1, now(), '门户公共配置'),
@@ -164,7 +164,7 @@ FROM sys_role_menu
 WHERE menu_id IN (4001, 4002, 4003)
 ON CONFLICT (role_id, menu_id) DO NOTHING;
 
--- 旧版 2000 是“门户应用管理”父目录。只保留真正拥有工具即用子菜单的角色，避免资源/论坛管理员看到空工具菜单。
+-- 旧版 2000 是“门户应用管理”父目录。只保留真正拥有应用中心子菜单的角色，避免资源/论坛管理员看到空应用菜单。
 DELETE FROM sys_role_menu rm
 WHERE rm.menu_id = 2000
   AND NOT EXISTS (

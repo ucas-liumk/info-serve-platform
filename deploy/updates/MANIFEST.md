@@ -16,9 +16,11 @@
 | 0.3.3 | `0.3.3-nacos-common-config.sql` | MySQL `ry-config` | 已随 0.3.3 包投放（此前仅存在于发布包内、仓库无源，2026-07-03 回收入库） |
 | 0.3.3 | `0.3.3-portal-notifications.sql` | PG `ry-cloud` | ⚠️ **未随任何包投放**（0.3.3 装包遗漏）。内容为"版本升级"通知种子，随下次更新决定补投或作废 |
 | 0.3.4 | `0.3.4-admin-menu-modules.sql` | PG `ry-cloud` | 待投放。后台管理菜单按一级模块展示；应知应会含题库管理、考试配置、OCR 导入二级菜单 |
+| 0.3.4 | `0.3.4-appcenter-categories.sql` | PG `ry-cloud` | 待投放。工具即用更名为应用中心；应用分类调整为自研/开源/离线；应知应会归入自研应用 |
 | 0.3.4 | `0.3.4-appcenter-offline-package.sql` | PG `ry-cloud` | ⚠️ **已被提前打进 0.3.3 包**（包内文件名 `update_appcenter_offline_package_20260701.sql`）。0.3.4 定版时注意已升级主机勿重复投放（脚本本身幂等，可重跑） |
 | 0.3.4 | `0.3.4-portal-merge.sql` | PG `ry-cloud` | 待投放。服务合并配套：防御性清理三张幻影表 |
 | 0.3.4 | `0.3.4-portal-module.sql` | PG `ry-cloud` | 待投放。门户模块注册表建表+5 模块种子（与 postgres_portal_kernel.sql 同步维护） |
+| 0.3.4 | `0.3.4-portal-user-module-preference.sql` | PG `ry-cloud` | 待投放。门户首页模块按用户保存显示顺序，前 6 项进入首屏（与 postgres_portal_kernel.sql 同步维护） |
 
 ### 0.3.4 更新包非 SQL 操作清单（服务合并 + ruoyi-file 改名）
 
