@@ -6,11 +6,11 @@
         <h1>应知应会</h1>
         <span>题库、考试和材料识别管理入口</span>
       </div>
-      <el-tag type="info" effect="light">待接入</el-tag>
+      <el-tag type="success" effect="light">已接入</el-tag>
     </section>
 
     <section class="rk-admin-grid">
-      <article v-for="item in moduleCards" :key="item.title" class="rk-admin-card">
+      <router-link v-for="item in moduleCards" :key="item.title" class="rk-admin-card" :to="item.to">
         <el-icon>
           <component :is="item.icon" />
         </el-icon>
@@ -18,7 +18,7 @@
           <strong>{{ item.title }}</strong>
           <span>{{ item.desc }}</span>
         </div>
-      </article>
+      </router-link>
     </section>
   </div>
 </template>
@@ -27,9 +27,9 @@
 import { Document, Files, Finished } from '@element-plus/icons-vue';
 
 const moduleCards = [
-  { title: '题库管理', desc: '题目录入、编辑与发布', icon: Document },
-  { title: '考试配置', desc: '试卷、题量、时长与分值', icon: Finished },
-  { title: 'OCR 导入', desc: 'PDF 和截图材料识别', icon: Files }
+  { title: '题库管理', desc: '题目录入、编辑与发布', icon: Document, to: '/admin/required-knowledge/questions' },
+  { title: '考试配置', desc: '试卷、题量、时长与分值', icon: Finished, to: '/admin/required-knowledge/exams' },
+  { title: 'OCR 导入', desc: 'PDF 和截图材料识别', icon: Files, to: '/admin/required-knowledge/ocr' }
 ];
 </script>
 
@@ -47,6 +47,18 @@ const moduleCards = [
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   background: var(--el-bg-color);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    border-color: var(--el-color-primary-light-5);
+    box-shadow: var(--el-box-shadow-light);
+    transform: translateY(-1px);
+  }
 
   p {
     margin: 0 0 8px;
