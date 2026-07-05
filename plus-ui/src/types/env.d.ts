@@ -12,6 +12,7 @@ interface ImportMetaEnv {
   VITE_APP_BASE_URL: string;
   VITE_APP_CONTEXT_PATH: string;
   VITE_APP_MONITOR_ADMIN: string;
+  VITE_APP_DATAEASE_DASHBOARD_URL: string;
   VITE_APP_ENV: string;
   VITE_APP_ENCRYPT: string;
   VITE_APP_RSA_PUBLIC_KEY: string;

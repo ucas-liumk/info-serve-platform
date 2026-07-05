@@ -24,6 +24,8 @@
 | Nacos 控制台 | `http://127.0.0.1:8148/nacos` | `source/pom.xml` / `deploy/docker-compose.yml` | 配置中心/注册中心 |
 | RabbitMQ 控制台 | `http://127.0.0.1:8173` | `deploy/docker-compose.yml` | 消息队列管理页 |
 | MinIO 控制台 | `http://127.0.0.1:8161` | `deploy/docker-compose.yml` | 对象存储管理页 |
+| DataEase 态势后台 | `http://127.0.0.1:8100` | DataEase 官方安装配置 | 外部大屏引擎，独立部署 |
+| Apache Hop Web | `http://127.0.0.1:8174` | Hop Web 部署配置 | 外部数据治理/ETL 入口，建议端口 |
 
 ## 前端端口
 
@@ -64,6 +66,8 @@
 | RabbitMQ 管理页 | `8173` | `15672` | `deploy/docker-compose.yml` | 浏览器管理入口 |
 | MinIO API | `8160` | `9000` | `deploy/docker-compose.yml` | 文件服务 API |
 | MinIO 控制台 | `8161` | `9001` | `deploy/docker-compose.yml` | 浏览器管理入口 |
+| DataEase Web | `8100` | DataEase 官方安装配置 | 态势大屏制作后台，独立部署 |
+| Apache Hop Web | `8174` | Hop Web 部署配置 | 态势数据治理入口，建议将容器 `8080` 映射到宿主机 `8174` |
 
 ## Nacos 配置规则
 
@@ -104,7 +108,7 @@ Get-Process -Id 进程ID
 一次检查本项目主要端口：
 
 ```powershell
-Get-NetTCPConnection -LocalPort 7010,7018,8180,8148,8132,8136,8179,8172,8173,8160,8161
+Get-NetTCPConnection -LocalPort 7010,7018,8180,8148,8132,8136,8179,8172,8173,8160,8161,8100,8174
 ```
 
 ## 改端口时改哪里

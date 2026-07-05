@@ -21,6 +21,7 @@
 | 0.3.4 | `0.3.4-portal-merge.sql` | PG `ry-cloud` | 待投放。服务合并配套：防御性清理三张幻影表 |
 | 0.3.4 | `0.3.4-portal-module.sql` | PG `ry-cloud` | 待投放。门户模块注册表建表+5 模块种子（与 postgres_portal_kernel.sql 同步维护） |
 | 0.3.4 | `0.3.4-portal-user-module-preference.sql` | PG `ry-cloud` | 待投放。门户首页模块按用户保存显示顺序，前 6 项进入首屏（与 postgres_portal_kernel.sql 同步维护） |
+| 0.3.5 | `0.3.5-portal-dataease-integration.sql` | PG `ry-cloud` | 待投放。DataEase 应用态势入口 + `portal_analytics_*` 态势分析表骨架 |
 
 ### 0.3.4 更新包非 SQL 操作清单（服务合并 + ruoyi-file 改名）
 

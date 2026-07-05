@@ -53,6 +53,12 @@ export const constantRoutes: RouteRecordRaw[] = [
         meta: { title: '资料预览' }
       },
       { path: 'tools', name: 'InfoTools', component: () => import('@/views/portal/tools/index.vue'), meta: { title: '应用中心' } },
+      {
+        path: 'usage-dashboard',
+        name: 'InfoUsageDashboard',
+        component: () => import('@/views/portal/usage-dashboard/index.vue'),
+        meta: { title: '应用态势' }
+      },
       { path: 'forum', name: 'InfoForum', component: () => import('@/views/portal/forum/index.vue'), meta: { title: '服务论坛' } }
     ]
   },

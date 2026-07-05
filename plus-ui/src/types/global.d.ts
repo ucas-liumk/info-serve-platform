@@ -6,6 +6,12 @@ declare global {
   /** vue Instance */
   declare type ComponentInternalInstance = ComponentInstance;
 
+  interface Window {
+    __INFO_SERVE_CONFIG__?: {
+      dataeaseDashboardUrl?: string;
+    };
+  }
+
   /**
    * 界面字段隐藏属性
    */
