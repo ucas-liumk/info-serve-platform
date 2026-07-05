@@ -343,6 +343,7 @@ const renderCharts = async () => {
   renderModuleChart();
   renderHeatmapChart();
   renderFeedbackChart();
+  window.requestAnimationFrame(resizeCharts);
 };
 
 const renderSummaryChart = () => {
