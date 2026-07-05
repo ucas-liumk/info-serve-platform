@@ -17,7 +17,7 @@
         }"
         type="button"
         draggable="true"
-        @click="openModule(item)"
+        @click="handleCardClick(item)"
         @dragstart="startDrag($event, index)"
         @dragenter.prevent="overIndex = index"
         @dragover.prevent
@@ -78,6 +78,8 @@ const emit = defineEmits<{
 const localModules = ref<HomeModule[]>([]);
 const dragIndex = ref<number | null>(null);
 const overIndex = ref<number | null>(null);
+const suppressNextClick = ref(false);
+const lastDragAt = ref(0);
 
 const visible = computed({
   get: () => props.modelValue,
@@ -110,6 +112,7 @@ watch(
 const startDrag = (event: DragEvent, index: number) => {
   dragIndex.value = index;
   overIndex.value = index;
+  suppressDragClick();
   event.dataTransfer?.setData('text/plain', String(index));
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move';
@@ -125,6 +128,15 @@ const clearOver = (index: number) => {
 const resetDrag = () => {
   dragIndex.value = null;
   overIndex.value = null;
+  suppressDragClick();
+};
+
+const suppressDragClick = () => {
+  lastDragAt.value = Date.now();
+  suppressNextClick.value = true;
+  window.setTimeout(() => {
+    suppressNextClick.value = false;
+  }, 800);
 };
 
 const dropModule = (index: number) => {
@@ -140,6 +152,14 @@ const dropModule = (index: number) => {
   localModules.value = nextModules;
   emit('reorder', nextModules);
   resetDrag();
+};
+
+const handleCardClick = (item: HomeModule) => {
+  if (suppressNextClick.value || dragIndex.value !== null || Date.now() - lastDragAt.value < 800) {
+    suppressNextClick.value = false;
+    return;
+  }
+  openModule(item);
 };
 
 const openModule = (item: HomeModule) => {
