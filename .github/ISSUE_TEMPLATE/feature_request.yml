@@ -1,0 +1,65 @@
+name: 功能需求
+description: 提出一个新功能或产品改进
+title: "feat: "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+      description: 说明这个功能要解决的用户问题或业务目标。
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 范围
+      description: 写清楚本次要做什么，以及明确不做什么。
+      placeholder: |
+        本次包含：
+        - ...
+
+        本次不包含：
+        - ...
+    validations:
+      required: true
+  - type: dropdown
+    id: bounded_context
+    attributes:
+      label: 归属 BC
+      multiple: true
+      options:
+        - kernel
+        - appcenter
+        - resources
+        - forum
+        - deploy
+        - docs
+        - to-be-decided
+    validations:
+      required: true
+  - type: textarea
+    id: user_flow
+    attributes:
+      label: 用户流程 / 接口流程
+      description: 描述用户如何使用，或调用方如何接入。
+    validations:
+      required: true
+  - type: textarea
+    id: data_config
+    attributes:
+      label: 数据库 / 配置影响
+      description: 如涉及 schema、Nacos、端口、部署文件，请写明预期影响。
+      placeholder: "无 / 需要新增表 / 需要新增 Nacos 配置 / 需要更新 deploy 文件"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      placeholder: |
+        - [ ] 页面/接口行为符合目标
+        - [ ] 必要验证通过
+        - [ ] 文档已更新
+    validations:
+      required: true
