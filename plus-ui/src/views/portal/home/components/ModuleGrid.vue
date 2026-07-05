@@ -1,46 +1,107 @@
 <template>
-  <nav class="module-grid" aria-label="数智服务入口">
-    <button v-for="item in modules" :key="item.title" class="module-card" type="button" @click="openModule(item)">
-      <span class="module-visual">
-        <img :src="item.image" :alt="item.title" />
-      </span>
-      <span class="module-title">{{ item.title }}</span>
-      <span class="module-desc">{{ item.desc }}</span>
-      <span class="module-action" aria-hidden="true">
-        <IconArrowRight />
-      </span>
+  <section class="module-zone" aria-label="数智服务入口">
+    <button v-if="showMore" class="more-service" type="button" @click="openMore">
+      <span>更多服务</span>
+      <em>{{ total }} 项</em>
+      <IconArrowRight />
     </button>
-  </nav>
+
+    <nav class="module-grid">
+      <button v-for="item in modules" :key="item.code || item.title" class="module-card" type="button" @click="openModule(item)">
+        <span class="module-visual">
+          <img :src="item.image" :alt="item.title" />
+        </span>
+        <span class="module-title">{{ item.title }}</span>
+        <span class="module-desc">{{ item.desc }}</span>
+        <span class="module-action" aria-hidden="true">
+          <IconArrowRight />
+        </span>
+      </button>
+    </nav>
+  </section>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import IconArrowRight from '~icons/material-symbols/arrow-right-alt-rounded';
 
 interface HomeModule {
+  code?: string;
   title: string;
   desc: string;
   image: string;
   path?: string;
 }
 
-defineProps<{ modules: HomeModule[] }>();
-const emit = defineEmits<{ (e: 'open', item: HomeModule): void }>();
+const props = defineProps<{ modules: HomeModule[]; total?: number }>();
+const emit = defineEmits<{ (e: 'open', item: HomeModule): void; (e: 'more'): void }>();
 
+const total = computed(() => props.total ?? props.modules.length);
+const showMore = computed(() => total.value > props.modules.length);
 const openModule = (item: HomeModule) => emit('open', item);
+const openMore = () => emit('more');
 </script>
 
 <style scoped>
-.module-grid {
+.module-zone {
   max-width: var(--portal-max);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  position: relative;
   margin: 190px auto 0;
+}
+
+.more-service {
+  position: absolute;
+  top: -54px;
+  right: 0;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--ip-primary-200);
+  border-radius: 999px;
+  padding: 0 14px 0 16px;
+  background: color-mix(in srgb, var(--ip-neutral-0) 90%, transparent);
+  color: var(--ip-primary-700);
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  box-shadow: var(--ip-shadow-sm);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition:
+    background var(--ip-motion-base) var(--ip-motion-ease),
+    box-shadow var(--ip-motion-base) var(--ip-motion-ease),
+    transform var(--ip-motion-base) var(--ip-motion-ease);
+}
+
+.more-service em {
+  color: var(--ip-neutral-500);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.more-service svg {
+  width: 18px;
+  height: 18px;
+}
+
+.more-service:hover {
+  background: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-md);
+  transform: translateY(-1px);
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .module-card {
   position: relative;
-  min-height: 292px;
+  min-height: 258px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -79,8 +140,8 @@ const openModule = (item: HomeModule) => emit('open', item);
 }
 
 .module-visual {
-  width: 148px;
-  height: 148px;
+  width: 132px;
+  height: 132px;
   display: block;
   margin-bottom: 12px;
 }
@@ -96,7 +157,7 @@ const openModule = (item: HomeModule) => emit('open', item);
   position: relative;
   z-index: 1;
   color: var(--ip-primary-900);
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1.15;
   font-weight: 700;
 }
@@ -143,19 +204,19 @@ const openModule = (item: HomeModule) => emit('open', item);
 }
 
 @media (max-width: 1460px) {
-  .module-grid {
+  .module-zone {
     gap: 16px;
     margin-top: 112px;
   }
 
   .module-card {
-    min-height: 276px;
+    min-height: 246px;
     padding-top: 16px;
   }
 
   .module-visual {
-    width: 148px;
-    height: 148px;
+    width: 124px;
+    height: 124px;
   }
 
   .module-title {
@@ -168,8 +229,12 @@ const openModule = (item: HomeModule) => emit('open', item);
 }
 
 @media (max-width: 1180px) {
-  .module-grid {
+  .module-zone {
     margin-top: 96px;
+  }
+
+  .module-grid {
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
   }
 
   .module-card {
@@ -201,8 +266,7 @@ const openModule = (item: HomeModule) => emit('open', item);
 }
 
 @media (max-width: 1023px) {
-  .module-grid {
-    grid-template-columns: repeat(3, minmax(180px, 1fr));
+  .module-zone {
     margin-top: 64px;
   }
 
@@ -224,12 +288,20 @@ const openModule = (item: HomeModule) => emit('open', item);
 @media (max-width: 767px) {
   .module-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .module-zone {
     margin-top: 48px;
+    padding-top: 44px;
+  }
+
+  .more-service {
+    top: 0;
   }
 }
 
 @media (max-width: 640px) {
-  .module-grid {
+  .module-zone {
     margin-top: 40px;
   }
 

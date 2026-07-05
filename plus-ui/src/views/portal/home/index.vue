@@ -3,7 +3,7 @@
     <section class="home-shell">
       <HomeTopbar @command="handleUserCommand" />
 
-      <ModuleGrid :modules="modules" @open="openModule" />
+      <ModuleGrid :modules="featuredModules" :total="modules.length" @open="openModule" @more="openModuleDialog" />
 
       <StatsBand :stats="stats" :loading="loading" />
     </section>
@@ -89,11 +89,13 @@
         <el-button type="primary" :loading="passwordDialog.saving" @click="submitPassword">保存</el-button>
       </template>
     </el-dialog>
+
+    <AllModuleDialog v-model="moduleDialog.visible" :modules="modules" @open="openModule" />
   </main>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getPortalStats } from '@/api/portal/stats';
@@ -104,6 +106,7 @@ import type { UserForm } from '@/api/system/user/types';
 import { PORTAL_HOME_PATH } from '@/constants/router';
 import { useUserStore } from '@/store/modules/user';
 import UserAvatar from '@/views/admin/system/user/profile/userAvatar.vue';
+import AllModuleDialog from './components/AllModuleDialog.vue';
 import HomeTopbar from './components/HomeTopbar.vue';
 import ModuleGrid from './components/ModuleGrid.vue';
 import StatsBand from './components/StatsBand.vue';
@@ -114,10 +117,12 @@ import moduleHot from '@/assets/portal/module-hot.png';
 import moduleForum from '@/assets/portal/module-forum.png';
 
 interface HomeModule {
+  code?: string;
   title: string;
   desc: string;
   image: string;
   path?: string;
+  sortOrder?: number;
 }
 
 const router = useRouter();
@@ -145,6 +150,10 @@ const profileDialog = reactive({
 const passwordDialog = reactive({
   visible: false,
   saving: false
+});
+
+const moduleDialog = reactive({
+  visible: false
 });
 
 const profileForm = reactive<PortalProfileForm>({
@@ -222,16 +231,19 @@ const MODULE_ART: Record<string, string> = {
   forum: moduleForum
 };
 
+const HOME_MODULE_LIMIT = 6;
+
 /** 注册表不可用时的兜底卡片（与种子数据一致） */
 const DEFAULT_MODULES: HomeModule[] = [
-  { title: '资料共享', desc: '数据汇聚  共享共用', image: moduleResource, path: '/portal/resources' },
-  { title: '工具即用', desc: '开箱即用  提升效率', image: moduleTools, path: '/portal/tools' },
-  { title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa },
-  { title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot },
-  { title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum' }
+  { code: 'resources', title: '资料共享', desc: '数据汇聚  共享共用', image: moduleResource, path: '/portal/resources', sortOrder: 10 },
+  { code: 'appcenter', title: '工具即用', desc: '开箱即用  提升效率', image: moduleTools, path: '/portal/tools', sortOrder: 20 },
+  { code: 'qa', title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa, sortOrder: 30 },
+  { code: 'news', title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot, sortOrder: 40 },
+  { code: 'forum', title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum', sortOrder: 50 }
 ];
 
 const modules = ref<HomeModule[]>(DEFAULT_MODULES);
+const featuredModules = computed(() => modules.value.slice(0, HOME_MODULE_LIMIT));
 
 /** 首页卡片改从 portal_module 注册表渲染（后台可配启停/排序/权限） */
 const loadModules = async () => {
@@ -239,12 +251,16 @@ const loadModules = async () => {
     const res = await listPortalModules();
     const rows = res.data ?? [];
     if (rows.length > 0) {
-      modules.value = rows.map((row) => ({
-        title: row.moduleName,
-        desc: row.description || '',
-        image: row.image || MODULE_ART[row.moduleCode] || moduleTools,
-        path: row.status === '0' && row.entryPath ? row.entryPath : undefined
-      }));
+      modules.value = rows
+        .map((row) => ({
+          code: row.moduleCode,
+          title: row.moduleName,
+          desc: row.description || '',
+          image: row.image || MODULE_ART[row.moduleCode] || moduleTools,
+          path: row.status === '0' && row.entryPath ? row.entryPath : undefined,
+          sortOrder: Number(row.sortOrder || 0)
+        }))
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
     }
   } catch {
     // 注册表不可用时保留兜底卡片，不阻塞首页
@@ -257,6 +273,10 @@ const openModule = (item: HomeModule) => {
     return;
   }
   ElMessage.info(`${item.title}将在后续版本开放`);
+};
+
+const openModuleDialog = () => {
+  moduleDialog.visible = true;
 };
 
 const openProfile = () => {
