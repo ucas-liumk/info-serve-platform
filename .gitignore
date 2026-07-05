@@ -3,6 +3,7 @@
 plus-ui/node_modules/
 plus-ui/dist/
 plus-ui/.eslintcache
+plus-ui/public/readme.md
 # runtime data & logs（仅根目录；不加 / 前缀会误伤任意层级同名目录，曾吞掉 plus-ui/src/api/system/dict/data）
 /data/
 /logs/

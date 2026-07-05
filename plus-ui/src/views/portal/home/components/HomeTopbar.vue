@@ -17,14 +17,6 @@
         <span>{{ weekText }}</span>
       </div>
       <div class="status-row user-row">
-        <span class="weather">
-          <el-icon><Sunny /></el-icon>
-          <b>26°C</b>
-          <em>晴</em>
-        </span>
-        <span class="divider" aria-hidden="true"></span>
-        <PortalNotificationBell />
-        <span class="divider" aria-hidden="true"></span>
         <el-dropdown trigger="click" @command="handleUserCommand">
           <button class="user-pill" type="button">
             <span class="avatar">
@@ -42,6 +34,12 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
+        <span class="divider" aria-hidden="true"></span>
+        <button class="manual-entry" type="button" title="系统使用手册" aria-label="系统使用手册" @click="handleManualClick">
+          <el-icon><Memo /></el-icon>
+        </button>
+        <span class="divider" aria-hidden="true"></span>
+        <PortalNotificationBell />
       </div>
     </div>
   </header>
@@ -49,12 +47,15 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { ArrowDown, Sunny, UserFilled } from '@element-plus/icons-vue';
+import { ArrowDown, Memo, UserFilled } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/modules/user';
 import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
 import logoUrl from '@/assets/portal/home-logo.png';
 
-const emit = defineEmits<{ (e: 'command', command: string | number | object): void }>();
+const emit = defineEmits<{
+  (e: 'command', command: string | number | object): void;
+  (e: 'open-manual'): void;
+}>();
 
 const userStore = useUserStore();
 const now = ref(new Date());
@@ -78,6 +79,7 @@ const timeText = computed(() => {
 const weekText = computed(() => ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.value.getDay()]);
 
 const handleUserCommand = (command: string | number | object) => emit('command', command);
+const handleManualClick = () => emit('open-manual');
 
 onMounted(() => {
   timer = setInterval(() => {
@@ -173,23 +175,38 @@ onBeforeUnmount(() => {
   border-top: 1px solid var(--ip-neutral-200);
 }
 
-.weather {
+.manual-entry {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 700;
+  justify-content: center;
+  border: 1px solid #d3dee8;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #58708c;
+  cursor: pointer;
+  box-shadow: 0 12px 26px rgba(31, 54, 76, 0.07);
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
 }
 
-.weather .el-icon {
-  color: var(--ip-warning);
-  font-size: 25px;
-  filter: drop-shadow(0 5px 9px rgba(255, 173, 35, 0.28));
+.manual-entry:hover {
+  border-color: #b8c9d9;
+  background: #eaf2f8;
+  color: #245f8f;
+  box-shadow: 0 14px 28px rgba(36, 95, 143, 0.12);
+  transform: translateY(-1px);
 }
 
-.weather em {
-  font-style: normal;
-  font-weight: 600;
+.manual-entry .el-icon {
+  font-size: 19px;
 }
 
 .user-pill {
@@ -287,7 +304,6 @@ onBeforeUnmount(() => {
     font-size: 16px;
   }
 
-  .weather,
   .admin-pill {
     font-size: 15px;
   }
@@ -337,7 +353,6 @@ onBeforeUnmount(() => {
     gap: 12px;
   }
 
-  .weather,
   .admin-pill {
     font-size: 15px;
   }
