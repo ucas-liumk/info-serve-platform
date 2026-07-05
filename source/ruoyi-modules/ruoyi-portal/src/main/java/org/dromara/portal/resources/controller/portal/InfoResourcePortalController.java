@@ -9,10 +9,14 @@ import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.portal.resources.domain.bo.InfoResourceBo;
+import org.dromara.portal.resources.domain.bo.InfoResourceNoteBo;
 import org.dromara.portal.resources.domain.vo.InfoResourceCategoryVo;
+import org.dromara.portal.resources.domain.vo.InfoResourceNoteVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceVo;
+import org.dromara.portal.resources.domain.vo.InfoResourceViewRecordVo;
 import org.dromara.portal.resources.domain.vo.ResourceUploadVo;
 import org.dromara.portal.resources.service.IInfoResourceCategoryService;
+import org.dromara.portal.resources.service.IInfoResourceInteractionService;
 import org.dromara.portal.resources.service.IInfoResourceService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +33,7 @@ public class InfoResourcePortalController {
 
     private final IInfoResourceCategoryService categoryService;
     private final IInfoResourceService resourceService;
+    private final IInfoResourceInteractionService interactionService;
 
     @GetMapping("/categories")
     public R<List<InfoResourceCategoryVo>> categories() {
@@ -90,6 +95,41 @@ public class InfoResourcePortalController {
     public R<Void> unfavorite(@PathVariable Long resourceId) {
         resourceService.favorite(resourceId, false);
         return R.ok();
+    }
+
+    @GetMapping("/{resourceId}/notes/my")
+    public TableDataInfo<InfoResourceNoteVo> myNotes(@PathVariable Long resourceId, PageQuery pageQuery) {
+        return interactionService.myNotes(resourceId, pageQuery);
+    }
+
+    @GetMapping("/{resourceId}/notes/public")
+    public TableDataInfo<InfoResourceNoteVo> publicNotes(@PathVariable Long resourceId, PageQuery pageQuery) {
+        return interactionService.publicNotes(resourceId, pageQuery);
+    }
+
+    @Log(title = "门户资料笔记", businessType = BusinessType.INSERT)
+    @RepeatSubmit
+    @PostMapping("/{resourceId}/notes")
+    public R<InfoResourceNoteVo> createNote(@PathVariable Long resourceId, @Validated @RequestBody InfoResourceNoteBo bo) {
+        return R.ok(interactionService.createNote(resourceId, bo));
+    }
+
+    @Log(title = "门户资料笔记", businessType = BusinessType.UPDATE)
+    @RepeatSubmit
+    @PutMapping("/{resourceId}/notes/{noteId}")
+    public R<InfoResourceNoteVo> updateNote(@PathVariable Long resourceId, @PathVariable Long noteId, @Validated @RequestBody InfoResourceNoteBo bo) {
+        return R.ok(interactionService.updateNote(resourceId, noteId, bo));
+    }
+
+    @Log(title = "门户资料笔记", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{resourceId}/notes/{noteId}")
+    public R<Void> deleteNote(@PathVariable Long resourceId, @PathVariable Long noteId) {
+        return Boolean.TRUE.equals(interactionService.deleteNote(resourceId, noteId)) ? R.ok() : R.fail("删除笔记失败");
+    }
+
+    @GetMapping("/{resourceId}/view-records")
+    public TableDataInfo<InfoResourceViewRecordVo> viewRecords(@PathVariable Long resourceId, PageQuery pageQuery) {
+        return interactionService.viewRecords(resourceId, pageQuery);
     }
 
     @GetMapping("/{resourceId}/preview")

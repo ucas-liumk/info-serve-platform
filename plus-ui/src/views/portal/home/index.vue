@@ -117,6 +117,10 @@ import moduleTools from '@/assets/portal/module-tools.png';
 import moduleQa from '@/assets/portal/module-qa.png';
 import moduleHot from '@/assets/portal/module-hot.png';
 import moduleForum from '@/assets/portal/module-forum.png';
+import moduleLowcode from '@/assets/portal/module-lowcode.png';
+import moduleAnalysis from '@/assets/portal/module-analysis.png';
+import moduleUsageDashboard from '@/assets/portal/module-usage-dashboard.png';
+import moduleDashboard from '@/assets/portal/module-dashboard.png';
 
 interface HomeModule {
   code?: string;
@@ -230,9 +234,20 @@ const stats = ref<PortalStats>({
 const MODULE_ART: Record<string, string> = {
   resources: moduleResource,
   appcenter: moduleTools,
+  lowcode: moduleLowcode,
+  analysis: moduleAnalysis,
+  'usage-dashboard': moduleUsageDashboard,
+  dashboard: moduleDashboard,
   qa: moduleQa,
   news: moduleHot,
   forum: moduleForum
+};
+
+const MODULE_NAME_ART: Record<string, string> = {
+  低代码: moduleLowcode,
+  运行分析: moduleAnalysis,
+  应用态势: moduleUsageDashboard,
+  态势: moduleDashboard
 };
 
 const HOME_MODULE_LIMIT = 6;
@@ -260,7 +275,7 @@ const loadModules = async () => {
           code: row.moduleCode,
           title: row.moduleName,
           desc: row.description || '',
-          image: row.image || MODULE_ART[row.moduleCode] || moduleTools,
+          image: row.image || resolveModuleImage(row.moduleCode, row.moduleName),
           path: row.status === '0' && row.entryPath ? row.entryPath : undefined,
           sortOrder: Number(row.sortOrder || 0)
         }))
@@ -269,6 +284,14 @@ const loadModules = async () => {
   } catch {
     // 注册表不可用时保留兜底卡片，不阻塞首页
   }
+};
+
+const resolveModuleImage = (moduleCode?: string, moduleName?: string) => {
+  if (moduleCode && MODULE_ART[moduleCode]) {
+    return MODULE_ART[moduleCode];
+  }
+  const matchedName = Object.keys(MODULE_NAME_ART).find((keyword) => moduleName?.includes(keyword));
+  return matchedName ? MODULE_NAME_ART[matchedName] : moduleTools;
 };
 
 const openModule = (item: HomeModule) => {
