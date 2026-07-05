@@ -1,10 +1,11 @@
 <template>
-  <el-dialog v-model="visible" title="全部服务" width="960px" align-center append-to-body class="all-module-dialog">
-    <div class="all-module-head">
-      <strong>全部服务模块</strong>
-      <span>拖拽调整当前用户的首页服务顺序，前 6 项进入首屏。</span>
-    </div>
-
+  <el-dialog v-model="visible" width="960px" align-center append-to-body class="all-module-dialog">
+    <template #header>
+      <div class="all-module-titlebar">
+        <strong>全部服务</strong>
+        <span>{{ saving ? '正在保存排序' : '拖拽排序，前 6 项展示在首页' }}</span>
+      </div>
+    </template>
     <div class="all-module-grid" :aria-busy="saving">
       <button
         v-for="(item, index) in localModules"
@@ -42,11 +43,6 @@
         </span>
       </button>
     </div>
-
-    <template #footer>
-      <span class="save-state">{{ saving ? '正在保存排序' : '拖拽后自动保存当前用户配置' }}</span>
-      <el-button @click="visible = false">关闭</el-button>
-    </template>
   </el-dialog>
 </template>
 

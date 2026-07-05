@@ -2,28 +2,32 @@
   border-radius: 16px;
 }
 
-.all-module-dialog .el-dialog__body {
-  padding-top: 8px;
-}
-
-.all-module-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 18px;
-  padding-bottom: 14px;
+.all-module-dialog .el-dialog__header {
+  margin-right: 0;
+  padding: 22px 36px 14px;
   border-bottom: 1px solid var(--ip-neutral-200);
 }
 
-.all-module-head strong {
+.all-module-dialog .el-dialog__body {
+  padding: 18px 30px 28px;
+}
+
+.all-module-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-right: 18px;
+}
+
+.all-module-titlebar strong {
   color: var(--ip-neutral-900);
-  font-size: 20px;
+  font-size: 16px;
   line-height: 1.2;
   font-weight: 700;
 }
 
-.all-module-head span {
+.all-module-titlebar span {
   color: var(--ip-neutral-500);
   font-size: 13px;
   line-height: 1.5;
@@ -205,20 +209,21 @@
   height: 17px;
 }
 
-.save-state {
-  float: left;
-  color: var(--ip-neutral-500);
-  font-size: 13px;
-  line-height: 32px;
-  font-weight: 600;
-}
-
 @media (max-width: 640px) {
-  .all-module-head {
-    display: block;
+  .all-module-dialog .el-dialog__header {
+    padding: 18px 34px 12px 18px;
   }
 
-  .all-module-head span {
+  .all-module-dialog .el-dialog__body {
+    padding: 16px 18px 22px;
+  }
+
+  .all-module-titlebar {
+    display: block;
+    padding-right: 12px;
+  }
+
+  .all-module-titlebar span {
     display: block;
     margin-top: 8px;
     text-align: left;
