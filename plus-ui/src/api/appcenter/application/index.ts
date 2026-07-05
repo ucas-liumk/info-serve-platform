@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { AppApplicationVo, AppApplicationForm, AppApplicationQuery } from './types';
+import { AppApplicationVo, AppApplicationForm, AppApplicationQuery, AppPackageUploadVo } from './types';
 
 // 查询应用列表
 export function listApplication(query: AppApplicationQuery): AxiosPromise<AppApplicationVo[]> {
@@ -43,6 +43,17 @@ export function changeApplicationStatus(appId: string | number, status: string) 
     url: '/appcenter/application/changeStatus',
     method: 'put',
     data: { appId, status }
+  });
+}
+
+// 上传离线安装包
+export function uploadApplicationPackage(data: FormData): AxiosPromise<AppPackageUploadVo> {
+  return request({
+    url: '/appcenter/application/package/upload',
+    method: 'post',
+    data,
+    timeout: 5 * 60 * 1000,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
   });
 }
 

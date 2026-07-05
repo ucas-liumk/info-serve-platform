@@ -12,6 +12,13 @@
                 <el-option v-for="item in categoryOptions" :key="item.categoryId" :label="item.categoryName" :value="item.categoryId" />
               </el-select>
             </el-form-item>
+            <el-form-item label="应用类型" prop="appType">
+              <el-select v-model="queryParams.appType" placeholder="请选择类型" clearable style="width: 140px">
+                <el-option label="自研应用" value="business" />
+                <el-option label="开源应用" value="online" />
+                <el-option label="离线应用" value="offline" />
+              </el-select>
+            </el-form-item>
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
                 <el-option label="上架" value="0" />
@@ -58,6 +65,16 @@
           </template>
         </el-table-column>
         <el-table-column label="版本" align="center" prop="version" width="90" />
+        <el-table-column label="类型" align="center" prop="appType" width="100">
+          <template #default="scope">
+            <el-tag :type="getAppTypeTag(scope.row.appType)">{{ getAppTypeLabel(scope.row.appType) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="安装包" align="center" prop="packageName" min-width="140" show-overflow-tooltip>
+          <template #default="scope">
+            <span>{{ scope.row.packageName || '-' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" align="center" prop="status" width="90">
           <template #default="scope">
             <el-switch
@@ -114,6 +131,15 @@
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="24">
+            <el-form-item label="应用类型" prop="appType">
+              <el-radio-group v-model="form.appType">
+                <el-radio value="business">自研应用</el-radio>
+                <el-radio value="online">开源应用</el-radio>
+                <el-radio value="offline">离线应用</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="图标" prop="icon">
               <el-input v-model="form.icon" placeholder="图标名称或URL" />
@@ -124,9 +150,22 @@
               <el-input v-model="form.accent" placeholder="如：#1890ff" />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
+          <el-col v-if="!isOfflineForm" :span="24">
             <el-form-item label="访问地址" prop="accessUrl">
-              <el-input v-model="form.accessUrl" placeholder="请输入 http:// 或 https:// 开头的地址" />
+              <el-input v-model="form.accessUrl" placeholder="请输入 http(s):// 外部地址或 / 开头的站内路径" />
+            </el-form-item>
+          </el-col>
+          <el-col v-if="isOfflineForm" :span="24">
+            <el-form-item label="离线安装包" prop="packageOssId">
+              <div class="package-file">
+                <el-upload action="#" :show-file-list="false" :http-request="handlePackageUpload">
+                  <el-button v-hasPermi="['appcenter:application:add', 'appcenter:application:edit']" type="primary" plain icon="Upload">
+                    上传安装包
+                  </el-button>
+                </el-upload>
+                <span class="package-file__name">{{ form.packageName || '未上传安装包' }}</span>
+                <span v-if="form.packageSize" class="package-file__size">{{ formatFileSize(form.packageSize) }}</span>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -184,6 +223,7 @@ import {
   addApplication,
   updateApplication,
   changeApplicationStatus,
+  uploadApplicationPackage,
   delApplication
 } from '@/api/appcenter/application/index';
 import { AppApplicationVo, AppApplicationForm, AppApplicationQuery } from '@/api/appcenter/application/types';
@@ -220,13 +260,18 @@ const initFormData: AppApplicationForm = {
   description: '',
   tags: '',
   accessUrl: '',
+  appType: 'online',
+  packageOssId: undefined,
+  packageName: '',
+  packageSize: undefined,
+  packageUrl: '',
   isSecurity: '0',
   status: '0',
   orderNum: 0,
   remark: ''
 };
 
-const urlPattern = /^https?:\/\/.+/;
+const urlPattern = /^(https?:\/\/.+|\/.+)/;
 
 const data = reactive<PageData<AppApplicationForm, AppApplicationQuery>>({
   form: { ...initFormData },
@@ -235,6 +280,7 @@ const data = reactive<PageData<AppApplicationForm, AppApplicationQuery>>({
     pageSize: 10,
     keyword: '',
     categoryId: undefined,
+    appType: '',
     status: '',
     isSecurity: ''
   },
@@ -242,19 +288,55 @@ const data = reactive<PageData<AppApplicationForm, AppApplicationQuery>>({
     appName: [{ required: true, message: '应用名称不能为空', trigger: 'blur' }],
     appCode: [{ required: true, message: '应用编码不能为空', trigger: 'blur' }],
     categoryId: [{ required: true, message: '请选择所属分类', trigger: 'change' }],
-    accessUrl: [
-      { required: true, message: '访问地址不能为空', trigger: 'blur' },
-      { pattern: urlPattern, message: '请输入以 http:// 或 https:// 开头的地址', trigger: 'blur' }
-    ]
+    appType: [{ required: true, message: '请选择应用类型', trigger: 'change' }],
+    accessUrl: [{ validator: validateAccessUrl, trigger: 'blur' }],
+    packageOssId: [{ validator: validatePackage, trigger: 'change' }]
   }
 });
 
 const { queryParams, form, rules } = toRefs<PageData<AppApplicationForm, AppApplicationQuery>>(data);
+const isOfflineForm = computed(() => form.value.appType === 'offline');
 
 const getCategoryName = (categoryId: number | string | undefined) => {
   if (!categoryId) return '-';
-  const found = categoryOptions.value.find((c) => c.categoryId === categoryId);
+  const found = categoryOptions.value.find((c) => String(c.categoryId) === String(categoryId));
   return found ? found.categoryName : '-';
+};
+
+function validateAccessUrl(_rule: unknown, value: string, callback: (error?: Error) => void) {
+  if (form.value.appType === 'offline') {
+    callback();
+    return;
+  }
+  if (!value) {
+    callback(new Error('访问地址不能为空'));
+    return;
+  }
+  if (!urlPattern.test(value)) {
+    callback(new Error('请输入 http(s):// 外部地址或 / 开头的站内路径'));
+    return;
+  }
+  callback();
+}
+
+function validatePackage(_rule: unknown, value: number | string | undefined, callback: (error?: Error) => void) {
+  if (form.value.appType === 'offline' && !value) {
+    callback(new Error('请先上传离线安装包'));
+    return;
+  }
+  callback();
+}
+
+const getAppTypeLabel = (appType?: string) => {
+  if (appType === 'business') return '自研';
+  if (appType === 'offline') return '离线';
+  return '开源';
+};
+
+const getAppTypeTag = (appType?: string) => {
+  if (appType === 'business') return 'success';
+  if (appType === 'offline') return 'warning';
+  return 'primary';
 };
 
 const loadCategories = async () => {
@@ -308,8 +390,25 @@ const handleUpdate = async (row?: AppApplicationVo) => {
   const appId = row?.appId || ids.value[0];
   const res = await getApplication(appId);
   Object.assign(form.value, (res as any).data);
+  form.value.appType = form.value.appType || 'online';
   dialog.visible = true;
   dialog.title = '修改应用';
+};
+
+const handlePackageUpload = async (options: any) => {
+  const uploadForm = new FormData();
+  uploadForm.append('file', options.file);
+  const res = await uploadApplicationPackage(uploadForm);
+  Object.assign(form.value, (res as any).data);
+  appFormRef.value?.validateField('packageOssId');
+  proxy?.$modal.msgSuccess('上传成功');
+};
+
+const formatFileSize = (size?: number) => {
+  if (!size) return '-';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
 };
 
 const handleStatusChange = async (row: AppApplicationVo) => {
@@ -348,3 +447,26 @@ onMounted(() => {
   getList();
 });
 </script>
+
+<style scoped lang="scss">
+.package-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+
+  &__name {
+    min-width: 0;
+    max-width: 320px;
+    overflow: hidden;
+    color: #606266;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__size {
+    color: #909399;
+    font-size: 12px;
+  }
+}
+</style>

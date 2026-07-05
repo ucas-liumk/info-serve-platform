@@ -1,0 +1,44 @@
+name: 工程任务
+description: 文档、构建、部署、重构、质量治理等非业务需求
+title: "chore: "
+labels: ["type:task"]
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: 任务目标
+      description: 说明这项工程任务完成后应该改善什么。
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影响范围
+      multiple: true
+      options:
+        - docs
+        - ci
+        - deploy
+        - frontend
+        - backend
+        - database
+        - security
+        - architecture
+    validations:
+      required: true
+  - type: textarea
+    id: checklist
+    attributes:
+      label: 工作清单
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: 验证要求
+      description: 写明完成后需要贴出的命令或证据。
+    validations:
+      required: true

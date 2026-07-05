@@ -3,8 +3,8 @@
     <button
       :class="['favorite-toggle', { on: app.favorited }]"
       type="button"
-      :title="app.favorited ? '取消收藏' : '收藏工具'"
-      :aria-label="app.favorited ? '取消收藏' : '收藏工具'"
+      :title="app.favorited ? '取消收藏' : '收藏应用'"
+      :aria-label="app.favorited ? '取消收藏' : '收藏应用'"
       :disabled="favoritePending"
       @click.stop="onFav"
     >
@@ -31,6 +31,12 @@
       <span v-for="tag in tagList" :key="tag">{{ tag }}</span>
     </div>
 
+    <div v-if="isOfflineApp" class="package-meta">
+      <el-icon><Download /></el-icon>
+      <span>{{ app.packageName || '离线安装包' }}</span>
+      <em v-if="app.packageSize">{{ formatFileSize(app.packageSize) }}</em>
+    </div>
+
     <footer class="card-foot">
       <span class="metric">
         <el-icon><Clock /></el-icon>
@@ -45,8 +51,8 @@
       </span>
     </footer>
 
-    <button class="use-btn" type="button" @click="onUse">
-      <span>立即使用</span>
+    <button :class="['use-btn', { download: isOfflineApp }]" type="button" @click="onPrimaryAction">
+      <span>{{ primaryActionText }}</span>
       <IconArrowRight />
     </button>
   </article>
@@ -54,12 +60,14 @@
 
 <script setup lang="ts">
 import { computed, markRaw, ref } from 'vue';
-import { Clock, Star, StarFilled } from '@element-plus/icons-vue';
+import { Clock, Download, Star, StarFilled } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { PortalApp } from '@/api/appcenter/types';
+import type { PortalApp } from '@/api/appcenter/types';
 import { useApp, favorite, unfavorite } from '@/api/portal/appcenter';
 import { formatStat } from '@/utils/format';
+import { downloadPortalAppPackage } from '../download';
 import IconArrowRight from '~icons/material-symbols/arrow-right-alt-rounded';
+import IconEducation from '~icons/material-symbols/school-outline-rounded';
 import IconDify from '~icons/simple-icons/dify';
 import IconAirflow from '~icons/simple-icons/apacheairflow';
 import IconMinio from '~icons/simple-icons/minio';
@@ -106,7 +114,8 @@ const iconMap = {
   diagramsdotnet: markRaw(IconDrawio),
   excalidraw: markRaw(IconExcalidraw),
   stirlingpdf: markRaw(IconPdf),
-  pdf: markRaw(IconPdf)
+  pdf: markRaw(IconPdf),
+  requiredknowledge: markRaw(IconEducation)
 } as const;
 
 const colorMap: Record<string, string> = {
@@ -140,6 +149,15 @@ const fallbackIcon = computed(() => (props.app.icon || props.app.appName.slice(0
 const appColor = computed(() => colorMap[props.app.accent || ''] || props.app.accent || 'var(--ip-mod-appcenter)');
 const useCountText = computed(() => formatStat(props.app.useCount));
 const favoriteCountText = computed(() => formatStat(props.app.favoriteCount));
+const isOfflineApp = computed(() => props.app.appType === 'offline');
+const primaryActionText = computed(() => (isOfflineApp.value ? '下载离线包' : '立即使用'));
+
+const formatFileSize = (size?: number) => {
+  if (!size) return '';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+};
 
 const normalizeToolUrl = (raw: string) => {
   try {
@@ -159,9 +177,17 @@ const onUse = async () => {
   if (url) {
     window.open(normalizeToolUrl(url), '_blank');
   } else {
-    ElMessage.warning('该工具暂未配置访问地址');
+    ElMessage.warning('该应用暂未配置访问地址');
   }
   emit('changed');
+};
+
+const onPrimaryAction = async () => {
+  if (isOfflineApp.value) {
+    await downloadPortalAppPackage(props.app);
+    return;
+  }
+  await onUse();
 };
 
 const onFav = async () => {
@@ -338,6 +364,31 @@ const onFav = async () => {
   font-weight: 700;
 }
 
+.package-meta {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  overflow: hidden;
+  color: var(--tool-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.package-meta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.package-meta em {
+  flex: 0 0 auto;
+  color: var(--tool-weak);
+  font-style: normal;
+}
+
 .card-foot {
   display: flex;
   align-items: center;
@@ -394,6 +445,18 @@ const onFav = async () => {
   background: var(--ip-primary-50);
   color: var(--ip-primary-700);
   box-shadow: var(--ip-shadow-md);
+}
+
+.use-btn.download {
+  border-color: var(--tool-accent);
+  color: var(--tool-accent);
+}
+
+.use-btn.download:hover {
+  border-color: var(--tool-accent);
+  background: var(--tool-accent);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(183, 121, 31, 0.2);
 }
 
 @media (max-width: 1500px) {

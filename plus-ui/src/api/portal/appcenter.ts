@@ -1,6 +1,7 @@
 import request from '@/utils/request';
-import { AxiosPromise } from 'axios';
-import { PortalApp, PortalCategory, PortalDemandForm, PortalDemandItem } from '@/api/appcenter/types';
+import axios, { AxiosPromise, AxiosResponse } from 'axios';
+import { globalHeaders } from '@/utils/request';
+import type { PortalApp, PortalCategory, PortalDemandForm, PortalDemandItem } from '@/api/appcenter/types';
 
 export function listCategories(): AxiosPromise<PortalCategory[]> {
   return request({ url: '/appcenter/portal/categories', method: 'get' });
@@ -12,6 +13,19 @@ export function listApps(query: any): AxiosPromise<PortalApp[]> {
 
 export function useApp(id: number): AxiosPromise<string> {
   return request({ url: `/appcenter/portal/apps/${id}/use`, method: 'post' });
+}
+
+export function packageDownloadUrl(id: number) {
+  return `${import.meta.env.VITE_APP_BASE_API}/appcenter/portal/apps/${id}/package/download`;
+}
+
+export function downloadPackageBlob(id: number): Promise<AxiosResponse<Blob>> {
+  return axios({
+    method: 'get',
+    url: packageDownloadUrl(id),
+    responseType: 'blob',
+    headers: globalHeaders()
+  });
 }
 
 export function favorite(id: number) {

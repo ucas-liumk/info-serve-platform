@@ -20,7 +20,7 @@
       </router-link>
       <router-link class="nav-item" to="/portal/tools" active-class="active">
         <el-icon class="ico"><Tools /></el-icon>
-        <span>工具即用</span>
+        <span>应用中心</span>
       </router-link>
       <router-link class="nav-item" to="/portal/forum" active-class="active">
         <el-icon class="ico"><ChatDotRound /></el-icon>
@@ -29,7 +29,7 @@
     </nav>
     <div class="sidebar-note">
       <span>一期上线范围</span>
-      <strong>资料 · 工具 · 论坛</strong>
+      <strong>资料 · 应用 · 论坛</strong>
     </div>
   </aside>
 </template>

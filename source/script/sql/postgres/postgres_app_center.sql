@@ -167,36 +167,52 @@ COMMENT ON TABLE app_demand IS '应用需求反馈';
 -- 种子数据：分类 (3条)
 -- ----------------------------------------------------------------
 INSERT INTO app_category (category_id, category_name, category_code, icon, order_num, create_time) VALUES
-(1, '文档处理', 'document', 'document', 1, now()),
-(2, '图形绘制', 'diagram',  'edit',     2, now()),
-(3, '协作白板', 'whiteboard','guide',    3, now());
+(1, '自研应用', 'self_hosted', 'component', 1, now()),
+(2, '开源应用', 'open_source', 'open',      2, now()),
+(3, '离线应用', 'offline',     'download',  3, now());
 
 -- ----------------------------------------------------------------
--- 种子数据：应用 (3条)
+-- 种子数据：应用
 -- ----------------------------------------------------------------
 INSERT INTO app_application
     (app_id, app_name, app_code, version, category_id, icon, accent,
      description, tags, access_url, app_type, status, is_security,
      use_count, recommend_count, order_num, create_time)
 VALUES
-(1, 'Stirling PDF', 'stirling-pdf', 'latest', 1, 'PDF', '#2563eb',
- 'PDF 合并、拆分、压缩、转换与页面处理工具，即开即用。',
- 'PDF,文档处理,转换', 'http://127.0.0.1:18080', 'online', '0', '0', 128, 36, 1, now()),
-(2, 'draw.io', 'drawio', 'latest', 2, 'DIO', '#0f766e',
- '流程图、架构图、网络拓扑和业务图示绘制工具。',
- '流程图,架构图,绘图', 'http://127.0.0.1:18082', 'online', '0', '0', 96, 28, 2, now()),
-(3, 'Excalidraw', 'excalidraw', 'latest', 3, 'EX', '#c2410c',
- '轻量白板和草图协作工具，适合快速表达方案和讨论。',
- '白板,草图,协作', 'http://127.0.0.1:18090', 'online', '0', '0', 84, 24, 3, now());
+(1, '应知应会', 'required-knowledge', 'latest', 1, 'education', '#2563eb',
+ '面向内部学习、题库、考试与材料导入的自研应用入口。',
+ '自研应用,题库,考试', '/admin/required-knowledge', 'business', '0', '1', 0, 0, 1, now()),
+(2, 'Stirling PDF', 'stirling-pdf', 'latest', 2, 'PDF', '#2563eb',
+ 'PDF 合并、拆分、压缩、转换与页面处理应用，即开即用。',
+ 'PDF,文档处理,转换', 'http://127.0.0.1:18080', 'online', '0', '0', 128, 36, 2, now()),
+(3, 'draw.io', 'drawio', 'latest', 2, 'DIO', '#0f766e',
+ '流程图、架构图、网络拓扑和业务图示绘制应用。',
+ '流程图,架构图,绘图', 'http://127.0.0.1:18082', 'online', '0', '0', 96, 28, 3, now()),
+(4, 'Excalidraw', 'excalidraw', 'latest', 2, 'EX', '#c2410c',
+ '轻量白板和草图协作应用，适合快速表达方案和讨论。',
+ '白板,草图,协作', 'http://127.0.0.1:18090', 'online', '0', '0', 84, 24, 4, now());
 
 -- ----------------------------------------------------------------
--- sys_menu: 门户应用管理目录 + 应用中心菜单 + 按钮权限
+-- sys_menu: 应用中心后台菜单 + 按钮权限
 -- 幂等: ON CONFLICT (menu_id) DO NOTHING
 -- ----------------------------------------------------------------
 
--- 门户应用管理 目录 (menu_id=2000)
+-- 应用中心 目录 (menu_id=2000)
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
-VALUES (2000, '门户应用管理', 0, 5, 'portal-apps', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now())
+VALUES (2000, '应用中心', 0, 5, 'appcenter', NULL, '', '1', '0', 'M', '0', '0', '', 'shopping', 103, 1, now())
+ON CONFLICT (menu_id) DO NOTHING;
+
+-- 应知应会 目录 (menu_id=4000)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
+VALUES (4000, '应知应会', 0, 9, 'required-knowledge', NULL, '', '1', '0', 'M', '0', '0', '', 'education', 103, 1, now())
+ON CONFLICT (menu_id) DO NOTHING;
+
+-- 应知应会管理 菜单 (menu_id=4001-4003)
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, query_param, is_frame, is_cache, menu_type, visible, status, perms, icon, create_dept, create_by, create_time)
+VALUES
+(4001, '题库管理', 4000, 1, 'questions', 'admin/required-knowledge/questions/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:question:list', 'question', 103, 1, now()),
+(4002, '考试配置', 4000, 2, 'exams', 'admin/required-knowledge/exams/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:exam:list', 'education', 103, 1, now()),
+(4003, 'OCR 导入', 4000, 3, 'ocr', 'admin/required-knowledge/ocr/index', '', '1', '0', 'C', '0', '0', 'requiredKnowledge:ocr:list', 'upload', 103, 1, now())
 ON CONFLICT (menu_id) DO NOTHING;
 
 -- 应用管理 菜单 (menu_id=2010)
