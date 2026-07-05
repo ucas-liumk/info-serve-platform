@@ -256,9 +256,10 @@ const HOME_MODULE_LIMIT = 6;
 const DEFAULT_MODULES: HomeModule[] = [
   { code: 'resources', title: '资料共享', desc: '数据汇聚  共享共用', image: moduleResource, path: '/portal/resources', sortOrder: 10 },
   { code: 'appcenter', title: '应用中心', desc: '应用聚合  即取即用', image: moduleTools, path: '/portal/tools', sortOrder: 20 },
-  { code: 'qa', title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa, sortOrder: 30 },
-  { code: 'news', title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot, sortOrder: 40 },
-  { code: 'forum', title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum', sortOrder: 50 }
+  { code: 'usage-dashboard', title: '应用态势', desc: '运行洞察  转型透明', image: moduleUsageDashboard, path: '/portal/usage-dashboard', sortOrder: 30 },
+  { code: 'forum', title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum', sortOrder: 40 },
+  { code: 'qa', title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa, sortOrder: 80 },
+  { code: 'news', title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot, sortOrder: 90 }
 ];
 
 const modules = ref<HomeModule[]>(DEFAULT_MODULES);

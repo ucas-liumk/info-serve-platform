@@ -192,7 +192,8 @@ COMMENT ON TABLE app_demand IS '应用需求反馈';
 INSERT INTO app_category (category_id, category_name, category_code, icon, order_num, create_time) VALUES
 (1, '自研应用', 'self_hosted', 'component', 1, now()),
 (2, '开源应用', 'open_source', 'open',      2, now()),
-(3, '离线应用', 'offline',     'download',  3, now());
+(3, '离线应用', 'offline',     'download',  3, now()),
+(4, '治理工具', 'governance',  'database',  4, now());
 
 -- ----------------------------------------------------------------
 -- 种子数据：应用
@@ -213,12 +214,24 @@ VALUES
  '流程图,架构图,绘图', 'http://127.0.0.1:18082', 'online', '0', '0', 'all', 96, 28, 3, now()),
 (4, 'Excalidraw', 'excalidraw', 'latest', 2, 'EX', '#c2410c',
  '轻量白板和草图协作应用，适合快速表达方案和讨论。',
- '白板,草图,协作', 'http://127.0.0.1:18090', 'online', '0', '0', 'all', 84, 24, 4, now());
+ '白板,草图,协作', 'http://127.0.0.1:18090', 'online', '0', '0', 'all', 84, 24, 4, now()),
+(5001, 'DataEase 态势后台', 'dataease-admin', 'latest', 4, 'DE', '#2563eb',
+ '态势大屏制作、数据集配置与可视化发布后台，仅面向管理员开放。',
+ '态势大屏,BI,DataEase', 'http://127.0.0.1:8100', 'online', '0', '1', 'role', 0, 0, 41, now()),
+(5002, 'Apache Hop 数据加工', 'apache-hop', 'latest', 4, 'HOP', '#0f766e',
+ '门户态势分析层数据加工、清洗与作业验证入口，仅面向管理员开放。',
+ '数据治理,ETL,Hop', 'http://127.0.0.1:18091/ui', 'online', '0', '1', 'role', 0, 0, 42, now()),
+(5003, 'Budibase 低代码工厂', 'budibase', 'latest', 4, 'BB', '#c2410c',
+ '快速搭建需求台账、任务推进、问题闭环等内部低代码应用，仅面向管理员开放。',
+ '低代码,应用工厂,Budibase', 'http://127.0.0.1:18100', 'online', '0', '1', 'role', 0, 0, 43, now());
 
 INSERT INTO app_access_scope
     (scope_id, app_id, target_type, target_id, tenant_id, create_time)
 VALUES
-    (2073005000000000901, 1, 'user', 1, '000000', now());
+    (2073005000000000901, 1, 'user', 1, '000000', now()),
+    (2073005000000005001, 5001, 'role', 1, '000000', now()),
+    (2073005000000005002, 5002, 'role', 1, '000000', now()),
+    (2073005000000005003, 5003, 'role', 1, '000000', now());
 
 -- ----------------------------------------------------------------
 -- sys_menu: 应用中心后台菜单 + 按钮权限

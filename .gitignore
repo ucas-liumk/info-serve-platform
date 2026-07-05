@@ -21,6 +21,7 @@ pics/resurces.png
 # generated initdb (regenerate via deploy/scripts/generate-initdb.py)
 deploy/initdb-mysql/
 deploy/initdb-postgres/
+deploy/situation/budibase/.env
 # SDD scratch ledger
 .superpowers/
 # local editor settings
