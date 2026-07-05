@@ -6,12 +6,14 @@
 
 ## 1. 仓库拓扑与分支纪律（红线）
 
-- 唯一真相源：Windows 裸仓库 `E:/git/info-serve.git`（hub）。工作副本：Windows `E:\gallant-dev\active\info-serve`、Mac `/Users/macmini/info-serve`。GitHub 仅为定版后推送的备份镜像。
-- **`main` 只进合并，禁止直接提交，禁止在 main 工作树上直接开发**（2026-07-04 曾因此需要 WIP 归位）。
-- 开工第一步：`git fetch origin && git switch -c <type>/<bc>-<主题>`；收工最后一步：`push`。**未 push 的工作视为不存在。**
+- 唯一真相源：GitHub 仓库 `origin`（当前为 `https://github.com/ucas-liumk/info-serve-platform.git`），`origin/main` 是稳定主线。Mac `/Users/macmini/windows-info-serve` 与 Windows `E:\gallant-dev\active\info-serve` 都必须作为 GitHub 的普通工作副本使用，禁止把本机目录、Windows 裸仓库或其他镜像当作更高优先级真相源。
+- **`main` 只进合并，禁止直接提交，禁止在 main 工作树上直接开发**（2026-07-04 曾因此需要 WIP 归位）。所有开发从最新 `origin/main` 拉任务分支。
+- 开工第一步：`git fetch origin && git switch main && git pull --ff-only origin main && git switch -c <type>/<bc>-<主题>`；如有 GitHub Issue，分支名优先带 issue 号，例如 `fix/issue-12-appcenter-download`。
+- 收工最后一步：验证通过后提交并 `git push -u origin <branch>`；需要合入主线时创建或交付 GitHub PR。**未 push 的工作视为不存在。**
+- GitHub Issue 是任务单；对应 PR 描述应写 `Closes #<编号>` 或 `Refs #<编号>`。无 Issue 时，分支名、提交信息、PR 描述必须能说明任务范围。
 - 提交信息：conventional 格式 `<type>: <中文描述>`（feat/fix/refactor/docs/chore/perf/test）。**禁止任何署名尾注**（Co-Authored-By 等）。
-- 禁止：force-push 共享分支、`git clean -fd`、`git checkout -- .`、改写他人已推送的历史。
-- 合并前自查 `git log origin/main..` 与 diff，交协调者/用户 review 后合入。
+- 禁止：直接 push 到 `origin/main`、force-push 共享分支、`git clean -fd`、`git checkout -- .`、改写他人已推送的历史。
+- 合并前自查 `git log origin/main..HEAD` 与 `git diff origin/main...HEAD`，附验证输出，交协调者/用户 review 后合入。
 
 ## 2. 架构边界（构建期强制）
 
@@ -58,14 +60,14 @@
 
 ## 7. 发布规约
 
-- 版本号唯一真相：根目录 `/VERSION`。定版流程：bump VERSION → 提交 → `git tag v<版本>` → 按 `MANIFEST.md` 从 tag 装更新包 → 部署验证 → 从 Mac 推 GitHub 镜像。
+- 版本号唯一真相：根目录 `/VERSION`。定版流程：bump VERSION → 提交 → `git tag v<版本>` → push 分支与 tag 到 GitHub → 按 `MANIFEST.md` 从 tag 装更新包 → 部署验证。
 - `releases/` 产物永不入库。
 - **Dubbo 接口（`org.dromara.*.api`）任何变更 ⇒ 提供方与全部消费方镜像必须同批重建**（新旧混跑接口不兼容）。
 - nginx.conf / 前端 dist 更新后必须**重建** `nginx-web` 容器——文件级 bind mount 绑定 inode，替换文件后仅 reload 读不到新内容。
 
 ## 8. 环境坑速查
 
-- Windows SSH 默认 shell 是 cmd.exe（GBK）：远程命令前加 `chcp 65001 >nul &`；对 Windows hub 的 git 访问需 PowerShell 包装（`remote.origin.uploadpack/receivepack = "powershell git-upload-pack/git-receive-pack"`，新 clone 记得配）。
+- Windows SSH 默认 shell 是 cmd.exe（GBK）：远程命令前加 `chcp 65001 >nul &`。Windows 开发也必须直接连接 GitHub `origin`；历史 Windows hub / 裸仓库只可作为旧资料参考，禁止作为开发与合并真相源。
 - Maven 离线模式 `-o` 必须搭配 `-am`（内部构件不在本地仓库）。
 - 历史债：`AppApplicationServiceImplTest`、`AppCategoryServiceImplTest` 已 `@Tag("exclude")`（用例腐烂待修），不要参考其旧断言。
 - 首页统计口径由各 BC 服务接口提供，禁止在内核新增裸 SQL 统计。
