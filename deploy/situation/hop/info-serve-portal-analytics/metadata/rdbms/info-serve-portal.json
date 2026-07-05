@@ -1,0 +1,23 @@
+{
+  "rdbms": {
+    "POSTGRESQL": {
+      "databaseName": "${INFO_SERVE_DB_NAME}",
+      "pluginId": "POSTGRESQL",
+      "accessType": 0,
+      "hostname": "${INFO_SERVE_DB_HOST}",
+      "password": "${INFO_SERVE_DB_PASSWORD}",
+      "pluginName": "PostgreSQL",
+      "port": "${INFO_SERVE_DB_PORT}",
+      "attributes": {
+        "FORCE_IDENTIFIERS_TO_LOWERCASE": "N",
+        "FORCE_IDENTIFIERS_TO_UPPERCASE": "N",
+        "PREFERRED_SCHEMA_NAME": "public",
+        "QUOTE_ALL_FIELDS": "N",
+        "SUPPORTS_BOOLEAN_DATA_TYPE": "Y",
+        "SUPPORTS_TIMESTAMP_DATA_TYPE": "Y"
+      },
+      "username": "${INFO_SERVE_DB_USER}"
+    }
+  },
+  "name": "info-serve-portal"
+}

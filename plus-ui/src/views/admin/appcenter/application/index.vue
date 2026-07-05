@@ -25,6 +25,12 @@
                 <el-option label="下架" value="1" />
               </el-select>
             </el-form-item>
+            <el-form-item label="可见范围" prop="requiredRoleKey">
+              <el-select v-model="queryParams.requiredRoleKey" placeholder="请选择范围" clearable style="width: 150px">
+                <el-option label="全员可见" value="__public__" />
+                <el-option label="超级管理员" value="superadmin" />
+              </el-select>
+            </el-form-item>
             <el-form-item>
               <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -68,6 +74,11 @@
         <el-table-column label="类型" align="center" prop="appType" width="100">
           <template #default="scope">
             <el-tag :type="getAppTypeTag(scope.row.appType)">{{ getAppTypeLabel(scope.row.appType) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="可见范围" align="center" prop="requiredRoleKey" width="120">
+          <template #default="scope">
+            <el-tag :type="scope.row.requiredRoleKey ? 'warning' : 'success'">{{ getVisibleScopeLabel(scope.row.requiredRoleKey) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="安装包" align="center" prop="packageName" min-width="140" show-overflow-tooltip>
@@ -138,6 +149,20 @@
                 <el-radio value="online">开源应用</el-radio>
                 <el-radio value="offline">离线应用</el-radio>
               </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="可见角色" prop="requiredRoleKey">
+              <el-select
+                v-model="form.requiredRoleKey"
+                allow-create
+                clearable
+                filterable
+                placeholder="留空为全员可见；填写角色键则仅该角色可见"
+                style="width: 100%"
+              >
+                <el-option label="超级管理员 superadmin" value="superadmin" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -261,6 +286,7 @@ const initFormData: AppApplicationForm = {
   tags: '',
   accessUrl: '',
   appType: 'online',
+  requiredRoleKey: '',
   packageOssId: undefined,
   packageName: '',
   packageSize: undefined,
@@ -282,7 +308,8 @@ const data = reactive<PageData<AppApplicationForm, AppApplicationQuery>>({
     categoryId: undefined,
     appType: '',
     status: '',
-    isSecurity: ''
+    isSecurity: '',
+    requiredRoleKey: undefined
   },
   rules: {
     appName: [{ required: true, message: '应用名称不能为空', trigger: 'blur' }],
@@ -337,6 +364,12 @@ const getAppTypeTag = (appType?: string) => {
   if (appType === 'business') return 'success';
   if (appType === 'offline') return 'warning';
   return 'primary';
+};
+
+const getVisibleScopeLabel = (requiredRoleKey?: string) => {
+  if (!requiredRoleKey) return '全员';
+  if (requiredRoleKey === 'superadmin') return '管理员';
+  return requiredRoleKey;
 };
 
 const loadCategories = async () => {

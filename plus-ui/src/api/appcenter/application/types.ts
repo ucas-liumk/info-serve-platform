@@ -11,6 +11,7 @@ export interface AppApplicationVo extends BaseEntity {
   tags: string;
   accessUrl: string;
   appType: string;
+  requiredRoleKey?: string;
   packageOssId?: number | string;
   packageName?: string;
   packageSize?: number;
@@ -35,6 +36,7 @@ export interface AppApplicationForm {
   tags: string;
   accessUrl: string;
   appType: string;
+  requiredRoleKey?: string;
   packageOssId?: number | string;
   packageName?: string;
   packageSize?: number;
@@ -51,6 +53,7 @@ export interface AppApplicationQuery extends PageQuery {
   appType: string;
   status: string;
   isSecurity: string;
+  requiredRoleKey?: string;
 }
 
 export interface AppPackageUploadVo {

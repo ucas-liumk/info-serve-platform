@@ -9,7 +9,7 @@ SELECT COALESCE((SELECT MAX(module_id) + 1 FROM portal_module), 6),
        '运行洞察  转型透明',
        '/portal/usage-dashboard',
        '0',
-       6,
+       3,
        now()
 WHERE NOT EXISTS (SELECT 1 FROM portal_module WHERE module_code = 'usage-dashboard');
 
@@ -18,6 +18,7 @@ SET module_name = '应用态势',
     description = '运行洞察  转型透明',
     entry_path = '/portal/usage-dashboard',
     status = '0',
+    sort_order = 3,
     update_time = now()
 WHERE module_code = 'usage-dashboard';
 

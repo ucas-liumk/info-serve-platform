@@ -24,6 +24,8 @@ public class AppApplicationBo extends BaseEntity {
     @Pattern(regexp = "^$|^https?://.*|^/.*", message = "访问地址必须以 http(s):// 或 / 开头")
     private String accessUrl;
     private String appType;
+    @Size(max = 100, message = "可见角色不能超过100字")
+    private String requiredRoleKey;
     private Long packageOssId;
     private String packageName;
     private Long packageSize;

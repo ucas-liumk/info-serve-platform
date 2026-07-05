@@ -206,10 +206,10 @@ INSERT INTO portal_module (module_id, module_code, module_name, description, ent
 VALUES
     (1, 'resources', '资料共享', '数据汇聚  共享共用', '/portal/resources', '0', 1, now()),
     (2, 'appcenter', '应用中心', '应用聚合  即取即用', '/portal/tools',     '0', 2, now()),
-    (3, 'qa',        '智能问答', '智慧问答  快速响应', NULL,               '1', 3, now()),
-    (4, 'news',      '时事热点', '热点速递  洞察先机', NULL,               '1', 4, now()),
-    (5, 'forum',     '服务论坛', '交流互动  共建共治', '/portal/forum',    '0', 5, now()),
-    (6, 'usage-dashboard', '应用态势', '运行洞察  转型透明', '/portal/usage-dashboard', '0', 6, now())
+    (3, 'usage-dashboard', '应用态势', '运行洞察  转型透明', '/portal/usage-dashboard', '0', 3, now()),
+    (4, 'forum',     '服务论坛', '交流互动  共建共治', '/portal/forum',    '0', 4, now()),
+    (5, 'qa',        '智能问答', '智慧问答  快速响应', NULL,               '1', 80, now()),
+    (6, 'news',      '时事热点', '热点速递  洞察先机', NULL,               '1', 90, now())
 ON CONFLICT (module_id) DO NOTHING;
 
 -- 管理后台菜单：门户配置

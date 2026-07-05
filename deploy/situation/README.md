@@ -1,6 +1,6 @@
-# DataEase + Hop 态势引擎接入说明
+# DataEase + Hop + Budibase 态势与低代码接入说明
 
-本目录说明 info-serve 侧如何接入外部态势引擎。DataEase 和 Apache Hop 均按独立产品部署，不纳入 `deploy/docker-compose.yml` 主业务栈，避免其升级、初始化和资源占用影响门户主链路。
+本目录说明 info-serve 侧如何接入外部态势引擎和低代码运行时。DataEase、Apache Hop、Budibase 均按独立产品部署，不纳入 `deploy/docker-compose.yml` 主业务栈，避免其升级、初始化和资源占用影响门户主链路。
 
 ## 1. 组件定位
 
@@ -8,6 +8,7 @@
 |---|---|---|
 | DataEase | 态势大屏制作后台 | 门户跳转到已发布大屏链接 |
 | Apache Hop | 数据加工与治理工具 | 读统计接口或中间结果，写 `portal_analytics_*` |
+| Budibase | 低代码应用工厂 | 应用中心管理员入口；后续由 Hop 抽取低代码应用数据 |
 | PostgreSQL `portal_analytics_*` | DataEase 稳定读取源 | 由 0.3.5 增量脚本创建 |
 | OpenMetadata / DataHub | 后续元数据平台 | 暂不上，未来采集分析表、指标目录和作业日志 |
 
@@ -17,16 +18,23 @@
 
 ```js
 // plus-ui/public/app-config.js
-window.__INFO_SERVE_CONFIG__.dataeaseDashboardUrl = "http://127.0.0.1:8100/link/your-dashboard";
+window.__INFO_SERVE_CONFIG__.dataeaseDashboardUrl =
+  `${window.location.protocol}//${window.location.hostname}:8100/#/de-link/your-dashboard`;
 ```
 
 如果该值为空，则退回构建期环境变量：
 
 ```bash
-VITE_APP_DATAEASE_DASHBOARD_URL="http://127.0.0.1:8100/link/your-dashboard"
+VITE_APP_DATAEASE_DASHBOARD_URL="http://127.0.0.1:8100/#/de-link/your-dashboard"
 ```
 
 生产部署优先改 `dist/app-config.js` 或源文件 `plus-ui/public/app-config.js` 后重新发布静态文件。不要为了换一个 DataEase 大屏链接就修改 Vue 源码。
+
+DataEase 公共链接必须使用前端 hash 路由，例如 `/#/de-link/infoserve001`。不要直接使用物理路径 `/de-link/infoserve001`，否则会被 DataEase 后端鉴权拦截。
+
+DataEase 管理后台、Apache Hop Web、Budibase 低代码工厂作为治理工具写入应用中心 `治理工具` 分类，`required_role_key=superadmin`。普通门户用户只看到业务应用；管理员从应用中心打开这些独立产品后台。后续新增“数据治理工程师”角色时，可把对应应用的 `required_role_key` 改为新角色键。
+
+Budibase 只作为低代码应用工厂，不直接维护门户核心业务表。
 
 ## 3. DataEase 数据源授权
 
@@ -55,6 +63,19 @@ DataEase 中只配置该账号，不配置业务库管理员账号。
 
 Hop 第一阶段只负责加工和写入分析表，不直接改业务表。
 
+已纳入版本管理的 Hop 工程位于：
+
+```text
+deploy/situation/hop/info-serve-portal-analytics
+```
+
+本地执行：
+
+```bash
+INFO_SERVE_DB_PASSWORD='***' deploy/situation/hop/run-portal-analytics.sh
+deploy/situation/hop/verify-portal-analytics.sh
+```
+
 建议管道命名：
 
 | 管道 | 写入目标 |
@@ -72,7 +93,8 @@ Hop 第一阶段只负责加工和写入分析表，不直接改业务表。
 | 服务 | 建议宿主机端口 | 说明 |
 |---|---:|---|
 | DataEase | `8100` | DataEase 官方默认 Web 端口 |
-| Hop Web | `8174` | 建议将 Hop Web 容器 `8080` 映射为宿主机 `8174` |
+| Hop Web | `18091` | 本地验证端口，将 Hop Web 容器 `8080` 映射为宿主机 `18091` |
+| Budibase | `18100` | 低代码应用工厂入口，将 Budibase proxy `10000` 映射为宿主机 `18100` |
 
 ## 6. 后续接 OpenMetadata
 

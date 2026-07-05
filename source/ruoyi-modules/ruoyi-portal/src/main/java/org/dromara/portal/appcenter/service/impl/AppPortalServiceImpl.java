@@ -25,6 +25,7 @@ import org.dromara.common.oss.factory.OssFactory;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.file.api.RemoteFileService;
 import org.dromara.file.api.domain.RemoteFile;
+import org.dromara.system.api.model.LoginUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,8 +49,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
 
     @Override
     public List<AppCategoryVo> categories() {
-        Map<Long, Long> appCounts = applicationMapper.selectList(
-                Wrappers.<AppApplication>lambdaQuery().eq(AppApplication::getStatus, "0"))
+        Map<Long, Long> appCounts = applicationMapper.selectList(visibleApplicationWrapper())
             .stream()
             .collect(Collectors.groupingBy(AppApplication::getCategoryId, Collectors.counting()));
         return categoryMapper.selectList(
@@ -61,8 +61,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
 
     @Override
     public TableDataInfo<PortalAppVo> apps(String categoryCode, String keyword, String appType, String sort, PageQuery pageQuery) {
-        LambdaQueryWrapper<AppApplication> w = Wrappers.lambdaQuery();
-        w.eq(AppApplication::getStatus, "0");
+        LambdaQueryWrapper<AppApplication> w = visibleApplicationWrapper();
         if (StringUtils.isNotBlank(appType) && !"all".equals(appType)) {
             w.eq(AppApplication::getAppType, appType);
         }
@@ -137,7 +136,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
     @Override
     public String use(Long appId) {
         AppApplication app = applicationMapper.selectById(appId);
-        if (app == null || !"0".equals(app.getStatus())) {
+        if (!isVisibleApp(app)) {
             throw new ServiceException("应用不存在或已下架");
         }
         if ("offline".equals(resolveAppType(app.getAppType()))) {
@@ -151,7 +150,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
     @Override
     public void downloadPackage(Long appId, HttpServletResponse response) throws IOException {
         AppApplication app = applicationMapper.selectById(appId);
-        if (app == null || !"0".equals(app.getStatus())) {
+        if (!isVisibleApp(app)) {
             throw new ServiceException("应用不存在或已下架");
         }
         if (!"offline".equals(resolveAppType(app.getAppType())) || app.getPackageOssId() == null) {
@@ -175,7 +174,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
     public void favorite(Long appId, boolean add) {
         if (add) {
             AppApplication app = applicationMapper.selectById(appId);
-            if (app == null || !"0".equals(app.getStatus())) {
+            if (!isVisibleApp(app)) {
                 throw new ServiceException("应用不存在或已下架");
             }
         }
@@ -199,7 +198,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
     public void recommend(Long appId, boolean add) {
         if (add) {
             AppApplication app = applicationMapper.selectById(appId);
-            if (app == null || !"0".equals(app.getStatus())) {
+            if (!isVisibleApp(app)) {
                 throw new ServiceException("应用不存在或已下架");
             }
         }
@@ -235,9 +234,8 @@ public class AppPortalServiceImpl implements IAppPortalService {
             return info;
         }
         Page<AppApplication> page = applicationMapper.selectPage(pageQuery.build(),
-            Wrappers.<AppApplication>lambdaQuery()
-                .in(AppApplication::getAppId, appIds)
-                .eq(AppApplication::getStatus, "0"));
+            visibleApplicationWrapper()
+                .in(AppApplication::getAppId, appIds));
         info.setRows(toPortalVos(page.getRecords()));
         info.setTotal(page.getTotal());
         return info;
@@ -333,6 +331,46 @@ public class AppPortalServiceImpl implements IAppPortalService {
             return "online";
         }
         return appType;
+    }
+
+    private LambdaQueryWrapper<AppApplication> visibleApplicationWrapper() {
+        LambdaQueryWrapper<AppApplication> w = Wrappers.<AppApplication>lambdaQuery()
+            .eq(AppApplication::getStatus, "0");
+        appendVisibleScope(w);
+        return w;
+    }
+
+    private void appendVisibleScope(LambdaQueryWrapper<AppApplication> w) {
+        if (LoginHelper.isSuperAdmin()) {
+            return;
+        }
+        Set<String> roleKeys = currentRoleKeys();
+        w.and(q -> {
+            q.isNull(AppApplication::getRequiredRoleKey)
+                .or().eq(AppApplication::getRequiredRoleKey, "");
+            if (!roleKeys.isEmpty()) {
+                q.or().in(AppApplication::getRequiredRoleKey, roleKeys);
+            }
+        });
+    }
+
+    private boolean isVisibleApp(AppApplication app) {
+        if (app == null || !"0".equals(app.getStatus())) {
+            return false;
+        }
+        String requiredRoleKey = StringUtils.trimToEmpty(app.getRequiredRoleKey());
+        if (StringUtils.isBlank(requiredRoleKey)) {
+            return true;
+        }
+        return LoginHelper.isSuperAdmin() || currentRoleKeys().contains(requiredRoleKey);
+    }
+
+    private Set<String> currentRoleKeys() {
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        if (loginUser == null || loginUser.getRolePermission() == null) {
+            return Collections.emptySet();
+        }
+        return loginUser.getRolePermission();
     }
 
     private OssClient resolveStorage(RemoteFile remoteFile) {

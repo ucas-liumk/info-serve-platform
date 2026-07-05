@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>refresh-portal-usage-analytics</name>
+    <name_sync_with_filename>Y</name_sync_with_filename>
+    <description>Refresh portal_analytics_* tables for the DataEase leadership situation dashboard.</description>
+    <extended_description>First-stage Hop pipeline: aggregate current app/resource/forum/demand tables into governed analytics tables.</extended_description>
+    <pipeline_version>v1</pipeline_version>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+    </parameters>
+    <capture_transform_performance>Y</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>info-serve</created_user>
+    <created_date>2026/07/05 23:00:00.000</created_date>
+    <modified_user>info-serve</modified_user>
+    <modified_date>2026/07/05 23:00:00.000</modified_date>
+    <key_for_session_key>H4sIAAAAAAAAAAMAAAAAAAAAAAA=</key_for_session_key>
+    <is_key_private>N</is_key_private>
+  </info>
+  <notepads>
+    <notepad>
+      <note>聚合 app_ / info_ / portal_ 数据，刷新 portal_analytics_*，供 DataEase 只读出图。</note>
+      <xloc>64</xloc>
+      <yloc>48</yloc>
+      <width>560</width>
+      <heigth>42</heigth>
+      <fontname>Segoe UI</fontname>
+      <fontsize>11</fontsize>
+      <fontbold>N</fontbold>
+      <fontitalic>N</fontitalic>
+      <fontcolorred>14</fontcolorred>
+      <fontcolorgreen>58</fontcolorgreen>
+      <fontcolorblue>90</fontcolorblue>
+      <backgroundcolorred>201</backgroundcolorred>
+      <backgroundcolorgreen>232</backgroundcolorgreen>
+      <backgroundcolorblue>251</backgroundcolorblue>
+      <bordercolorred>14</bordercolorred>
+      <bordercolorgreen>58</bordercolorgreen>
+      <bordercolorblue>90</bordercolorblue>
+    </notepad>
+  </notepads>
+  <order>
+    <hop>
+      <from>Refresh analytics tables</from>
+      <to>Done</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+  <transform>
+    <name>Refresh analytics tables</name>
+    <type>TableInput</type>
+    <description>Execute one PostgreSQL statement that refreshes daily analytics tables and writes job_run evidence.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <connection>info-serve-portal</connection>
+    <sql><![CDATA[
+WITH
+run_ctx AS (
+  SELECT
+    '000000'::varchar(20) AS tenant_id,
+    timezone('Asia/Shanghai', clock_timestamp())::date AS stat_date,
+    timezone('Asia/Shanghai', clock_timestamp()) AS started_at,
+    'hop-' || to_char(timezone('Asia/Shanghai', clock_timestamp()), 'YYYYMMDDHH24MISSMS') AS job_run_id
+),
+module_src AS (
+  SELECT
+    r.tenant_id,
+    r.stat_date,
+    'appcenter'::varchar(50) AS module_code,
+    '工具即用'::varchar(100) AS module_name,
+    COALESCE(SUM(a.use_count), 0)::bigint AS active_count,
+    COALESCE(SUM(a.use_count), 0)::bigint AS visit_count,
+    COALESCE(SUM(a.use_count), 0)::bigint AS action_count,
+    COUNT(DISTINCT COALESCE(a.update_by, a.create_by))::bigint AS user_count
+  FROM run_ctx r
+  LEFT JOIN app_application a ON a.tenant_id = r.tenant_id AND a.status = '0' AND a.del_flag = '0'
+  GROUP BY r.tenant_id, r.stat_date
+
+  UNION ALL
+
+  SELECT
+    r.tenant_id,
+    r.stat_date,
+    'resources'::varchar(50) AS module_code,
+    '资料共享'::varchar(100) AS module_name,
+    COALESCE(SUM(COALESCE(ir.view_count, 0) + COALESCE(ir.download_count, 0)), 0)::bigint AS active_count,
+    COALESCE(SUM(ir.view_count), 0)::bigint AS visit_count,
+    COALESCE(SUM(ir.download_count), 0)::bigint AS action_count,
+    (
+      SELECT COUNT(DISTINCT user_id)::bigint
+      FROM (
+        SELECT create_by AS user_id FROM info_resource WHERE tenant_id = r.tenant_id AND status = '0' AND del_flag = '0' AND create_by IS NOT NULL
+        UNION
+        SELECT user_id FROM info_resource_favorite WHERE tenant_id = r.tenant_id
+      ) u
+    ) AS user_count
+  FROM run_ctx r
+  LEFT JOIN info_resource ir ON ir.tenant_id = r.tenant_id AND ir.status = '0' AND ir.del_flag = '0'
+  GROUP BY r.tenant_id, r.stat_date
+
+  UNION ALL
+
+  SELECT
+    r.tenant_id,
+    r.stat_date,
+    'forum'::varchar(50) AS module_code,
+    '服务论坛'::varchar(100) AS module_name,
+    COALESCE(SUM(COALESCE(t.view_count, 0) + COALESCE(t.reply_count, 0) + COALESCE(t.like_count, 0)), 0)::bigint AS active_count,
+    COALESCE(SUM(t.view_count), 0)::bigint AS visit_count,
+    COALESCE(SUM(COALESCE(t.reply_count, 0) + COALESCE(t.like_count, 0)), 0)::bigint AS action_count,
+    (
+      SELECT COUNT(DISTINCT user_id)::bigint
+      FROM (
+        SELECT author_id AS user_id FROM info_forum_topic WHERE tenant_id = r.tenant_id AND status = '0' AND del_flag = '0' AND author_id IS NOT NULL
+        UNION
+        SELECT author_id AS user_id FROM info_forum_reply WHERE tenant_id = r.tenant_id AND status = '0' AND del_flag = '0' AND author_id IS NOT NULL
+        UNION
+        SELECT user_id FROM info_forum_like WHERE user_id IS NOT NULL
+      ) u
+    ) AS user_count
+  FROM run_ctx r
+  LEFT JOIN info_forum_topic t ON t.tenant_id = r.tenant_id AND t.status = '0' AND t.del_flag = '0'
+  GROUP BY r.tenant_id, r.stat_date
+
+  UNION ALL
+
+  SELECT
+    r.tenant_id,
+    r.stat_date,
+    'notifications'::varchar(50) AS module_code,
+    '通知消息'::varchar(100) AS module_name,
+    COUNT(m.message_id)::bigint AS active_count,
+    COUNT(m.message_id)::bigint AS visit_count,
+    COUNT(m.message_id)::bigint AS action_count,
+    COUNT(DISTINCT m.user_id)::bigint AS user_count
+  FROM run_ctx r
+  LEFT JOIN app_message m ON TRUE
+  GROUP BY r.tenant_id, r.stat_date
+),
+del_module AS (
+  DELETE FROM portal_analytics_module_daily d
+  USING run_ctx r
+  WHERE d.tenant_id = r.tenant_id AND d.stat_date = r.stat_date
+  RETURNING 1
+),
+ins_module AS (
+  INSERT INTO portal_analytics_module_daily
+    (tenant_id, stat_date, module_code, module_name, active_count, visit_count, action_count, user_count, create_time, update_time)
+  SELECT tenant_id, stat_date, module_code, module_name, active_count, visit_count, action_count, user_count, timezone('Asia/Shanghai', clock_timestamp()), timezone('Asia/Shanghai', clock_timestamp())
+  FROM module_src
+  CROSS JOIN (SELECT COUNT(*) AS deleted_rows FROM del_module) gate
+  RETURNING 1
+),
+app_src AS (
+  SELECT
+    r.tenant_id,
+    r.stat_date,
+    a.app_code,
+    a.app_name,
+    COALESCE(c.category_name, a.app_type, '未分类') AS category_name,
+    COALESCE(a.use_count, 0)::bigint AS open_count,
+    0::bigint AS download_count,
+    COUNT(d.demand_id)::bigint AS demand_count,
+    ROW_NUMBER() OVER (ORDER BY COALESCE(a.use_count, 0) DESC, a.app_name, a.app_code)::int AS rank_no
+  FROM run_ctx r
+  JOIN app_application a ON a.tenant_id = r.tenant_id AND a.status = '0' AND a.del_flag = '0'
+  LEFT JOIN app_category c ON c.category_id = a.category_id AND c.del_flag = '0'
+  LEFT JOIN app_demand d ON d.tenant_id = r.tenant_id AND d.del_flag = '0' AND d.app_id = a.app_id
+  GROUP BY r.tenant_id, r.stat_date, a.app_code, a.app_name, c.category_name, a.app_type, a.use_count
+),
+del_app AS (
+  DELETE FROM portal_analytics_app_rank d
+  USING run_ctx r
+  WHERE d.tenant_id = r.tenant_id AND d.stat_date = r.stat_date
+  RETURNING 1
+),
+ins_app AS (
+  INSERT INTO portal_analytics_app_rank
+    (tenant_id, stat_date, app_code, app_name, category_name, open_count, download_count, demand_count, rank_no, create_time, update_time)
+  SELECT tenant_id, stat_date, app_code, app_name, category_name, open_count, download_count, demand_count, rank_no, timezone('Asia/Shanghai', clock_timestamp()), timezone('Asia/Shanghai', clock_timestamp())
+  FROM app_src
+  CROSS JOIN (SELECT COUNT(*) AS deleted_rows FROM del_app) gate
+  RETURNING 1
+),
+resource_src AS (
+  SELECT
+    r.tenant_id,
+    r.stat_date,
+    ir.resource_id,
+    ir.title AS resource_name,
+    COALESCE(rc.category_name, '未分类') AS category_name,
+    COALESCE(ir.view_count, 0)::bigint AS view_count,
+    COALESCE(ir.download_count, 0)::bigint AS download_count,
+    ROW_NUMBER() OVER (ORDER BY (COALESCE(ir.view_count, 0) + COALESCE(ir.download_count, 0)) DESC, ir.title, ir.resource_id)::int AS rank_no
+  FROM run_ctx r
+  JOIN info_resource ir ON ir.tenant_id = r.tenant_id AND ir.status = '0' AND ir.del_flag = '0'
+  LEFT JOIN info_resource_category rc ON rc.category_id = ir.category_id AND rc.del_flag = '0'
+),
+del_resource AS (
+  DELETE FROM portal_analytics_resource_rank d
+  USING run_ctx r
+  WHERE d.tenant_id = r.tenant_id AND d.stat_date = r.stat_date
+  RETURNING 1
+),
+ins_resource AS (
+  INSERT INTO portal_analytics_resource_rank
+    (tenant_id, stat_date, resource_id, resource_name, category_name, view_count, download_count, rank_no, create_time, update_time)
+  SELECT tenant_id, stat_date, resource_id, resource_name, category_name, view_count, download_count, rank_no, timezone('Asia/Shanghai', clock_timestamp()), timezone('Asia/Shanghai', clock_timestamp())
+  FROM resource_src
+  CROSS JOIN (SELECT COUNT(*) AS deleted_rows FROM del_resource) gate
+  RETURNING 1
+),
+feedback_dim AS (
+  SELECT * FROM (VALUES ('需求'::varchar(50)), ('建议'::varchar(50))) t(feedback_type)
+  CROSS JOIN (VALUES ('待处理'::varchar(20)), ('已处理'::varchar(20))) s(feedback_status)
+),
+feedback_src AS (
+  SELECT
+    r.tenant_id,
+    r.stat_date,
+    fd.feedback_type,
+    fd.feedback_status,
+    COALESCE(COUNT(d.demand_id), 0)::bigint AS total_count,
+    ROUND(AVG(
+      CASE
+        WHEN fd.feedback_status = '已处理' AND d.handled_time IS NOT NULL AND d.create_time IS NOT NULL
+        THEN EXTRACT(EPOCH FROM (d.handled_time - d.create_time)) / 3600
+      END
+    )::numeric, 2) AS avg_response_hours
+  FROM run_ctx r
+  CROSS JOIN feedback_dim fd
+  LEFT JOIN app_demand d
+    ON d.tenant_id = r.tenant_id
+   AND d.del_flag = '0'
+   AND COALESCE(NULLIF(d.demand_type, ''), '需求') = fd.feedback_type
+   AND CASE WHEN d.status IN ('1', '2', 'handled', 'done') THEN '已处理' ELSE '待处理' END = fd.feedback_status
+  GROUP BY r.tenant_id, r.stat_date, fd.feedback_type, fd.feedback_status
+),
+del_feedback AS (
+  DELETE FROM portal_analytics_feedback_summary d
+  USING run_ctx r
+  WHERE d.tenant_id = r.tenant_id AND d.stat_date = r.stat_date
+  RETURNING 1
+),
+ins_feedback AS (
+  INSERT INTO portal_analytics_feedback_summary
+    (tenant_id, stat_date, feedback_type, feedback_status, total_count, avg_response_hours, create_time, update_time)
+  SELECT tenant_id, stat_date, feedback_type, feedback_status, total_count, avg_response_hours, timezone('Asia/Shanghai', clock_timestamp()), timezone('Asia/Shanghai', clock_timestamp())
+  FROM feedback_src
+  CROSS JOIN (SELECT COUNT(*) AS deleted_rows FROM del_feedback) gate
+  RETURNING 1
+),
+metric_src AS (
+  SELECT r.tenant_id, timezone('Asia/Shanghai', clock_timestamp()) AS stat_time, 'USAGE_TOTAL'::varchar(80) AS metric_code,
+         COALESCE((SELECT SUM(active_count) FROM module_src), 0)::numeric(20, 4) AS metric_value,
+         '工具/资料/论坛/通知'::varchar(200) AS metric_label
+  FROM run_ctx r
+  UNION ALL
+  SELECT r.tenant_id, timezone('Asia/Shanghai', clock_timestamp()), 'APP_TOTAL',
+         COALESCE((SELECT COUNT(*) FROM app_application WHERE tenant_id = r.tenant_id AND status = '0' AND del_flag = '0'), 0)::numeric(20, 4),
+         '可访问应用总数'
+  FROM run_ctx r
+  UNION ALL
+  SELECT r.tenant_id, timezone('Asia/Shanghai', clock_timestamp()), 'RESOURCE_TOTAL',
+         COALESCE((SELECT COUNT(*) FROM info_resource WHERE tenant_id = r.tenant_id AND status = '0' AND del_flag = '0'), 0)::numeric(20, 4),
+         '可用资料条目'
+  FROM run_ctx r
+  UNION ALL
+  SELECT r.tenant_id, timezone('Asia/Shanghai', clock_timestamp()), 'ACTIVE_USER',
+         COALESCE((SELECT SUM(user_count) FROM module_src), 0)::numeric(20, 4),
+         '跨模块参与估算'
+  FROM run_ctx r
+  UNION ALL
+  SELECT r.tenant_id, timezone('Asia/Shanghai', clock_timestamp()), 'DEMAND_PENDING',
+         COALESCE((SELECT COUNT(*) FROM app_demand WHERE tenant_id = r.tenant_id AND del_flag = '0' AND status NOT IN ('1', '2', 'handled', 'done')), 0)::numeric(20, 4),
+         '需求反馈池'
+  FROM run_ctx r
+),
+del_metric AS (
+  DELETE FROM portal_analytics_metric_snapshot d
+  USING run_ctx r
+  WHERE d.tenant_id = r.tenant_id AND d.stat_time::date = r.stat_date
+  RETURNING 1
+),
+ins_metric AS (
+  INSERT INTO portal_analytics_metric_snapshot
+    (tenant_id, stat_time, metric_code, metric_value, metric_label, source_version, create_time)
+  SELECT tenant_id, stat_time, metric_code, metric_value, metric_label, 'v1', timezone('Asia/Shanghai', clock_timestamp())
+  FROM metric_src
+  CROSS JOIN (SELECT COUNT(*) AS deleted_rows FROM del_metric) gate
+  RETURNING 1
+),
+job_row AS (
+  INSERT INTO portal_analytics_job_run
+    (tenant_id, job_run_id, job_code, job_name, run_status, started_at, finished_at, duration_ms, affected_rows, error_message, create_time)
+  SELECT
+    r.tenant_id,
+    r.job_run_id,
+    'PORTAL_USAGE_ANALYTICS',
+    'Hop门户应用态势刷新',
+    'success',
+    r.started_at,
+    timezone('Asia/Shanghai', clock_timestamp()),
+    (EXTRACT(EPOCH FROM (timezone('Asia/Shanghai', clock_timestamp()) - r.started_at)) * 1000)::bigint,
+    (
+      (SELECT COUNT(*) FROM ins_module) +
+      (SELECT COUNT(*) FROM ins_app) +
+      (SELECT COUNT(*) FROM ins_resource) +
+      (SELECT COUNT(*) FROM ins_feedback) +
+      (SELECT COUNT(*) FROM ins_metric)
+    )::bigint,
+    NULL,
+    timezone('Asia/Shanghai', clock_timestamp())
+  FROM run_ctx r
+  RETURNING job_run_id, duration_ms, affected_rows
+)
+SELECT
+  j.job_run_id,
+  j.duration_ms,
+  j.affected_rows,
+  (SELECT COUNT(*) FROM ins_module) AS module_rows,
+  (SELECT COUNT(*) FROM ins_app) AS app_rank_rows,
+  (SELECT COUNT(*) FROM ins_resource) AS resource_rank_rows,
+  (SELECT COUNT(*) FROM ins_feedback) AS feedback_rows,
+  (SELECT COUNT(*) FROM ins_metric) AS metric_rows
+FROM job_row j;
+]]></sql>
+    <limit>0</limit>
+    <lookup/>
+    <execute_each_row>N</execute_each_row>
+    <variables_active>N</variables_active>
+    <attributes/>
+    <GUI>
+      <xloc>144</xloc>
+      <yloc>144</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Done</name>
+    <type>Dummy</type>
+    <description>Pipeline sink.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <attributes/>
+    <GUI>
+      <xloc>448</xloc>
+      <yloc>144</yloc>
+    </GUI>
+  </transform>
+  <transform_error_handling>
+  </transform_error_handling>
+  <attributes/>
+</pipeline>

@@ -1,6 +1,6 @@
 # 项目端口清单
 
-更新时间：2026-07-03
+更新时间：2026-07-06
 
 当前项目采用统一号段：
 
@@ -24,8 +24,9 @@
 | Nacos 控制台 | `http://127.0.0.1:8148/nacos` | `source/pom.xml` / `deploy/docker-compose.yml` | 配置中心/注册中心 |
 | RabbitMQ 控制台 | `http://127.0.0.1:8173` | `deploy/docker-compose.yml` | 消息队列管理页 |
 | MinIO 控制台 | `http://127.0.0.1:8161` | `deploy/docker-compose.yml` | 对象存储管理页 |
-| DataEase 态势后台 | `http://127.0.0.1:8100` | DataEase 官方安装配置 | 外部大屏引擎，独立部署 |
-| Apache Hop Web | `http://127.0.0.1:8174` | Hop Web 部署配置 | 外部数据治理/ETL 入口，建议端口 |
+| DataEase 态势后台 | `http://127.0.0.1:8100` | DataEase 官方安装配置 | 外部大屏引擎，应用中心管理员入口 |
+| Apache Hop Web | `http://127.0.0.1:18091` | Hop Web 部署配置 | 外部数据治理/ETL，应用中心管理员入口 |
+| Budibase 低代码工厂 | `http://127.0.0.1:18100` | `deploy/situation/budibase/docker-compose.yml` | 外部低代码应用工厂，应用中心管理员入口 |
 
 ## 前端端口
 
@@ -67,7 +68,8 @@
 | MinIO API | `8160` | `9000` | `deploy/docker-compose.yml` | 文件服务 API |
 | MinIO 控制台 | `8161` | `9001` | `deploy/docker-compose.yml` | 浏览器管理入口 |
 | DataEase Web | `8100` | DataEase 官方安装配置 | 态势大屏制作后台，独立部署 |
-| Apache Hop Web | `8174` | Hop Web 部署配置 | 态势数据治理入口，建议将容器 `8080` 映射到宿主机 `8174` |
+| Apache Hop Web | `18091` | Hop Web 部署配置 | 态势数据治理入口，本地验证将容器 `8080` 映射到宿主机 `18091` |
+| Budibase Web | `18100` | Budibase proxy `10000` | 低代码应用工厂入口，独立部署 |
 
 ## Nacos 配置规则
 
@@ -108,7 +110,7 @@ Get-Process -Id 进程ID
 一次检查本项目主要端口：
 
 ```powershell
-Get-NetTCPConnection -LocalPort 7010,7018,8180,8148,8132,8136,8179,8172,8173,8160,8161,8100,8174
+Get-NetTCPConnection -LocalPort 7010,7018,8180,8148,8132,8136,8179,8172,8173,8160,8161,8100,18091,18100
 ```
 
 ## 改端口时改哪里

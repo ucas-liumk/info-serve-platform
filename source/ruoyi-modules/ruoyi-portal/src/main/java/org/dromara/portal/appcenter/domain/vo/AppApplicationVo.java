@@ -20,6 +20,7 @@ public class AppApplicationVo implements Serializable {
     private String tags;
     private String accessUrl;
     private String appType;
+    private String requiredRoleKey;
     private Long packageOssId;
     private String packageName;
     private Long packageSize;

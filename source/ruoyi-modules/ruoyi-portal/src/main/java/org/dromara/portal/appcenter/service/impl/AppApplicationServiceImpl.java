@@ -16,17 +16,23 @@ import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.file.api.RemoteFileService;
 import org.dromara.file.api.domain.RemoteFile;
+import org.dromara.system.api.model.LoginUser;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor
 @Service
 public class AppApplicationServiceImpl implements IAppApplicationService {
+
+    private static final String PUBLIC_SCOPE_QUERY = "__public__";
 
     private final AppApplicationMapper baseMapper;
     private final IPortalNotificationService notificationService;
@@ -40,6 +46,11 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
         w.eq(StringUtils.isNotBlank(bo.getAppType()), AppApplication::getAppType, bo.getAppType());
         w.eq(StringUtils.isNotBlank(bo.getStatus()), AppApplication::getStatus, bo.getStatus());
         w.eq(StringUtils.isNotBlank(bo.getIsSecurity()), AppApplication::getIsSecurity, bo.getIsSecurity());
+        if (PUBLIC_SCOPE_QUERY.equals(bo.getRequiredRoleKey())) {
+            w.and(q -> q.isNull(AppApplication::getRequiredRoleKey).or().eq(AppApplication::getRequiredRoleKey, ""));
+        } else {
+            w.eq(StringUtils.isNotBlank(bo.getRequiredRoleKey()), AppApplication::getRequiredRoleKey, bo.getRequiredRoleKey());
+        }
         if (StringUtils.isNotBlank(bo.getKeyword())) {
             w.and(q -> q.like(AppApplication::getAppName, bo.getKeyword())
                 .or().like(AppApplication::getDescription, bo.getKeyword())
@@ -145,6 +156,7 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
         entity.setTags(bo.getTags());
         entity.setAccessUrl(StringUtils.defaultString(bo.getAccessUrl()));
         entity.setAppType(resolveAppType(bo.getAppType()));
+        entity.setRequiredRoleKey(StringUtils.trimToNull(bo.getRequiredRoleKey()));
         entity.setPackageOssId(bo.getPackageOssId());
         entity.setPackageName(bo.getPackageName());
         entity.setPackageSize(bo.getPackageSize());
@@ -171,6 +183,7 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
         vo.setTags(entity.getTags());
         vo.setAccessUrl(entity.getAccessUrl());
         vo.setAppType(resolveAppType(entity.getAppType()));
+        vo.setRequiredRoleKey(entity.getRequiredRoleKey());
         vo.setPackageOssId(entity.getPackageOssId());
         vo.setPackageName(entity.getPackageName());
         vo.setPackageSize(entity.getPackageSize());
@@ -229,7 +242,31 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
 
     @Override
     public Long countPortalVisible() {
-        return baseMapper.selectCount(Wrappers.<AppApplication>lambdaQuery()
-            .eq(AppApplication::getStatus, "0"));
+        LambdaQueryWrapper<AppApplication> w = Wrappers.<AppApplication>lambdaQuery()
+            .eq(AppApplication::getStatus, "0");
+        appendVisibleScope(w);
+        return baseMapper.selectCount(w);
+    }
+
+    private void appendVisibleScope(LambdaQueryWrapper<AppApplication> w) {
+        if (LoginHelper.isSuperAdmin()) {
+            return;
+        }
+        Set<String> roleKeys = currentRoleKeys();
+        w.and(q -> {
+            q.isNull(AppApplication::getRequiredRoleKey)
+                .or().eq(AppApplication::getRequiredRoleKey, "");
+            if (!roleKeys.isEmpty()) {
+                q.or().in(AppApplication::getRequiredRoleKey, roleKeys);
+            }
+        });
+    }
+
+    private Set<String> currentRoleKeys() {
+        LoginUser loginUser = LoginHelper.getLoginUser();
+        if (loginUser == null || loginUser.getRolePermission() == null) {
+            return Collections.emptySet();
+        }
+        return loginUser.getRolePermission();
     }
 }
