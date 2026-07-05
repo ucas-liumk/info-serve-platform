@@ -22,8 +22,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -161,6 +164,67 @@ public class AppDemandServiceImpl implements IAppDemandService {
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids) {
         return baseMapper.deleteByIds(ids) > 0;
+    }
+
+    @Override
+    public List<DemandStatusStat> listStatusStats() {
+        return baseMapper.selectList(Wrappers.<AppDemand>lambdaQuery()
+                .select(AppDemand::getStatus))
+            .stream()
+            .collect(Collectors.groupingBy(
+                demand -> StringUtils.blankToDefault(demand.getStatus(), "unknown"),
+                Collectors.counting()))
+            .entrySet()
+            .stream()
+            .map(entry -> new DemandStatusStat(entry.getKey(), entry.getValue()))
+            .sorted(Comparator.comparing(DemandStatusStat::status))
+            .toList();
+    }
+
+    @Override
+    public List<DemandTypeStat> listTypeStats() {
+        return baseMapper.selectList(Wrappers.<AppDemand>lambdaQuery()
+                .select(AppDemand::getDemandType))
+            .stream()
+            .collect(Collectors.groupingBy(
+                demand -> StringUtils.blankToDefault(demand.getDemandType(), "unknown"),
+                Collectors.counting()))
+            .entrySet()
+            .stream()
+            .map(entry -> new DemandTypeStat(entry.getKey(), entry.getValue()))
+            .sorted(Comparator.comparing(DemandTypeStat::value).reversed())
+            .toList();
+    }
+
+    @Override
+    public Long countPending() {
+        return baseMapper.selectCount(Wrappers.<AppDemand>lambdaQuery()
+            .eq(AppDemand::getStatus, "0"));
+    }
+
+    @Override
+    public List<Long> listRequesterIds() {
+        return baseMapper.selectList(Wrappers.<AppDemand>lambdaQuery()
+                .select(AppDemand::getRequesterId)
+                .isNotNull(AppDemand::getRequesterId))
+            .stream()
+            .map(AppDemand::getRequesterId)
+            .distinct()
+            .toList();
+    }
+
+    @Override
+    public List<DeptDemandStat> listDeptDemandStats() {
+        Map<Long, Long> grouped = baseMapper.selectList(Wrappers.<AppDemand>lambdaQuery()
+                .select(AppDemand::getCreateDept))
+            .stream()
+            .filter(demand -> demand.getCreateDept() != null)
+            .collect(Collectors.groupingBy(AppDemand::getCreateDept, Collectors.counting()));
+        return grouped.entrySet()
+            .stream()
+            .map(entry -> new DeptDemandStat(entry.getKey(), entry.getValue()))
+            .sorted(Comparator.comparing(DeptDemandStat::value).reversed())
+            .toList();
     }
 
     private AppDemandVo toVo(AppDemand entity) {

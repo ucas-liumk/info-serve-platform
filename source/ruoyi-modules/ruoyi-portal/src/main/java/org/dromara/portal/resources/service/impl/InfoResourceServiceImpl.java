@@ -41,12 +41,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -776,5 +781,65 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     @Override
     public Long sumPortalVisits() {
         return baseMapper.sumPortalVisits();
+    }
+
+    @Override
+    public List<ResourceUsageRank> listPortalUsageTop(int limit) {
+        int size = Math.max(0, Math.min(limit, 20));
+        if (size == 0) {
+            return List.of();
+        }
+        Map<Long, String> categoryNames = categoryMapper.selectList(null).stream()
+            .collect(Collectors.toMap(InfoResourceCategory::getCategoryId, InfoResourceCategory::getCategoryName, (left, right) -> left));
+        return baseMapper.selectList(Wrappers.<InfoResource>lambdaQuery()
+                .eq(InfoResource::getStatus, "0"))
+            .stream()
+            .sorted(Comparator.comparing((InfoResource resource) -> usageValue(resource)).reversed())
+            .limit(size)
+            .map(resource -> new ResourceUsageRank(
+                resource.getTitle(),
+                categoryNames.getOrDefault(resource.getCategoryId(), "未分类"),
+                usageValue(resource)))
+            .toList();
+    }
+
+    @Override
+    public List<Long> listPortalActorIds() {
+        Set<Long> actorIds = new LinkedHashSet<>();
+        baseMapper.selectList(Wrappers.<InfoResource>lambdaQuery()
+                .select(InfoResource::getCreateBy)
+                .eq(InfoResource::getStatus, "0")
+                .isNotNull(InfoResource::getCreateBy))
+            .forEach(resource -> actorIds.add(resource.getCreateBy()));
+        favoriteMapper.selectList(null).stream()
+            .map(InfoResourceFavorite::getUserId)
+            .filter(Objects::nonNull)
+            .forEach(actorIds::add);
+        return new ArrayList<>(actorIds);
+    }
+
+    @Override
+    public List<DeptResourceStat> listDeptResourceStats() {
+        return baseMapper.selectList(Wrappers.<InfoResource>lambdaQuery()
+                .select(InfoResource::getCreateDept, InfoResource::getViewCount, InfoResource::getDownloadCount)
+                .eq(InfoResource::getStatus, "0"))
+            .stream()
+            .filter(resource -> resource.getCreateDept() != null)
+            .collect(Collectors.groupingBy(
+                InfoResource::getCreateDept,
+                Collectors.summingLong(this::usageValue)))
+            .entrySet()
+            .stream()
+            .map(entry -> new DeptResourceStat(entry.getKey(), entry.getValue()))
+            .sorted(Comparator.comparing(DeptResourceStat::value).reversed())
+            .toList();
+    }
+
+    private Long usageValue(InfoResource resource) {
+        if (resource == null) {
+            return 0L;
+        }
+        return Optional.ofNullable(resource.getViewCount()).orElse(0L)
+            + Optional.ofNullable(resource.getDownloadCount()).orElse(0L);
     }
 }

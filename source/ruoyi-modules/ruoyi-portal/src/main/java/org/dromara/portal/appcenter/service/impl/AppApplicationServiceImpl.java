@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.portal.appcenter.domain.AppApplication;
+import org.dromara.portal.appcenter.domain.AppCategory;
 import org.dromara.portal.appcenter.domain.bo.AppApplicationBo;
 import org.dromara.portal.appcenter.domain.vo.AppApplicationVo;
 import org.dromara.portal.appcenter.domain.vo.AppPackageUploadVo;
 import org.dromara.portal.appcenter.mapper.AppApplicationMapper;
+import org.dromara.portal.appcenter.mapper.AppCategoryMapper;
 import org.dromara.portal.appcenter.service.IAppApplicationService;
 import org.dromara.portal.kernel.service.IPortalNotificationService;
 import org.dromara.common.core.exception.ServiceException;
@@ -22,13 +24,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
 public class AppApplicationServiceImpl implements IAppApplicationService {
 
     private final AppApplicationMapper baseMapper;
+    private final AppCategoryMapper categoryMapper;
     private final IPortalNotificationService notificationService;
 
     @DubboReference
@@ -231,5 +238,72 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
     public Long countPortalVisible() {
         return baseMapper.selectCount(Wrappers.<AppApplication>lambdaQuery()
             .eq(AppApplication::getStatus, "0"));
+    }
+
+    @Override
+    public Long sumPortalUseCount() {
+        return baseMapper.selectList(Wrappers.<AppApplication>lambdaQuery()
+                .select(AppApplication::getUseCount)
+                .eq(AppApplication::getStatus, "0"))
+            .stream()
+            .map(AppApplication::getUseCount)
+            .filter(value -> value != null)
+            .reduce(0L, Long::sum);
+    }
+
+    @Override
+    public List<AppUsageRank> listPortalUsageTop(int limit) {
+        int size = normalizeLimit(limit);
+        if (size == 0) {
+            return List.of();
+        }
+        Map<Long, String> categoryNames = categoryMapper.selectList(null).stream()
+            .collect(Collectors.toMap(AppCategory::getCategoryId, AppCategory::getCategoryName, (left, right) -> left));
+        return baseMapper.selectList(Wrappers.<AppApplication>lambdaQuery()
+                .eq(AppApplication::getStatus, "0"))
+            .stream()
+            .sorted(Comparator.comparing((AppApplication app) -> defaultLong(app.getUseCount())).reversed())
+            .limit(size)
+            .map(app -> new AppUsageRank(
+                app.getAppName(),
+                categoryNames.getOrDefault(app.getCategoryId(), "未分类"),
+                defaultLong(app.getUseCount())))
+            .toList();
+    }
+
+    @Override
+    public Long countPortalLowUsage(Long maxUseCount) {
+        long threshold = defaultLong(maxUseCount);
+        return baseMapper.selectList(Wrappers.<AppApplication>lambdaQuery()
+                .select(AppApplication::getUseCount)
+                .eq(AppApplication::getStatus, "0"))
+            .stream()
+            .filter(app -> defaultLong(app.getUseCount()) <= threshold)
+            .count();
+    }
+
+    @Override
+    public List<DeptUsageStat> listDeptUsageStats() {
+        return baseMapper.selectList(Wrappers.<AppApplication>lambdaQuery()
+                .select(AppApplication::getCreateDept, AppApplication::getUseCount)
+                .eq(AppApplication::getStatus, "0"))
+            .stream()
+            .filter(app -> app.getCreateDept() != null)
+            .collect(Collectors.groupingBy(
+                AppApplication::getCreateDept,
+                Collectors.summingLong(app -> defaultLong(app.getUseCount()))))
+            .entrySet()
+            .stream()
+            .map(entry -> new DeptUsageStat(entry.getKey(), entry.getValue()))
+            .sorted(Comparator.comparing(DeptUsageStat::value).reversed())
+            .toList();
+    }
+
+    private int normalizeLimit(int limit) {
+        return Math.max(0, Math.min(limit, 20));
+    }
+
+    private Long defaultLong(Long value) {
+        return Optional.ofNullable(value).orElse(0L);
     }
 }

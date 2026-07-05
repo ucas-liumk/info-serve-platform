@@ -9,6 +9,7 @@ import org.dromara.portal.forum.domain.vo.InfoForumReplyVo;
 import org.dromara.portal.forum.domain.vo.InfoForumTopicVo;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface IInfoForumService {
 
@@ -40,4 +41,16 @@ public interface IInfoForumService {
 
     /** 论坛活跃用户数（发帖或回帖去重，内核统计聚合用） */
     Long countActiveAuthors();
+
+    /** 论坛互动总量（应用态势聚合用） */
+    Long sumPortalInteractions();
+
+    /** 论坛活跃用户 ID（应用态势聚合用） */
+    List<Long> listActiveAuthorIds();
+
+    /** 按创建部门聚合的论坛互动量（应用态势聚合用） */
+    List<DeptForumStat> listDeptForumStats();
+
+    record DeptForumStat(Long deptId, Long value) {
+    }
 }

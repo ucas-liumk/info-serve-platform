@@ -217,6 +217,7 @@ const stats = ref<PortalStats>({
 const MODULE_ART: Record<string, string> = {
   resources: moduleResource,
   appcenter: moduleTools,
+  'usage-dashboard': moduleTools,
   qa: moduleQa,
   news: moduleHot,
   forum: moduleForum
@@ -226,6 +227,7 @@ const MODULE_ART: Record<string, string> = {
 const DEFAULT_MODULES: HomeModule[] = [
   { title: '资料共享', desc: '数据汇聚  共享共用', image: moduleResource, path: '/portal/resources' },
   { title: '工具即用', desc: '开箱即用  提升效率', image: moduleTools, path: '/portal/tools' },
+  { title: '应用态势', desc: '洞察系统应用  透明运行态势', image: moduleTools, path: '/portal/usage-dashboard' },
   { title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa },
   { title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot },
   { title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum' }

@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 public interface IInfoResourceService {
 
@@ -41,6 +42,15 @@ public interface IInfoResourceService {
     /** 资料浏览+下载总量（内核统计聚合用） */
     Long sumPortalVisits();
 
+    /** 门户资料流动排行（应用态势聚合用） */
+    List<ResourceUsageRank> listPortalUsageTop(int limit);
+
+    /** 门户资料参与用户（应用态势聚合用） */
+    List<Long> listPortalActorIds();
+
+    /** 按创建部门聚合的资料流动量（应用态势聚合用） */
+    List<DeptResourceStat> listDeptResourceStats();
+
     Boolean insertByBo(InfoResourceBo bo);
 
     Boolean insertPortalByBo(InfoResourceBo bo);
@@ -56,4 +66,10 @@ public interface IInfoResourceService {
     Boolean deleteOwnById(Long resourceId);
 
     Boolean deleteWithValidByIds(Collection<Long> ids);
+
+    record ResourceUsageRank(String name, String categoryName, Long value) {
+    }
+
+    record DeptResourceStat(Long deptId, Long value) {
+    }
 }

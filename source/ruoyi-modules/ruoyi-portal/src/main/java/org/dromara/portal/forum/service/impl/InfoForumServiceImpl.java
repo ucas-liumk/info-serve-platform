@@ -31,12 +31,15 @@ import org.dromara.portal.kernel.support.InfoUserDisplayNameResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -322,5 +325,57 @@ public class InfoForumServiceImpl implements IInfoForumService {
     @Override
     public Long countActiveAuthors() {
         return topicMapper.countActiveAuthors();
+    }
+
+    @Override
+    public Long sumPortalInteractions() {
+        return topicMapper.selectList(Wrappers.<InfoForumTopic>lambdaQuery()
+                .select(InfoForumTopic::getViewCount, InfoForumTopic::getReplyCount, InfoForumTopic::getLikeCount)
+                .eq(InfoForumTopic::getStatus, "0"))
+            .stream()
+            .map(this::interactionValue)
+            .reduce(0L, Long::sum);
+    }
+
+    @Override
+    public List<Long> listActiveAuthorIds() {
+        Set<Long> authorIds = new LinkedHashSet<>();
+        topicMapper.selectList(Wrappers.<InfoForumTopic>lambdaQuery()
+                .select(InfoForumTopic::getAuthorId)
+                .eq(InfoForumTopic::getStatus, "0")
+                .isNotNull(InfoForumTopic::getAuthorId))
+            .forEach(topic -> authorIds.add(topic.getAuthorId()));
+        replyMapper.selectList(Wrappers.<InfoForumReply>lambdaQuery()
+                .select(InfoForumReply::getAuthorId)
+                .eq(InfoForumReply::getStatus, "0")
+                .isNotNull(InfoForumReply::getAuthorId))
+            .forEach(reply -> authorIds.add(reply.getAuthorId()));
+        return new ArrayList<>(authorIds);
+    }
+
+    @Override
+    public List<DeptForumStat> listDeptForumStats() {
+        return topicMapper.selectList(Wrappers.<InfoForumTopic>lambdaQuery()
+                .select(InfoForumTopic::getCreateDept, InfoForumTopic::getViewCount, InfoForumTopic::getReplyCount, InfoForumTopic::getLikeCount)
+                .eq(InfoForumTopic::getStatus, "0"))
+            .stream()
+            .filter(topic -> topic.getCreateDept() != null)
+            .collect(Collectors.groupingBy(
+                InfoForumTopic::getCreateDept,
+                Collectors.summingLong(this::interactionValue)))
+            .entrySet()
+            .stream()
+            .map(entry -> new DeptForumStat(entry.getKey(), entry.getValue()))
+            .sorted(Comparator.comparing(DeptForumStat::value).reversed())
+            .toList();
+    }
+
+    private Long interactionValue(InfoForumTopic topic) {
+        if (topic == null) {
+            return 0L;
+        }
+        return Optional.ofNullable(topic.getViewCount()).orElse(0L)
+            + Optional.ofNullable(topic.getReplyCount()).orElse(0L)
+            + Optional.ofNullable(topic.getLikeCount()).orElse(0L);
     }
 }
