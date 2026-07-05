@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "lint:eslint": "eslint",
     "lint:eslint:fix": "eslint --fix",
-    "prettier": "prettier --write ."
+    "prettier": "prettier --write .",
+    "design:audit": "node ../deploy/scripts/design-audit.mjs"
   },
   "repository": {
     "type": "git",

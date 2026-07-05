@@ -7,7 +7,8 @@ const setting: DefaultSettings = {
    */
   title: import.meta.env.VITE_APP_TITLE,
 
-  theme: '#409EFF',
+  /** 品牌主色 = 设计令牌 --ip-primary-600（正本 docs/design/design-system.md）；运行时会内联写入 :root */
+  theme: '#1260E8',
 
   /**
    * 侧边栏主题 深色主题theme-dark，浅色主题theme-light

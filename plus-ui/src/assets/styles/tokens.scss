@@ -1,0 +1,114 @@
+/**
+ * 设计令牌（唯一色彩/字阶/圆角/阴影来源）
+ * 正本规范：docs/design/design-system.md v1.0 —— 本文件与规范一一对应，改其一必改其二。
+ * 门禁：npm run design:audit（硬编码色值棘轮基线）。
+ */
+:root {
+  /* ===== 品牌蓝 Primary ===== */
+  --ip-primary-50: #f0f6ff;
+  --ip-primary-100: #e1edff;
+  --ip-primary-200: #bad5ff;
+  --ip-primary-300: #8fb7ff;
+  --ip-primary-400: #5e92f7;
+  --ip-primary-500: #3374ee;
+  --ip-primary-600: #1260e8; /* 基准 */
+  --ip-primary-700: #0e4cbf;
+  --ip-primary-800: #0c3d99;
+  --ip-primary-900: #0a2e73;
+
+  /* ===== 中性色 Neutral（蓝灰系） ===== */
+  --ip-neutral-0: #ffffff;
+  --ip-neutral-50: #f7faff;
+  --ip-neutral-100: #f0f4fb;
+  --ip-neutral-200: #e1e9f6;
+  --ip-neutral-300: #c9d5e8;
+  --ip-neutral-400: #8a97af;
+  --ip-neutral-500: #53668f;
+  --ip-neutral-600: #3c5078;
+  --ip-neutral-700: #25395f;
+  --ip-neutral-800: #172a4a;
+  --ip-neutral-900: #0b1833;
+
+  /* ===== 语义色 Semantic（base/soft/border 三值制） ===== */
+  --ip-success: #16a34a;
+  --ip-success-soft: #e7f6ee;
+  --ip-success-border: #b7e3c8;
+  --ip-warning: #d97706;
+  --ip-warning-soft: #fdf3e4;
+  --ip-warning-border: #f3d9ac;
+  --ip-danger: #d93026;
+  --ip-danger-soft: #fdebea;
+  --ip-danger-border: #f5c1bd;
+
+  /* ===== 模块识别色 Module Accent（同明度带；仅识别场景，禁用于行动元素） ===== */
+  --ip-mod-resources: #0e7a5f;
+  --ip-mod-resources-soft: #e6f4f0;
+  --ip-mod-resources-border: #b5ded2;
+  --ip-mod-appcenter: #b45309;
+  --ip-mod-appcenter-soft: #fbf1e5;
+  --ip-mod-appcenter-border: #ebd3b0;
+  --ip-mod-forum: #c0452c;
+  --ip-mod-forum-soft: #faece8;
+  --ip-mod-forum-border: #efc6bb;
+  --ip-mod-qa: #5b4fc9;
+  --ip-mod-qa-soft: #efedfb;
+  --ip-mod-qa-border: #ccc7ef;
+  --ip-mod-news: #c11b4b;
+  --ip-mod-news-soft: #fae8ed;
+  --ip-mod-news-border: #f0becd;
+
+  /* ===== 字阶（8 档，值/行高见规范 §3） ===== */
+  --ip-font-caption: 12px;
+  --ip-font-hint: 13px;
+  --ip-font-body: 14px;
+  --ip-font-emphasis: 16px;
+  --ip-font-title-sm: 20px;
+  --ip-font-title: 24px;
+  --ip-font-headline: 30px;
+  --ip-font-display: 38px;
+
+  /* ===== 圆角 / 阴影 / 动效 / 布局 ===== */
+  --ip-radius-sm: 6px;
+  --ip-radius-md: 10px;
+  --ip-radius-lg: 16px;
+  --ip-radius-full: 999px;
+  --ip-shadow-sm: 0 1px 2px rgba(11, 24, 51, 0.06);
+  --ip-shadow-md: 0 4px 12px rgba(11, 24, 51, 0.08);
+  --ip-shadow-lg: 0 12px 32px rgba(11, 24, 51, 0.12);
+  --ip-motion-fast: 120ms;
+  --ip-motion-base: 200ms;
+  --ip-motion-panel: 320ms;
+  --ip-motion-ease: cubic-bezier(0.2, 0, 0, 1);
+  --ip-layout-max: 1440px;
+  --ip-focus-ring: 0 0 0 2px var(--ip-neutral-0), 0 0 0 4px var(--ip-primary-300);
+
+  /* ===== Element Plus 主题对齐（后台与门户同源） ===== */
+  --el-color-primary: var(--ip-primary-600);
+  --el-color-primary-light-3: var(--ip-primary-400);
+  --el-color-primary-light-5: var(--ip-primary-300);
+  --el-color-primary-light-7: var(--ip-primary-200);
+  --el-color-primary-light-8: var(--ip-primary-100);
+  --el-color-primary-light-9: var(--ip-primary-50);
+  --el-color-primary-dark-2: var(--ip-primary-700);
+  --el-color-success: var(--ip-success);
+  --el-color-warning: var(--ip-warning);
+  --el-color-danger: var(--ip-danger);
+  --el-color-error: var(--ip-danger);
+  --el-color-info: var(--ip-neutral-500);
+  --el-text-color-primary: var(--ip-neutral-900);
+  --el-text-color-regular: var(--ip-neutral-700);
+  --el-text-color-secondary: var(--ip-neutral-500);
+  --el-text-color-placeholder: var(--ip-neutral-400);
+  --el-border-color: var(--ip-neutral-200);
+  --el-border-color-light: var(--ip-neutral-200);
+  --el-border-color-lighter: var(--ip-neutral-100);
+  --el-border-radius-base: var(--ip-radius-sm);
+  --el-box-shadow-light: var(--ip-shadow-md);
+}
+
+/* 全站统一可见焦点态（规范 §9）：禁止 outline:none 裸移除 */
+:where(a, button, [role='button'], input, select, textarea, .el-button):focus-visible {
+  outline: none;
+  box-shadow: var(--ip-focus-ring);
+  border-radius: var(--ip-radius-sm);
+}

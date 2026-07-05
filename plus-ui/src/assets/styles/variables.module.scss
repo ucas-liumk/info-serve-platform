@@ -341,10 +341,11 @@ $fixed-header-bg: var(--fixedHeaderBg);
 $table-header-bg: var(--tableHeaderBg);
 $table-header-text-color: var(--tableHeaderTextColor);
 
-$--color-primary: #409eff;
-$--color-success: #67c23a;
-$--color-warning: #e6a23c;
-$--color-danger: #f56c6c;
+/* 与设计令牌对齐（正本 docs/design/design-system.md；tokens.scss --ip-*） */
+$--color-primary: #1260e8;
+$--color-success: #16a34a;
+$--color-warning: #d97706;
+$--color-danger: #d93026;
 $--color-info: #909399;
 
 $base-sidebar-width: 200px;
