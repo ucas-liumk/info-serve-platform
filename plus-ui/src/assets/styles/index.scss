@@ -7,6 +7,8 @@
 @use './ruoyi.scss';
 @use 'animate.css';
 @use 'element-plus/dist/index.css';
+/* 设计令牌层：必须在 element-plus 之后引入，使 --el-* 主题覆盖生效（正本规范 docs/design/design-system.md） */
+@use './tokens.scss';
 
 body {
   height: 100%;

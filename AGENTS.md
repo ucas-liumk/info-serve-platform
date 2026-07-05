@@ -44,6 +44,7 @@
 | 任何后端 | Docker Maven 编译：`mvn -o -ntp -Pdev -DskipTests -pl <模块> -am compile`（Mac 内存紧，`-Xmx768m~1024m`） |
 | 涉及 ruoyi-portal | ArchUnit：`mvn -pl ruoyi-modules/ruoyi-portal -am -DskipTests=false test`（根 pom 默认 `skipTests=true`，必须显式关闭） |
 | 任何前端 | `cd plus-ui && npm run build:prod` 必绿 |
+| 前端样式/视觉 | `npm run design:audit` 必绿（设计令牌棘轮门禁）；新颜色/字号/圆角只允许用 `tokens.scss` 令牌，正本规范 `docs/design/design-system.md`；重大视觉改动前后跑 `deploy/scripts/ui-capture.py` 截图对比 |
 | deploy 文件 | `docker compose --env-file .env config --quiet`；shell 脚本 `bash -n` |
 | 行为面改动 | 本地栈冒烟：`APP_CENTER_BASE_URL=http://127.0.0.1:7010/prod-api node deploy/scripts/appcenter-v1-e2e.mjs` + 相关端点 curl |
 
