@@ -225,7 +225,7 @@ const MODULE_ART: Record<string, string> = {
 /** 注册表不可用时的兜底卡片（与种子数据一致） */
 const DEFAULT_MODULES: HomeModule[] = [
   { title: '资料共享', desc: '数据汇聚  共享共用', image: moduleResource, path: '/portal/resources' },
-  { title: '工具即用', desc: '开箱即用  提升效率', image: moduleTools, path: '/portal/tools' },
+  { title: '应用中心', desc: '应用聚合  即取即用', image: moduleTools, path: '/portal/tools' },
   { title: '智能问答', desc: '智慧问答  快速响应', image: moduleQa },
   { title: '时事热点', desc: '热点速递  洞察先机', image: moduleHot },
   { title: '服务论坛', desc: '交流互动  共建共治', image: moduleForum, path: '/portal/forum' }
@@ -253,10 +253,26 @@ const loadModules = async () => {
 
 const openModule = (item: HomeModule) => {
   if (item.path) {
+    if (/^https?:\/\//.test(item.path)) {
+      window.open(normalizeServiceUrl(item.path), '_blank');
+      return;
+    }
     router.push(item.path);
     return;
   }
   ElMessage.info(`${item.title}将在后续版本开放`);
+};
+
+const normalizeServiceUrl = (raw: string) => {
+  try {
+    const url = new URL(raw);
+    if (['127.0.0.1', 'localhost'].includes(url.hostname)) {
+      url.hostname = window.location.hostname;
+    }
+    return url.toString();
+  } catch {
+    return raw;
+  }
 };
 
 const openProfile = () => {

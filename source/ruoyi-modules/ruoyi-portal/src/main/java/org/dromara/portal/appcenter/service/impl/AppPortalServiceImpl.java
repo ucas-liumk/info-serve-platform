@@ -48,11 +48,15 @@ public class AppPortalServiceImpl implements IAppPortalService {
 
     @Override
     public List<AppCategoryVo> categories() {
+        Map<Long, Long> appCounts = applicationMapper.selectList(
+                Wrappers.<AppApplication>lambdaQuery().eq(AppApplication::getStatus, "0"))
+            .stream()
+            .collect(Collectors.groupingBy(AppApplication::getCategoryId, Collectors.counting()));
         return categoryMapper.selectList(
             Wrappers.<AppCategory>lambdaQuery()
                 .eq(AppCategory::getStatus, "0")
                 .orderByAsc(AppCategory::getOrderNum))
-            .stream().map(this::toCategoryVo).toList();
+            .stream().map(category -> toCategoryVo(category, appCounts.getOrDefault(category.getCategoryId(), 0L))).toList();
     }
 
     @Override
@@ -137,7 +141,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
             throw new ServiceException("应用不存在或已下架");
         }
         if ("offline".equals(resolveAppType(app.getAppType()))) {
-            throw new ServiceException("离线工具请下载安装包后使用");
+            throw new ServiceException("离线应用请下载安装包后使用");
         }
         applicationMapper.update(null, Wrappers.<AppApplication>lambdaUpdate()
             .setSql("use_count = COALESCE(use_count, 0) + 1").eq(AppApplication::getAppId, appId));
@@ -309,7 +313,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
         return demandService.deleteOwnById(demandId);
     }
 
-    private AppCategoryVo toCategoryVo(AppCategory entity) {
+    private AppCategoryVo toCategoryVo(AppCategory entity, Long appCount) {
         if (entity == null) {
             return null;
         }
@@ -320,6 +324,7 @@ public class AppPortalServiceImpl implements IAppPortalService {
         vo.setIcon(entity.getIcon());
         vo.setOrderNum(entity.getOrderNum());
         vo.setStatus(entity.getStatus());
+        vo.setAppCount(appCount);
         return vo;
     }
 

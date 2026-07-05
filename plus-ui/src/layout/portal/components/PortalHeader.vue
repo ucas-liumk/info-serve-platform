@@ -44,7 +44,7 @@ const props = withDefaults(
   {
     subtitle: '',
     eyebrow: '信息中心数智服务平台',
-    searchPlaceholder: '搜索资料、工具或话题',
+    searchPlaceholder: '搜索资料、应用或话题',
     showSearch: true,
     modelValue: ''
   }

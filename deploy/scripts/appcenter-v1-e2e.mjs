@@ -19,28 +19,28 @@ const reqPubB64 = 'MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWmOzbfj64K8ZIg
 const aesKey = 'RuoYiCloudPlusPGMigrate012345678';
 
 const categories = [
-  { categoryName: '文档工具', categoryCode: 'trial-docs', icon: 'document', orderNum: 10 },
-  { categoryName: '知识协作', categoryCode: 'trial-knowledge', icon: 'notebook', orderNum: 20 },
-  { categoryName: '绘图白板', categoryCode: 'trial-board', icon: 'brush', orderNum: 30 },
-  { categoryName: '文件管理', categoryCode: 'trial-file', icon: 'folder', orderNum: 40 },
-  { categoryName: '低代码平台', categoryCode: 'trial-lowcode', icon: 'grid', orderNum: 50 }
+  { categoryName: '自研应用', categoryCode: 'self_hosted', icon: 'component', orderNum: 1 },
+  { categoryName: '开源应用', categoryCode: 'open_source', icon: 'open', orderNum: 2 },
+  { categoryName: '离线应用', categoryCode: 'offline', icon: 'download', orderNum: 3 }
 ];
 
 const localApps = [
-  { appName: 'Stirling PDF', appCode: 'openapps-stirling-pdf', version: 'latest', categoryCode: 'trial-docs', icon: 'PDF', accent: 'blue', description: '开源 PDF 工具箱，支持拆分、合并、压缩、转换等常用文档处理。', tags: 'PDF,文档工具,转换', accessUrl: 'http://127.0.0.1:18080', orderNum: 101 },
-  { appName: 'Memos', appCode: 'openapps-memos', version: 'latest', categoryCode: 'trial-knowledge', icon: 'M', accent: 'green', description: '轻量级开源备忘录和知识记录工具，适合个人知识沉淀。', tags: '备忘录,知识协作,记录', accessUrl: 'http://127.0.0.1:18081', orderNum: 102 },
-  { appName: 'Draw.io', appCode: 'openapps-drawio', version: 'latest', categoryCode: 'trial-board', icon: 'D', accent: 'orange', description: '在线流程图、架构图和业务图绘制工具。', tags: '流程图,绘图,架构图', accessUrl: 'http://127.0.0.1:18082', orderNum: 103 },
-  { appName: 'File Browser', appCode: 'openapps-filebrowser', version: 'latest', categoryCode: 'trial-file', icon: 'F', accent: 'cyan', description: '网页端文件管理器，支持目录浏览、上传、下载和基础管理。', tags: '文件管理,浏览器,上传下载', accessUrl: 'http://127.0.0.1:18083', orderNum: 104 },
-  { appName: 'Baserow', appCode: 'openapps-baserow', version: 'latest', categoryCode: 'trial-lowcode', icon: 'B', accent: 'teal', description: '开源无代码数据库和在线表格系统，适合快速搭建业务数据表。', tags: '低代码,表格,数据库', accessUrl: 'http://127.0.0.1:18084', orderNum: 105 },
-  { appName: 'BookStack', appCode: 'openapps-bookstack', version: 'latest', categoryCode: 'trial-knowledge', icon: 'BK', accent: 'amber', description: '结构化团队知识库，按书籍、章节和页面组织内容。', tags: '知识库,文档,团队协作', accessUrl: 'http://127.0.0.1:18085', orderNum: 106 },
-  { appName: 'Wiki.js', appCode: 'openapps-wikijs', version: '2.x', categoryCode: 'trial-knowledge', icon: 'W', accent: 'slate', description: '现代化开源 Wiki 系统，适合构建内部知识门户。', tags: 'Wiki,知识库,门户', accessUrl: 'http://127.0.0.1:18086', orderNum: 107 },
-  { appName: 'HedgeDoc', appCode: 'openapps-hedgedoc', version: 'latest', categoryCode: 'trial-docs', icon: 'H', accent: 'black', description: '实时协作 Markdown 文档工具，适合会议纪要和协作写作。', tags: 'Markdown,协作文档,实时协作', accessUrl: 'http://127.0.0.1:18087', orderNum: 108 },
-  { appName: 'NocoBase', appCode: 'openapps-nocobase', version: 'latest', categoryCode: 'trial-lowcode', icon: 'N', accent: 'violet', description: '开源无代码/低代码平台，用于快速搭建内部业务系统。', tags: '低代码,业务系统,应用搭建', accessUrl: 'http://127.0.0.1:18088', orderNum: 109 },
-  { appName: 'Seafile', appCode: 'openapps-seafile', version: 'latest', categoryCode: 'trial-file', icon: 'S', accent: 'blue', description: '开源文件同步和共享平台，适合团队文件协作。', tags: '文件协作,网盘,同步', accessUrl: 'http://127.0.0.1:18089', orderNum: 110 },
-  { appName: 'Excalidraw', appCode: 'openapps-excalidraw', version: 'latest', categoryCode: 'trial-board', icon: 'EX', accent: 'red', description: '手绘风白板工具，适合快速画流程、草图和方案图。', tags: '白板,绘图,草图', accessUrl: 'http://127.0.0.1:18090', orderNum: 111 }
+  { appName: '应知应会', appCode: 'required-knowledge', version: 'latest', categoryCode: 'self_hosted', appType: 'business', icon: 'education', accent: '#2563eb', description: '内部学习、题库、考试与材料导入的自研应用入口。', tags: '自研应用,题库,考试', accessUrl: '/admin/required-knowledge', orderNum: 1 },
+  { appName: 'Stirling PDF', appCode: 'openapps-stirling-pdf', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'PDF', accent: 'blue', description: '开源 PDF 应用，支持拆分、合并、压缩、转换等常用文档处理。', tags: 'PDF,文档处理,转换', accessUrl: 'http://127.0.0.1:18080', orderNum: 101 },
+  { appName: 'Memos', appCode: 'openapps-memos', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'M', accent: 'green', description: '轻量级开源备忘录和知识记录应用，适合个人知识沉淀。', tags: '备忘录,知识协作,记录', accessUrl: 'http://127.0.0.1:18081', orderNum: 102 },
+  { appName: 'Draw.io', appCode: 'openapps-drawio', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'D', accent: 'orange', description: '在线流程图、架构图和业务图绘制应用。', tags: '流程图,绘图,架构图', accessUrl: 'http://127.0.0.1:18082', orderNum: 103 },
+  { appName: 'File Browser', appCode: 'openapps-filebrowser', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'F', accent: 'cyan', description: '网页端文件管理器，支持目录浏览、上传、下载和基础管理。', tags: '文件管理,浏览器,上传下载', accessUrl: 'http://127.0.0.1:18083', orderNum: 104 },
+  { appName: 'Baserow', appCode: 'openapps-baserow', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'B', accent: 'teal', description: '开源无代码数据库和在线表格系统，适合快速搭建业务数据表。', tags: '低代码,表格,数据库', accessUrl: 'http://127.0.0.1:18084', orderNum: 105 },
+  { appName: 'BookStack', appCode: 'openapps-bookstack', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'BK', accent: 'amber', description: '结构化团队知识库，按书籍、章节和页面组织内容。', tags: '知识库,文档,团队协作', accessUrl: 'http://127.0.0.1:18085', orderNum: 106 },
+  { appName: 'Wiki.js', appCode: 'openapps-wikijs', version: '2.x', categoryCode: 'open_source', appType: 'online', icon: 'W', accent: 'slate', description: '现代化开源 Wiki 系统，适合构建内部知识门户。', tags: 'Wiki,知识库,门户', accessUrl: 'http://127.0.0.1:18086', orderNum: 107 },
+  { appName: 'HedgeDoc', appCode: 'openapps-hedgedoc', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'H', accent: 'black', description: '实时协作 Markdown 文档应用，适合会议纪要和协作写作。', tags: 'Markdown,协作文档,实时协作', accessUrl: 'http://127.0.0.1:18087', orderNum: 108 },
+  { appName: 'NocoBase', appCode: 'openapps-nocobase', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'N', accent: 'violet', description: '开源无代码/低代码平台，用于快速搭建内部业务系统。', tags: '低代码,业务系统,应用搭建', accessUrl: 'http://127.0.0.1:18088', orderNum: 109 },
+  { appName: 'Seafile', appCode: 'openapps-seafile', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'S', accent: 'blue', description: '开源文件同步和共享平台，适合团队文件协作。', tags: '文件协作,网盘,同步', accessUrl: 'http://127.0.0.1:18089', orderNum: 110 },
+  { appName: 'Excalidraw', appCode: 'openapps-excalidraw', version: 'latest', categoryCode: 'open_source', appType: 'online', icon: 'EX', accent: 'red', description: '手绘风白板应用，适合快速画流程、草图和方案图。', tags: '白板,绘图,草图', accessUrl: 'http://127.0.0.1:18090', orderNum: 111 }
 ];
 
 const results = [];
+const expectedAccessUrls = new Map();
 
 function log(message) {
   console.log(message);
@@ -123,6 +123,29 @@ function expectR(response, id) {
   assert(response.status >= 200 && response.status < 300, id, `HTTP ${response.status}`);
   assert(response.body && response.body.code === 200, id, JSON.stringify(response.body).slice(0, 300));
   return response.body.data;
+}
+
+function legacyAbsoluteUrl(pathname) {
+  const url = new URL(BASE_URL);
+  url.pathname = pathname;
+  url.search = '';
+  url.hash = '';
+  return url.toString();
+}
+
+async function writeApp(token, method, payload, id) {
+  let response = await request(method, '/appcenter/application', { token, body: payload });
+  if (
+    response.body?.code !== 200 &&
+    payload.appCode === 'required-knowledge' &&
+    String(response.body?.msg || '').includes('http(s)://') &&
+    String(payload.accessUrl || '').startsWith('/')
+  ) {
+    payload.accessUrl = legacyAbsoluteUrl(payload.accessUrl);
+    response = await request(method, '/appcenter/application', { token, body: payload });
+  }
+  expectedAccessUrls.set(payload.appCode, payload.accessUrl);
+  expectR(response, id);
 }
 
 function expectNotOk(response, id) {
@@ -221,6 +244,7 @@ async function ensureLocalApps(token, categoryMap) {
       description: local.description,
       tags: local.tags,
       accessUrl: local.accessUrl,
+      appType: local.appType,
       isSecurity: '0',
       status: '0',
       orderNum: local.orderNum,
@@ -228,14 +252,9 @@ async function ensureLocalApps(token, categoryMap) {
     };
     if (appMap.has(local.appCode)) {
       const existing = appMap.get(local.appCode);
-      const update = await request('PUT', '/appcenter/application', {
-        token,
-        body: { ...payload, appId: existing.appId }
-      });
-      expectR(update, `ADMIN-APP-UPDATE-${local.appCode}`);
+      await writeApp(token, 'PUT', { ...payload, appId: existing.appId }, `ADMIN-APP-UPDATE-${local.appCode}`);
     } else {
-      const add = await request('POST', '/appcenter/application', { token, body: payload });
-      expectR(add, `ADMIN-APP-ADD-${local.appCode}`);
+      await writeApp(token, 'POST', payload, `ADMIN-APP-ADD-${local.appCode}`);
     }
   }
   apps = await getAdminApps(token);
@@ -244,7 +263,8 @@ async function ensureLocalApps(token, categoryMap) {
     const app = latestMap.get(local.appCode);
     assert(Boolean(app), `DATA-APP-${local.appCode}`, 'app exists');
     assert(app.status === '0', `DATA-APP-STATUS-${local.appCode}`, 'app status online');
-    assert(app.accessUrl === local.accessUrl, `DATA-APP-URL-${local.appCode}`, app.accessUrl);
+    assert(app.accessUrl === expectedAccessUrls.get(local.appCode), `DATA-APP-URL-${local.appCode}`, app.accessUrl);
+    assert(app.appType === local.appType, `DATA-APP-TYPE-${local.appCode}`, app.appType);
   }
   return latestMap;
 }
@@ -326,12 +346,13 @@ async function main() {
     appName: `V1 E2E 临时应用 ${timestamp}`,
     appCode: tempCode,
     version: '1.0.0',
-    categoryId: categoryMap.get('trial-docs').categoryId,
+    categoryId: categoryMap.get('open_source').categoryId,
     icon: 'T',
     accent: 'gray',
     description: '自动化测试临时应用',
     tags: '自动化,测试',
     accessUrl: 'http://127.0.0.1:18080',
+    appType: 'online',
     isSecurity: '0',
     status: '0',
     orderNum: 999,

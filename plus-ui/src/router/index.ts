@@ -52,7 +52,7 @@ export const constantRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/portal/resources/preview.vue'),
         meta: { title: '资料预览' }
       },
-      { path: 'tools', name: 'InfoTools', component: () => import('@/views/portal/tools/index.vue'), meta: { title: '工具即用' } },
+      { path: 'tools', name: 'InfoTools', component: () => import('@/views/portal/tools/index.vue'), meta: { title: '应用中心' } },
       { path: 'forum', name: 'InfoForum', component: () => import('@/views/portal/forum/index.vue'), meta: { title: '服务论坛' } }
     ]
   },
