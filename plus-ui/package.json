@@ -31,7 +31,7 @@
     "await-to-js": "3.0.0",
     "axios": "1.13.6",
     "crypto-js": "4.2.0",
-    "echarts": "6.0.0",
+    "echarts": "6.1.0",
     "element-plus": "2.13.5",
     "file-saver": "2.0.5",
     "highlight.js": "11.11.1",
