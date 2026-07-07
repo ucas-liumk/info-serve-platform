@@ -27,7 +27,7 @@ import org.dromara.portal.forum.mapper.InfoForumReplyMapper;
 import org.dromara.portal.forum.mapper.InfoForumTopicMapper;
 import org.dromara.portal.kernel.service.IPortalNotificationService;
 import org.dromara.portal.forum.service.IInfoForumService;
-import org.dromara.portal.kernel.support.InfoUserDisplayNameResolver;
+import org.dromara.portal.forum.support.ForumUserDisplayNameResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,7 +51,7 @@ public class InfoForumServiceImpl implements IInfoForumService {
     private final InfoForumBoardMapper boardMapper;
     private final InfoForumLikeMapper likeMapper;
     private final IPortalNotificationService notificationService;
-    private final InfoUserDisplayNameResolver userDisplayNameResolver;
+    private final ForumUserDisplayNameResolver userDisplayNameResolver;
 
     private LambdaQueryWrapper<InfoForumTopic> buildTopicWrapper(InfoForumTopicBo bo, boolean portal) {
         LambdaQueryWrapper<InfoForumTopic> w = Wrappers.lambdaQuery();

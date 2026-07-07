@@ -9,7 +9,7 @@ import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.satoken.utils.LoginHelper;
-import org.dromara.portal.kernel.support.InfoUserDisplayNameResolver;
+import org.dromara.portal.resources.support.ResourceUserDisplayNameResolver;
 import org.dromara.portal.resources.domain.InfoResourceNote;
 import org.dromara.portal.resources.domain.InfoResourceViewRecord;
 import org.dromara.portal.resources.domain.bo.InfoResourceNoteBo;
@@ -34,7 +34,7 @@ public class InfoResourceInteractionServiceImpl implements IInfoResourceInteract
     private final InfoResourceNoteMapper noteMapper;
     private final InfoResourceViewRecordMapper viewRecordMapper;
     private final IInfoResourceService resourceService;
-    private final InfoUserDisplayNameResolver userDisplayNameResolver;
+    private final ResourceUserDisplayNameResolver userDisplayNameResolver;
 
     @Override
     public TableDataInfo<InfoResourceNoteVo> myNotes(Long resourceId, PageQuery pageQuery) {

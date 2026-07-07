@@ -8,11 +8,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.dromara.portal.appcenter.domain.*;
 import org.dromara.portal.appcenter.domain.vo.AppCategoryVo;
-import org.dromara.portal.kernel.domain.vo.AppMessageVo;
 import org.dromara.portal.appcenter.domain.vo.PortalAppVo;
 import org.dromara.portal.appcenter.mapper.*;
-import org.dromara.portal.kernel.mapper.AppMessageMapper;
-import org.dromara.portal.kernel.domain.AppMessage;
 import org.dromara.portal.appcenter.service.impl.AppPortalServiceImpl;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -49,8 +46,6 @@ class AppPortalServiceImplTest {
     private AppFavoriteMapper favoriteMapper;
     @Mock
     private AppRecommendMapper recommendMapper;
-    @Mock
-    private AppMessageMapper messageMapper;
 
     @InjectMocks
     private AppPortalServiceImpl service;
@@ -554,89 +549,4 @@ class AppPortalServiceImplTest {
         verify(applicationMapper).selectPage(any(), any());
     }
 
-    // ============================================================
-    // messages()
-    // ============================================================
-
-    @Test
-    void messages_withIsReadFilter_shouldReturnPage() {
-        Page<AppMessage> msgPage = new Page<>(1, 10);
-        AppMessage msg = new AppMessage();
-        msg.setMessageId(1L);
-        msg.setTitle("Hello");
-        msgPage.setRecords(List.of(msg));
-        msgPage.setTotal(1);
-        when(messageMapper.selectPage(any(), any())).thenReturn(msgPage);
-
-        TableDataInfo<AppMessageVo> result = service.messages("0", pageQuery);
-
-        assertThat(result.getRows()).hasSize(1);
-        assertThat(result.getTotal()).isEqualTo(1);
-        verify(messageMapper).selectPage(any(), any());
-    }
-
-    @Test
-    void messages_withNoFilter_shouldReturnAllMessages() {
-        Page<AppMessage> msgPage = new Page<>(1, 10);
-        msgPage.setRecords(Collections.emptyList());
-        msgPage.setTotal(0);
-        when(messageMapper.selectPage(any(), any())).thenReturn(msgPage);
-
-        TableDataInfo<AppMessageVo> result = service.messages(null, pageQuery);
-
-        assertThat(result.getRows()).isEmpty();
-        verify(messageMapper).selectPage(any(), any());
-    }
-
-    // ============================================================
-    // unreadCount()
-    // ============================================================
-
-    @Test
-    void unreadCount_shouldReturnCountForCurrentUser() {
-        when(messageMapper.selectCount(any())).thenReturn(5L);
-
-        long result = service.unreadCount();
-
-        assertThat(result).isEqualTo(5L);
-        verify(messageMapper).selectCount(any());
-    }
-
-    @Test
-    void unreadCount_shouldReturnZeroWhenNoUnread() {
-        when(messageMapper.selectCount(any())).thenReturn(0L);
-
-        long result = service.unreadCount();
-
-        assertThat(result).isEqualTo(0L);
-    }
-
-    // ============================================================
-    // readMessage()
-    // ============================================================
-
-    @Test
-    void readMessage_shouldUpdateMessageScopedToCurrentUser() {
-        when(messageMapper.update(any(AppMessage.class), any())).thenReturn(1);
-
-        service.readMessage(10L);
-
-        verify(messageMapper).update(any(AppMessage.class), any());
-        // Confirm LoginHelper was called for userId scoping
-        loginHelperMock.verify(LoginHelper::getUserId);
-    }
-
-    @Test
-    void readMessage_shouldSetIsReadTo1() {
-        // Capture the AppMessage entity passed to update
-        org.mockito.ArgumentCaptor<AppMessage> captor =
-            org.mockito.ArgumentCaptor.forClass(AppMessage.class);
-        when(messageMapper.update(captor.capture(), any())).thenReturn(1);
-
-        service.readMessage(7L);
-
-        AppMessage captured = captor.getValue();
-        assertThat(captured.getMessageId()).isEqualTo(7L);
-        assertThat(captured.getIsRead()).isEqualTo("1");
-    }
 }

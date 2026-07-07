@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.dromara.portal.appcenter.domain.bo.AppDemandSubmitBo;
 import org.dromara.portal.appcenter.domain.vo.AppCategoryVo;
 import org.dromara.portal.appcenter.domain.vo.AppDemandVo;
-import org.dromara.portal.kernel.domain.vo.AppMessageVo;
 import org.dromara.portal.appcenter.domain.vo.PortalAppVo;
 import org.dromara.portal.appcenter.service.IAppPortalService;
 import org.dromara.common.core.domain.R;
@@ -77,34 +76,6 @@ public class AppPortalController extends BaseController {
     @GetMapping("/favorites")
     public TableDataInfo<PortalAppVo> favorites(PageQuery pageQuery) {
         return portalService.favorites(pageQuery);
-    }
-
-    @GetMapping("/messages")
-    public TableDataInfo<AppMessageVo> messages(@RequestParam(required = false) String isRead, PageQuery pageQuery) {
-        return portalService.messages(isRead, pageQuery);
-    }
-
-    @GetMapping("/messages/unreadCount")
-    public R<Long> unreadCount() {
-        return R.ok(portalService.unreadCount());
-    }
-
-    @PostMapping("/messages/{id}/read")
-    public R<Void> read(@PathVariable Long id) {
-        portalService.readMessage(id);
-        return R.ok();
-    }
-
-    @DeleteMapping("/messages/{id}")
-    public R<Void> deleteReadMessage(@PathVariable Long id) {
-        portalService.deleteReadMessage(id);
-        return R.ok();
-    }
-
-    @DeleteMapping("/messages/history/clear")
-    public R<Void> clearReadMessages() {
-        portalService.clearReadMessages();
-        return R.ok();
     }
 
     @RepeatSubmit

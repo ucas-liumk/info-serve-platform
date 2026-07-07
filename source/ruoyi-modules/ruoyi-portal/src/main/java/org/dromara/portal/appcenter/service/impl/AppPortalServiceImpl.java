@@ -7,9 +7,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.portal.appcenter.domain.*;
-import org.dromara.portal.kernel.domain.AppMessage;
-import org.dromara.portal.kernel.domain.vo.AppMessageVo;
-import org.dromara.portal.kernel.mapper.AppMessageMapper;
 import org.dromara.portal.appcenter.domain.bo.AppDemandSubmitBo;
 import org.dromara.portal.appcenter.domain.vo.*;
 import org.dromara.portal.appcenter.mapper.*;
@@ -49,7 +46,6 @@ public class AppPortalServiceImpl implements IAppPortalService {
     private final AppCategoryMapper categoryMapper;
     private final AppFavoriteMapper favoriteMapper;
     private final AppRecommendMapper recommendMapper;
-    private final AppMessageMapper messageMapper;
     private final IAppDemandService demandService;
 
     @DubboReference
@@ -261,61 +257,6 @@ public class AppPortalServiceImpl implements IAppPortalService {
     }
 
     @Override
-    public TableDataInfo<AppMessageVo> messages(String isRead, PageQuery pageQuery) {
-        Long userId = LoginHelper.getUserId();
-        Page<AppMessage> page = messageMapper.selectPage(pageQuery.build(),
-            Wrappers.<AppMessage>lambdaQuery()
-                .eq(AppMessage::getUserId, userId)
-                .eq(StringUtils.isNotBlank(isRead), AppMessage::getIsRead, isRead)
-                .orderByDesc(AppMessage::getCreateTime));
-        List<AppMessageVo> rows = page.getRecords().stream().map(this::toMessageVo).toList();
-        return new TableDataInfo<>(rows, page.getTotal());
-    }
-
-    @Override
-    public long unreadCount() {
-        Long userId = LoginHelper.getUserId();
-        return messageMapper.selectCount(Wrappers.<AppMessage>lambdaQuery()
-            .eq(AppMessage::getUserId, userId).eq(AppMessage::getIsRead, "0"));
-    }
-
-    @Override
-    public void readMessage(Long messageId) {
-        Long userId = LoginHelper.getUserId();
-        AppMessage up = new AppMessage();
-        up.setMessageId(messageId);
-        up.setIsRead("1");
-        messageMapper.update(up, Wrappers.<AppMessage>lambdaUpdate()
-            .eq(AppMessage::getMessageId, messageId).eq(AppMessage::getUserId, userId));
-    }
-
-    @Override
-    public void deleteReadMessage(Long messageId) {
-        Long userId = LoginHelper.getUserId();
-        AppMessage message = messageMapper.selectOne(Wrappers.<AppMessage>lambdaQuery()
-            .eq(AppMessage::getMessageId, messageId)
-            .eq(AppMessage::getUserId, userId));
-        if (message == null) {
-            throw new ServiceException("通知不存在");
-        }
-        if (!"1".equals(message.getIsRead())) {
-            throw new ServiceException("请先标记已读后再删除");
-        }
-        messageMapper.delete(Wrappers.<AppMessage>lambdaQuery()
-            .eq(AppMessage::getMessageId, messageId)
-            .eq(AppMessage::getUserId, userId)
-            .eq(AppMessage::getIsRead, "1"));
-    }
-
-    @Override
-    public void clearReadMessages() {
-        Long userId = LoginHelper.getUserId();
-        messageMapper.delete(Wrappers.<AppMessage>lambdaQuery()
-            .eq(AppMessage::getUserId, userId)
-            .eq(AppMessage::getIsRead, "1"));
-    }
-
-    @Override
     public Boolean submitDemand(AppDemandSubmitBo bo) {
         return demandService.submitFromPortal(bo);
     }
@@ -430,19 +371,5 @@ public class AppPortalServiceImpl implements IAppPortalService {
         return StringUtils.isBlank(remoteFile.getService())
             ? OssFactory.instance()
             : OssFactory.instance(remoteFile.getService());
-    }
-
-    private AppMessageVo toMessageVo(AppMessage entity) {
-        if (entity == null) {
-            return null;
-        }
-        AppMessageVo vo = new AppMessageVo();
-        vo.setMessageId(entity.getMessageId());
-        vo.setTitle(entity.getTitle());
-        vo.setContent(entity.getContent());
-        vo.setMsgType(entity.getMsgType());
-        vo.setIsRead(entity.getIsRead());
-        vo.setCreateTime(entity.getCreateTime());
-        return vo;
     }
 }

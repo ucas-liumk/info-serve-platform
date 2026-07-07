@@ -30,7 +30,7 @@ import org.dromara.portal.resources.mapper.InfoResourceMapper;
 import org.dromara.portal.resources.mapper.InfoResourceViewRecordMapper;
 import org.dromara.portal.kernel.service.IPortalNotificationService;
 import org.dromara.portal.resources.service.IInfoResourceService;
-import org.dromara.portal.kernel.support.InfoUserDisplayNameResolver;
+import org.dromara.portal.resources.support.ResourceUserDisplayNameResolver;
 import org.dromara.file.api.RemoteFileService;
 import org.dromara.file.api.domain.RemoteFile;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,7 +74,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     private final InfoResourceFavoriteMapper favoriteMapper;
     private final InfoResourceViewRecordMapper viewRecordMapper;
     private final IPortalNotificationService notificationService;
-    private final InfoUserDisplayNameResolver userDisplayNameResolver;
+    private final ResourceUserDisplayNameResolver userDisplayNameResolver;
 
     @DubboReference
     private RemoteFileService remoteFileService;

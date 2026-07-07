@@ -1,4 +1,4 @@
-package org.dromara.portal.kernel.support;
+package org.dromara.portal.forum.support;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class InfoUserDisplayNameResolver {
+public class ForumUserDisplayNameResolver {
 
     @DubboReference
     private RemoteUserService remoteUserService;
