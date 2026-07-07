@@ -15,6 +15,7 @@
         <module>ruoyi-portal-requiredknowledge</module>
         <module>ruoyi-portal-kernel</module>
         <module>ruoyi-portal-forum</module>
+        <module>ruoyi-portal-resources</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>

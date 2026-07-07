@@ -35,14 +35,9 @@ class BcBoundaryTest {
             .check(classes);
     }
 
-    @Test
-    void resources_should_not_depend_on_other_content_bcs() {
-        noClasses().that().resideInAPackage("org.dromara.portal.resources..")
-            .should().dependOnClassesThat().resideInAnyPackage(
-                "org.dromara.portal.appcenter..", "org.dromara.portal.forum..",
-                "org.dromara.portal.requiredknowledge..")
-            .check(classes);
-    }
+    // resources 已拆为独立服务 ruoyi-portal-resources（批次 A），其源包不再存在于本模块，
+    // 故删除以 resources 为主语的规则（ArchUnit 默认 failOnEmptyShould=true，空规则会判失败）；
+    // 其他规则仍将 resources 列为禁止依赖的目标包，作为防御性约束保留。
 
     // forum 已拆为独立服务 ruoyi-portal-forum（批次 A），其源包不再存在于本模块，
     // 故删除以 forum 为主语的规则（ArchUnit 默认 failOnEmptyShould=true，空规则会判失败）；

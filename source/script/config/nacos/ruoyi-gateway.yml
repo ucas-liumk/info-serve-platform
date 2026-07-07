@@ -79,6 +79,13 @@ spring:
               filters:
                 - StripPrefix=1
               order: -5
+            - id: portal-resources
+              uri: lb://portal-resources
+              predicates:
+                - Path=/infoservice/resource/**,/infoservice/portal/resources/**
+              filters:
+                - StripPrefix=1
+              order: -5
             - id: ruoyi-portal-appcenter
               uri: lb://ruoyi-portal
               predicates:

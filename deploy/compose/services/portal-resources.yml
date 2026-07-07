@@ -1,0 +1,37 @@
+name: infosys-ruoyi-cloud-plus
+services:
+  portal-resources:
+    image: ${PORTAL_RESOURCES_IMAGE}
+    container_name: infosys-ruoyi-cloud-plus-portal-resources
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: "8111"
+      SPRING_CLOUD_NACOS_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_USERNAME: ${NACOS_USERNAME}
+      SPRING_CLOUD_NACOS_PASSWORD: ${NACOS_PASSWORD}
+      NACOS_USERNAME: ${NACOS_USERNAME}
+      NACOS_PASSWORD: ${NACOS_PASSWORD}
+      JAVA_OPTS: >-
+        -Xms256m -Xmx768m
+        -Dspring.cloud.nacos.server-addr=nacos:8848
+        -Dspring.cloud.nacos.config.server-addr=nacos:8848
+        -Dspring.cloud.nacos.discovery.server-addr=nacos:8848
+        -Dspring.cloud.nacos.username=${NACOS_USERNAME}
+        -Dspring.cloud.nacos.password=${NACOS_PASSWORD}
+      INFOSERVICE_PREVIEW_CACHE_DIR: ${INFOSERVICE_PREVIEW_CACHE_DIR:-/ruoyi/portal/preview-cache}
+      INFOSERVICE_PREVIEW_CACHE_SOFFICE: ${INFOSERVICE_PREVIEW_CACHE_SOFFICE:-soffice}
+      INFOSERVICE_PREVIEW_CACHE_TIMEOUT_SECONDS: ${INFOSERVICE_PREVIEW_CACHE_TIMEOUT_SECONDS:-120}
+    volumes:
+      - ../logs/portal-resources:/app/logs
+      - ../data/preview-cache:/ruoyi/portal/preview-cache
+    networks:
+      - infosys-ruoyi-cloud-plus
+
+networks:
+  infosys-ruoyi-cloud-plus:
+    name: infosys-ruoyi-cloud-plus
+    external: true
