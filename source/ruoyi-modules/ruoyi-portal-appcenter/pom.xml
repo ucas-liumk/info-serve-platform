@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.dromara</groupId>
@@ -8,8 +8,9 @@
         <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>ruoyi-portal</artifactId>
-    <description>ruoyi-portal 门户业务服务（内核/应用中心/资料共享/服务论坛）</description>
+    <artifactId>ruoyi-portal-appcenter</artifactId>
+
+    <description>portal-appcenter 应用中心服务</description>
 
     <dependencies>
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-nacos</artifactId></dependency>
@@ -22,27 +23,14 @@
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-security</artifactId></dependency>
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-dubbo</artifactId></dependency>
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-oss</artifactId></dependency>
+        <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-redis</artifactId></dependency>
+        <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-portal-event</artifactId></dependency>
+        <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-api-portal-kernel</artifactId></dependency>
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-api-system</artifactId></dependency>
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-api-file</artifactId></dependency>
         <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-portal-event</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-api-portal-kernel</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- 限界上下文边界纪律（构建期强制），见 src/test/java/org/dromara/portal/arch -->
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5</artifactId>
-            <version>1.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -54,30 +42,22 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
-                <executions><execution><goals><goal>repackage</goal></goals></execution></executions>
+                <executions>
+                    <execution>
+                        <goals><goal>repackage</goal></goals>
+                    </execution>
+                </executions>
             </plugin>
+            <!-- 根 pom 用 <groups>${profiles.active}</groups> 仅跑带对应 @Tag 的用例；
+                 本模块从 ruoyi-portal 搬入的单测未打 @Tag，故沿用 ruoyi-portal 的覆盖策略，
+                 去掉 groups 限制，只按 @Tag("exclude") 排除。 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration combine.self="override">
-                    <argLine>@{argLine} -Dfile.encoding=UTF-8</argLine>
+                    <argLine>-Dfile.encoding=UTF-8</argLine>
                     <excludedGroups>exclude</excludedGroups>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
-                <executions>
-                    <execution>
-                        <goals><goal>prepare-agent</goal></goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>test</phase>
-                        <goals><goal>report</goal></goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

@@ -263,33 +263,6 @@ services:
     networks:
       - infosys-ruoyi-cloud-plus
 
-  ruoyi-portal:
-    image: ${PORTAL_IMAGE}
-    container_name: infosys-ruoyi-cloud-plus-portal
-    restart: unless-stopped
-    environment:
-      <<: *ruoyi-env
-      SERVER_PORT: 8107
-      INFOSERVICE_PREVIEW_CACHE_DIR: ${INFOSERVICE_PREVIEW_CACHE_DIR:-/ruoyi/portal/preview-cache}
-      INFOSERVICE_PREVIEW_CACHE_SOFFICE: ${INFOSERVICE_PREVIEW_CACHE_SOFFICE:-soffice}
-      INFOSERVICE_PREVIEW_CACHE_TIMEOUT_SECONDS: ${INFOSERVICE_PREVIEW_CACHE_TIMEOUT_SECONDS:-120}
-    volumes:
-      - ../logs/portal:/app/logs
-      - ../data/preview-cache:/ruoyi/portal/preview-cache
-    depends_on:
-      nacos:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      ruoyi-file:
-        condition: service_started
-    networks:
-      - infosys-ruoyi-cloud-plus
-
   ruoyi-file:
     image: ${FILE_IMAGE}
     container_name: infosys-ruoyi-cloud-plus-file

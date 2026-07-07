@@ -43,9 +43,9 @@ build_java_image() {
     "${SOURCE_DIR}/ruoyi-visual/ruoyi-monitor" \
     "target/ruoyi-monitor.jar"
 
-  build_java_image "infosys/ruoyi-cloud-plus-portal:2.6.2" \
-    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal" \
-    "target/ruoyi-portal.jar"
+  build_java_image "infosys/ruoyi-cloud-plus-portal-appcenter:2.6.2" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-appcenter" \
+    "target/ruoyi-portal-appcenter.jar"
 
   build_java_image "infosys/ruoyi-cloud-plus-portal-requiredknowledge:2.6.2" \
     "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-requiredknowledge" \

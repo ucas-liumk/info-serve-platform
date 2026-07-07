@@ -1,20 +1,13 @@
 # Tomcat
 server:
-  port: 8107
+  port: 8106
 
 # Spring
 spring:
   application:
-    name: ruoyi-portal
+    name: portal-appcenter
   profiles:
     active: @profiles.active@
-
-# 资料共享 PDF 预览转换缓存配置
-infoservice:
-  preview-cache:
-    dir: ${INFOSERVICE_PREVIEW_CACHE_DIR:/ruoyi/portal/preview-cache}
-    soffice: ${INFOSERVICE_PREVIEW_CACHE_SOFFICE:soffice}
-    timeout-seconds: ${INFOSERVICE_PREVIEW_CACHE_TIMEOUT_SECONDS:120}
 
 --- # nacos 配置
 spring:
