@@ -70,14 +70,11 @@ class BcBoundaryTest {
     }
 
     @Test
-    void content_bcs_should_only_touch_kernel_service_interfaces() {
+    void content_bcs_should_not_depend_on_kernel_at_all() {
         noClasses().that().resideInAnyPackage(
                 "org.dromara.portal.appcenter..", "org.dromara.portal.resources..",
                 "org.dromara.portal.forum..", "org.dromara.portal.requiredknowledge..")
-            .should().dependOnClassesThat().resideInAnyPackage(
-                "org.dromara.portal.kernel.domain..", "org.dromara.portal.kernel.mapper..",
-                "org.dromara.portal.kernel.service.impl..", "org.dromara.portal.kernel.controller..",
-                "org.dromara.portal.kernel.support..")
+            .should().dependOnClassesThat().resideInAPackage("org.dromara.portal.kernel..")
             .check(classes);
     }
 }

@@ -25,7 +25,9 @@ import org.dromara.portal.forum.mapper.InfoForumBoardMapper;
 import org.dromara.portal.forum.mapper.InfoForumLikeMapper;
 import org.dromara.portal.forum.mapper.InfoForumReplyMapper;
 import org.dromara.portal.forum.mapper.InfoForumTopicMapper;
-import org.dromara.portal.kernel.service.IPortalNotificationService;
+import org.dromara.common.portalevent.publisher.PortalEventPublisher;
+import org.dromara.portal.api.event.PortalEventConstants;
+import org.dromara.portal.api.event.PortalNotificationEvent;
 import org.dromara.portal.forum.service.IInfoForumService;
 import org.dromara.portal.forum.support.ForumUserDisplayNameResolver;
 import org.springframework.stereotype.Service;
@@ -50,7 +52,7 @@ public class InfoForumServiceImpl implements IInfoForumService {
     private final InfoForumReplyMapper replyMapper;
     private final InfoForumBoardMapper boardMapper;
     private final InfoForumLikeMapper likeMapper;
-    private final IPortalNotificationService notificationService;
+    private final PortalEventPublisher eventPublisher;
     private final ForumUserDisplayNameResolver userDisplayNameResolver;
 
     private LambdaQueryWrapper<InfoForumTopic> buildTopicWrapper(InfoForumTopicBo bo, boolean portal) {
@@ -273,12 +275,14 @@ public class InfoForumServiceImpl implements IInfoForumService {
         }
         String author = StringUtils.defaultIfBlank(reply.getAuthorName(), "用户");
         String excerpt = StringUtils.substring(StringUtils.trimToEmpty(reply.getContent()), 0, 80);
-        notificationService.sendToUsers(
-            recipients,
-            "论坛有新回复：" + topic.getTitle(),
-            author + " 回复了话题“" + topic.getTitle() + "”：" + excerpt,
-            "forum"
-        );
+        eventPublisher.publishNotification(
+            PortalEventConstants.RK_FORUM_REPLY_CREATED,
+            PortalNotificationEvent.toUsers(
+                "forum",
+                "论坛有新回复：" + topic.getTitle(),
+                author + " 回复了话题“" + topic.getTitle() + "”：" + excerpt,
+                java.util.List.copyOf(recipients)
+            ));
     }
 
     private void addRecipient(Set<Long> recipients, Long userId, Long currentUserId) {

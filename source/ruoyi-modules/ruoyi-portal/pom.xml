@@ -24,6 +24,10 @@
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-common-oss</artifactId></dependency>
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-api-system</artifactId></dependency>
         <dependency><groupId>org.dromara</groupId><artifactId>ruoyi-api-file</artifactId></dependency>
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-portal-event</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

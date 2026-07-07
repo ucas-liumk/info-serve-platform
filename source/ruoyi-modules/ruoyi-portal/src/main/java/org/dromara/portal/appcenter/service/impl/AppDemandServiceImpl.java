@@ -12,7 +12,9 @@ import org.dromara.portal.appcenter.domain.vo.AppDemandVo;
 import org.dromara.portal.appcenter.mapper.AppApplicationMapper;
 import org.dromara.portal.appcenter.mapper.AppDemandMapper;
 import org.dromara.portal.appcenter.service.IAppDemandService;
-import org.dromara.portal.kernel.service.IPortalNotificationService;
+import org.dromara.common.portalevent.publisher.PortalEventPublisher;
+import org.dromara.portal.api.event.PortalEventConstants;
+import org.dromara.portal.api.event.PortalNotificationEvent;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -31,7 +33,7 @@ public class AppDemandServiceImpl implements IAppDemandService {
 
     private final AppDemandMapper baseMapper;
     private final AppApplicationMapper applicationMapper;
-    private final IPortalNotificationService notificationService;
+    private final PortalEventPublisher eventPublisher;
 
     private LambdaQueryWrapper<AppDemand> buildWrapper(AppDemandBo bo) {
         LambdaQueryWrapper<AppDemand> w = Wrappers.lambdaQuery();
@@ -150,12 +152,14 @@ public class AppDemandServiceImpl implements IAppDemandService {
     }
 
     private void sendHandleMessage(AppDemand demand, String handleRemark) {
-        notificationService.sendToUser(
-            demand.getRequesterId(),
-            "需求反馈已回复",
-            "你提交的“" + StringUtils.blankToDefault(demand.getAppName(), "需求反馈") + "”已有管理员回复：" + handleRemark,
-            "demand"
-        );
+        eventPublisher.publishNotification(
+            PortalEventConstants.RK_APPCENTER_DEMAND_REPLIED,
+            PortalNotificationEvent.toUsers(
+                "demand",
+                "需求反馈已回复",
+                "你提交的“" + StringUtils.blankToDefault(demand.getAppName(), "需求反馈") + "”已有管理员回复：" + handleRemark,
+                java.util.List.of(demand.getRequesterId())
+            ));
     }
 
     @Override

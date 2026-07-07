@@ -28,7 +28,9 @@ import org.dromara.portal.resources.mapper.InfoResourceCategoryMapper;
 import org.dromara.portal.resources.mapper.InfoResourceFavoriteMapper;
 import org.dromara.portal.resources.mapper.InfoResourceMapper;
 import org.dromara.portal.resources.mapper.InfoResourceViewRecordMapper;
-import org.dromara.portal.kernel.service.IPortalNotificationService;
+import org.dromara.common.portalevent.publisher.PortalEventPublisher;
+import org.dromara.portal.api.event.PortalEventConstants;
+import org.dromara.portal.api.event.PortalNotificationEvent;
 import org.dromara.portal.resources.service.IInfoResourceService;
 import org.dromara.portal.resources.support.ResourceUserDisplayNameResolver;
 import org.dromara.file.api.RemoteFileService;
@@ -73,7 +75,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     private final InfoResourceCategoryMapper categoryMapper;
     private final InfoResourceFavoriteMapper favoriteMapper;
     private final InfoResourceViewRecordMapper viewRecordMapper;
-    private final IPortalNotificationService notificationService;
+    private final PortalEventPublisher eventPublisher;
     private final ResourceUserDisplayNameResolver userDisplayNameResolver;
 
     @DubboReference
@@ -701,11 +703,13 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         }
         String uploader = userDisplayNameResolver.currentUserDisplayName("用户");
         String fileName = StringUtils.defaultIfBlank(resource.getOriginalName(), resource.getTitle());
-        notificationService.sendToAllUsers(
-            "新增资源：" + resource.getTitle(),
-            uploader + " 上传了新资源“" + resource.getTitle() + "”（" + fileName + "），可前往资料共享中查看。",
-            "resource"
-        );
+        eventPublisher.publishNotification(
+            PortalEventConstants.RK_RESOURCES_ITEM_PUBLISHED,
+            PortalNotificationEvent.toAll(
+                "resource",
+                "新增资源：" + resource.getTitle(),
+                uploader + " 上传了新资源“" + resource.getTitle() + "”（" + fileName + "），可前往资料共享中查看。"
+            ));
     }
 
     private boolean isActiveFilter(String value) {

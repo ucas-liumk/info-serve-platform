@@ -13,7 +13,9 @@ import org.dromara.portal.appcenter.domain.vo.AppPackageUploadVo;
 import org.dromara.portal.appcenter.mapper.AppAccessScopeMapper;
 import org.dromara.portal.appcenter.mapper.AppApplicationMapper;
 import org.dromara.portal.appcenter.service.IAppApplicationService;
-import org.dromara.portal.kernel.service.IPortalNotificationService;
+import org.dromara.common.portalevent.publisher.PortalEventPublisher;
+import org.dromara.portal.api.event.PortalEventConstants;
+import org.dromara.portal.api.event.PortalNotificationEvent;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -47,7 +49,7 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
 
     private final AppApplicationMapper baseMapper;
     private final AppAccessScopeMapper accessScopeMapper;
-    private final IPortalNotificationService notificationService;
+    private final PortalEventPublisher eventPublisher;
 
     @DubboReference
     private RemoteFileService remoteFileService;
@@ -375,11 +377,13 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
             return;
         }
         String version = StringUtils.isBlank(app.getVersion()) ? "" : " " + app.getVersion();
-        notificationService.sendToAllUsers(
-            "应用上架：" + app.getAppName(),
-            "应用中心已上架“" + app.getAppName() + "”" + version + "，可前往应用中心打开使用。",
-            "app"
-        );
+        eventPublisher.publishNotification(
+            PortalEventConstants.RK_APPCENTER_APP_PUBLISHED,
+            PortalNotificationEvent.toAll(
+                "app",
+                "应用上架：" + app.getAppName(),
+                "应用中心已上架“" + app.getAppName() + "”" + version + "，可前往应用中心打开使用。"
+            ));
     }
 
     @Override
