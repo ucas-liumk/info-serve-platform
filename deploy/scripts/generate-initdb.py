@@ -81,7 +81,7 @@ def generate_nacos_update_sql() -> None:
             )
     # 基线（上游 ry-config.sql）中无行的配置需 INSERT(MySQL ry-config 为 Nacos 存储)：
     # 新增服务 + 改名后的服务（基线只有旧 data_id）
-    new_configs = ["ruoyi-portal.yml", "ruoyi-file.yml", "portal-requiredknowledge.yml", "portal-kernel.yml"]
+    new_configs = ["ruoyi-portal.yml", "ruoyi-file.yml", "portal-requiredknowledge.yml", "portal-kernel.yml", "portal-forum.yml"]
     for name in new_configs:
         path = config_dir / name
         for tenant in ("dev", "prod"):

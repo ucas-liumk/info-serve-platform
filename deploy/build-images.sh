@@ -57,4 +57,8 @@ build_java_image() {
   build_java_image "infosys/ruoyi-cloud-plus-portal-kernel:2.6.2" \
     "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-kernel" \
     "target/ruoyi-portal-kernel.jar"
+
+  build_java_image "infosys/ruoyi-cloud-plus-portal-forum:2.6.2" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-forum" \
+    "target/ruoyi-portal-forum.jar"
 } 2>&1 | tee "${LOG_DIR}/docker-build-images.log"

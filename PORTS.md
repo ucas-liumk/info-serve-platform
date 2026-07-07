@@ -45,10 +45,11 @@
 | Gateway | `8180` | `source/ruoyi-gateway/src/main/resources/application.yml` | 后端统一入口 |
 | Auth | `8110` | `source/ruoyi-auth/src/main/resources/application.yml` | 认证服务 |
 | System | `8101` | `source/ruoyi-modules/ruoyi-system/src/main/resources/application.yml` | 系统管理 |
-| Portal | `8107` | `source/ruoyi-modules/ruoyi-portal/src/main/resources/application.yml` | ruoyi-portal（拆分过渡中，仅剩 appcenter/forum/resources） |
+| Portal | `8107` | `source/ruoyi-modules/ruoyi-portal/src/main/resources/application.yml` | ruoyi-portal（拆分过渡中，仅剩 appcenter/resources） |
 | Portal-Kernel | `8107` | `source/ruoyi-modules/ruoyi-portal-kernel/src/main/resources/application.yml` | 门户内核服务（统计/消息/模块注册表；原 ruoyi-portal 8107 移交） |
 | File | `8114` | `source/ruoyi-modules/ruoyi-file/src/main/resources/application.yml` | 文件服务（由 ruoyi-resource 改名）；避开本机占用的 `8104` |
 | Portal-RequiredKnowledge | `8109` | `source/ruoyi-modules/ruoyi-portal-requiredknowledge/src/main/resources/application.yml` | 应知应会服务（批次 A 自 portal 拆出） |
+| Portal-Forum | `8108` | `source/ruoyi-modules/ruoyi-portal-forum/src/main/resources/application.yml` | 服务论坛服务（批次 A 拆出） |
 | Monitor | `8190` | `source/ruoyi-visual/ruoyi-monitor/src/main/resources/application.yml` | Spring Boot Admin |
 
 已移除的服务（gen `8102`、workflow `8105`、job `8113`、gateway-mvc `8181`、demo `8121`、test-mq `8122`、snailjob `8191-8193`、seata `8194`）不再占用端口，compose 中对应条目已删除。

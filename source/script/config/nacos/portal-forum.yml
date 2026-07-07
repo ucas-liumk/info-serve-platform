@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    dynamic:
+      primary: master
+      datasource:
+        master:
+          type: ${spring.datasource.type}
+          driver-class-name: org.postgresql.Driver
+          url: ${datasource.system-master.url}
+          username: ${datasource.system-master.username}
+          password: ${datasource.system-master.password}
+mybatis-plus:
+  mapper-package: org.dromara.portal.forum.**.mapper
+  type-aliases-package: org.dromara.portal.forum.**.domain
