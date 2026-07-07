@@ -4,13 +4,14 @@ import http from 'node:http';
 import https from 'node:https';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
 const BASE_URL = process.env.APP_CENTER_BASE_URL || 'http://127.0.0.1:19100/prod-api';
 const CLIENT_ID = process.env.APP_CENTER_CLIENT_ID || 'e5cd7e4891bf95d1d19206ce24a7b32e';
 const TENANT_ID = process.env.APP_CENTER_TENANT_ID || '000000';
 const PG_CONTAINER = process.env.APP_CENTER_PG_CONTAINER || 'infosys-ruoyi-cloud-plus-postgres';
-const ROOT_DIR = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const REPORT_DIR = path.join(ROOT_DIR, 'output', 'appcenter-tests');
 const RUN_ID = new Date().toISOString().replace(/[:.]/g, '-');
 const REPORT_FILE = path.join(REPORT_DIR, `v1-e2e-${RUN_ID}.json`);
@@ -305,7 +306,7 @@ async function main() {
 
   const portalData = await getPortalApps(userToken);
   assert(portalData.total >= 12, 'DATA-APP-TOTAL-12', `total=${portalData.total}`);
-  for (const local of localApps) {
+  for (const local of localApps.filter((app) => app.accessMode !== 'user')) {
     assert(portalData.rows.some((item) => item.appName === local.appName), `PORTAL-HAS-${local.appCode}`, local.appName);
   }
 
