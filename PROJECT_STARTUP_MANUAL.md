@@ -262,9 +262,13 @@ JDK 17
 | 认证 | `org.dromara.auth.RuoYiAuthApplication` | `8110` |
 | 系统 | `org.dromara.system.RuoYiSystemApplication` | `8101` |
 | 文件 | `org.dromara.file.RuoYiFileApplication` | `8114` |
-| 门户业务 | `org.dromara.portal.RuoYiPortalApplication` | `8107` |
+| 门户内核 | `org.dromara.portal.kernel.PortalKernelApplication` | `8107` |
+| 应用中心 | `org.dromara.portal.appcenter.PortalAppcenterApplication` | `8106` |
+| 服务论坛 | `org.dromara.portal.forum.PortalForumApplication` | `8108` |
+| 应知应会 | `org.dromara.portal.requiredknowledge.PortalRequiredKnowledgeApplication` | `8109` |
+| 资料共享 | `org.dromara.portal.resources.PortalResourcesApplication` | `8111` |
 
-（应用中心与信息服务已合并为门户业务服务 ruoyi-portal；代码生成 / 工作流 / 定时任务已移出源码。）
+（批次 A 起，门户五个限界上下文已各自拆为独立服务；代码生成 / 工作流 / 定时任务已移出源码。）
 
 日常开发不一定全部启动。建议优先启动：
 
@@ -273,10 +277,11 @@ ruoyi-gateway
 ruoyi-auth
 ruoyi-system
 ruoyi-file
-ruoyi-portal
+ruoyi-portal-kernel
+（再按需启动你在改的门户业务服务：portal-appcenter / portal-forum / portal-requiredknowledge / portal-resources）
 ```
 
-如果 Docker Compose 已经把这些服务作为容器启动了，IDEA 中只启动你正在修改的那个服务即可。否则会端口冲突。
+门户内核（portal-kernel）承载消息、统计聚合等公共能力，建议常开；其余四个门户业务服务按需启动。如果 Docker Compose 已经把这些服务作为容器启动了，IDEA 中只启动你正在修改的那个服务即可，否则会端口冲突。
 
 ### 开发阶段推荐启动方式
 
@@ -289,7 +294,7 @@ cd E:\gallant-dev\active\info-serve\source
 只检查某个服务和它依赖的模块能否编译：
 
 ```powershell
-mvn -pl ruoyi-modules/ruoyi-portal -am -DskipTests -Pdev compile
+mvn -pl ruoyi-modules/ruoyi-portal-kernel -am -DskipTests -Pdev compile
 ```
 
 第一次在新机器上用 Maven 源码启动服务前，先把本项目内部依赖安装到本机 Maven 仓库：
@@ -315,8 +320,11 @@ mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:r
 cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-file
 mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
 
-cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-portal
+cd E:\gallant-dev\active\info-serve\source\ruoyi-modules\ruoyi-portal-kernel
 mvn -DskipTests -Pdev org.springframework.boot:spring-boot-maven-plugin:3.5.15:run
+
+REM 其余门户业务服务按需启动，把上面的 ruoyi-portal-kernel 换成
+REM ruoyi-portal-appcenter / ruoyi-portal-forum / ruoyi-portal-requiredknowledge / ruoyi-portal-resources
 ```
 
 日常修改建议：
