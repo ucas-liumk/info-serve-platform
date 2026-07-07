@@ -7,7 +7,7 @@ ACTION="$1"; SVC="$2"
 DEPLOY_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 FILE="${DEPLOY_DIR}/compose/services/${SVC}.yml"
 [ -f "$FILE" ] || { echo "未知服务: ${SVC}（找不到 ${FILE}）"; exit 1; }
-DC=(docker compose --env-file "${DEPLOY_DIR}/.env" -f "$FILE")
+DC=(docker compose --project-directory "${DEPLOY_DIR}" --env-file "${DEPLOY_DIR}/.env" -f "$FILE")
 case "$ACTION" in
   start)
     docker network inspect infosys-ruoyi-cloud-plus >/dev/null 2>&1 \

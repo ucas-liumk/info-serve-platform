@@ -23,7 +23,7 @@ services:
         -Dspring.cloud.nacos.username=${NACOS_USERNAME}
         -Dspring.cloud.nacos.password=${NACOS_PASSWORD}
     volumes:
-      - ../../logs/portal-requiredknowledge:/app/logs
+      - ../logs/portal-requiredknowledge:/app/logs
     networks:
       - infosys-ruoyi-cloud-plus
 
