@@ -58,14 +58,11 @@ class BcBoundaryTest {
     // 空规则会判失败）；其他规则仍将 requiredknowledge 列为禁止依赖的目标包，作为防御性约束保留。
 
     @Test
-    void kernel_should_only_touch_content_bc_service_interfaces() {
+    void kernel_should_not_depend_on_content_bcs() {
         noClasses().that().resideInAPackage("org.dromara.portal.kernel..")
             .should().dependOnClassesThat().resideInAnyPackage(
-                "org.dromara.portal.appcenter.domain..", "org.dromara.portal.appcenter.mapper..", "org.dromara.portal.appcenter.service.impl..",
-                "org.dromara.portal.resources.domain..", "org.dromara.portal.resources.mapper..", "org.dromara.portal.resources.service.impl..",
-                "org.dromara.portal.forum.domain..", "org.dromara.portal.forum.mapper..", "org.dromara.portal.forum.service.impl..",
-                "org.dromara.portal.requiredknowledge.domain..", "org.dromara.portal.requiredknowledge.mapper..",
-                "org.dromara.portal.requiredknowledge.service.impl..")
+                "org.dromara.portal.appcenter..", "org.dromara.portal.resources..",
+                "org.dromara.portal.forum..", "org.dromara.portal.requiredknowledge..")
             .check(classes);
     }
 

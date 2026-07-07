@@ -1,5 +1,6 @@
 package org.dromara.portal;
 
+import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
@@ -7,6 +8,7 @@ import org.springframework.boot.context.metrics.buffering.BufferingApplicationSt
 /**
  * 门户业务服务（内核/应用中心/资料共享/服务论坛）
  */
+@EnableDubbo
 @SpringBootApplication
 public class RuoYiPortalApplication {
 
