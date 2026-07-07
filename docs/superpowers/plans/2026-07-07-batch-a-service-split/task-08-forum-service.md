@@ -94,12 +94,13 @@ mvn -o -ntp -Pdev -DskipTests -pl ruoyi-modules/ruoyi-portal-forum -am compile
 mvn -ntp -pl ruoyi-modules/ruoyi-portal -am -DskipTests=false test
 ```
 预期：双绿（老 portal 无 forum 残留引用——kernel 已在 T7 搬走，唯一曾引用 forum 的 `InfoPortalServiceImpl` 已 Dubbo 化）。
+> ArchUnit 拆一删一：删除 `forum_should_not_depend_on_other_content_bcs`（主语包已空）。
 
 - [ ] **Step 5: 镜像 / compose / 配置发布**
 
 `build-images.sh` 追加：
 ```bash
-build_java_image "infosys/ruoyi-cloud-plus-portal-forum:${RUOYI_CLOUD_VERSION}" \
+build_java_image "infosys/ruoyi-cloud-plus-portal-forum:2.6.2" \
   "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-forum" \
   "target/ruoyi-portal-forum.jar"
 ```

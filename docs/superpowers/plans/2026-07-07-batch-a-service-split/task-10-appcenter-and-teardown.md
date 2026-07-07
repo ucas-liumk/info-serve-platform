@@ -111,7 +111,7 @@ grep -rn "ruoyi-portal[^-]" --include="*.xml" --include="*.yml" --include="*.py"
 
 `build-images.sh`：删除 portal 条目（T9 已改为标准构建的那条），追加：
 ```bash
-build_java_image "infosys/ruoyi-cloud-plus-portal-appcenter:${RUOYI_CLOUD_VERSION}" \
+build_java_image "infosys/ruoyi-cloud-plus-portal-appcenter:2.6.2" \
   "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-appcenter" \
   "target/ruoyi-portal-appcenter.jar"
 ```

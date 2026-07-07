@@ -111,13 +111,14 @@ mvn -o -ntp -Pdev -DskipTests -pl ruoyi-modules/ruoyi-portal-kernel -am compile
 mvn -ntp -pl ruoyi-modules/ruoyi-portal-kernel -am -DskipTests=false test
 mvn -ntp -pl ruoyi-modules/ruoyi-portal -am -DskipTests=false test
 ```
-预期：三条全 `BUILD SUCCESS`（kernel 模块 9 个用例绿；老 portal 编译通过证明零残留依赖，BcBoundaryTest 剩余规则绿）。若老 portal 报 kernel 符号缺失，说明 T3-T6 有漏网调用，回到对应任务补断。
+预期：三条全 `BUILD SUCCESS`（kernel 模块 9 个用例绿；老 portal 编译通过证明零残留依赖）。若老 portal 报 kernel 符号缺失，说明 T3-T6 有漏网调用，回到对应任务补断。
+> ArchUnit 拆一删一（T2 实证空规则会失败，failOnEmptyShould 默认 true）：kernel 包搬走后，`BcBoundaryTest` 中以 kernel 为主语的 `kernel_should_not_depend_on_content_bcs` 删除；`content_bcs_should_not_depend_on_kernel_at_all` 保留（主语仍非空，且继续防守残留引用）。
 
 - [ ] **Step 5: 镜像 / compose / 配置发布**
 
 `deploy/build-images.sh` 追加：
 ```bash
-build_java_image "infosys/ruoyi-cloud-plus-portal-kernel:${RUOYI_CLOUD_VERSION}" \
+build_java_image "infosys/ruoyi-cloud-plus-portal-kernel:2.6.2" \
   "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-kernel" \
   "target/ruoyi-portal-kernel.jar"
 ```

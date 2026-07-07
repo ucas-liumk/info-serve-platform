@@ -110,6 +110,7 @@ mvn -ntp -pl ruoyi-modules/ruoyi-portal-resources -am -DskipTests=false test
 mvn -ntp -pl ruoyi-modules/ruoyi-portal -am -DskipTests=false test
 ```
 预期：全绿。
+> ArchUnit 拆一删一：删除 `resources_should_not_depend_on_other_content_bcs`（主语包已空）。
 
 - [ ] **Step 5: LibreOffice 专用镜像切换**
 
@@ -120,13 +121,13 @@ git mv deploy/docker/portal.Dockerfile deploy/docker/resources.Dockerfile
 `deploy/build-images.sh`：
 1. 原 portal 条目（`-f .../portal.Dockerfile` 那条 `docker build`）整条替换为标准构建（老 portal 已不含转换代码，不再需要 LibreOffice）：
 ```bash
-build_java_image "infosys/ruoyi-cloud-plus-portal:${RUOYI_CLOUD_VERSION}" \
+build_java_image "infosys/ruoyi-cloud-plus-portal:2.6.2" \
   "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal" \
   "target/ruoyi-portal.jar"
 ```
 2. 追加 resources 条目（LibreOffice 镜像）：
 ```bash
-docker build -t "infosys/ruoyi-cloud-plus-portal-resources:${RUOYI_CLOUD_VERSION}" \
+docker build -t "infosys/ruoyi-cloud-plus-portal-resources:2.6.2" \
   --build-arg "JAR_FILE=target/ruoyi-portal-resources.jar" \
   -f "${ROOT_DIR}/deploy/docker/resources.Dockerfile" \
   "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-resources"
