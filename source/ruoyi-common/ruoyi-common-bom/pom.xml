@@ -237,6 +237,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 门户事件发布模块 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-common-portal-event</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 </project>
