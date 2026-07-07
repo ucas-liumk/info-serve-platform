@@ -68,6 +68,8 @@ cd /Users/macmini/windows-info-serve
 mkdir -p source/ruoyi-modules/ruoyi-portal-forum/src/main/java/org/dromara/portal
 git mv source/ruoyi-modules/ruoyi-portal/src/main/java/org/dromara/portal/forum \
        source/ruoyi-modules/ruoyi-portal-forum/src/main/java/org/dromara/portal/forum
+# 若 test 目录存在 forum 包（先 ls 确认），一并 git mv 到新模块 test 目录，且 forum pom 需加
+# ruoyi-portal-kernel 同款 surefire 覆盖段（T7 实证：缺该段则测试静默不跑）。
 ```
 `source/ruoyi-modules/pom.xml` `<modules>` 追加 `<module>ruoyi-portal-forum</module>`。
 

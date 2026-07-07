@@ -69,13 +69,19 @@ public class PortalAppcenterApplication {
 ```bash
 cd /Users/macmini/windows-info-serve
 mkdir -p source/ruoyi-modules/ruoyi-portal-appcenter/src/main/java/org/dromara/portal
+mkdir -p source/ruoyi-modules/ruoyi-portal-appcenter/src/test/java/org/dromara/portal
 git mv source/ruoyi-modules/ruoyi-portal/src/main/java/org/dromara/portal/appcenter \
        source/ruoyi-modules/ruoyi-portal-appcenter/src/main/java/org/dromara/portal/appcenter
+# ⚠️ 既有测试随包走（AppPortalServiceImplTest/AppApplicationServiceImplTest 等在 test 目录 appcenter 包下），
+#    先搬测试再删单体，否则测试被连带删除：
+git mv source/ruoyi-modules/ruoyi-portal/src/test/java/org/dromara/portal/appcenter \
+       source/ruoyi-modules/ruoyi-portal-appcenter/src/test/java/org/dromara/portal/appcenter
 # 此刻 ruoyi-portal 只剩启动类/配置/BcBoundaryTest（使命完成，物理隔离取代之），整体删除：
 git rm -r source/ruoyi-modules/ruoyi-portal
 git rm source/script/config/nacos/ruoyi-portal.yml
 ```
 `source/ruoyi-modules/pom.xml`：`<modules>` 追加 `<module>ruoyi-portal-appcenter</module>`，删除 `<module>ruoyi-portal</module>`。
+appcenter pom 的 build 段**必须含** ruoyi-portal 同款 surefire 覆盖（照抄 `ruoyi-portal-kernel/pom.xml`，T7 实证无此段则测试静默不跑）；搬迁后跑 `-DskipTests=false test` 确认 Tests run 数 >0 且全绿。
 
 - [ ] **Step 3: Nacos data-id + initdb + 网关终态**
 
