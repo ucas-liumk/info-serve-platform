@@ -45,7 +45,8 @@
 | Gateway | `8180` | `source/ruoyi-gateway/src/main/resources/application.yml` | 后端统一入口 |
 | Auth | `8110` | `source/ruoyi-auth/src/main/resources/application.yml` | 认证服务 |
 | System | `8101` | `source/ruoyi-modules/ruoyi-system/src/main/resources/application.yml` | 系统管理 |
-| Portal | `8107` | `source/ruoyi-modules/ruoyi-portal/src/main/resources/application.yml` | 门户业务服务（内核/应用中心/资料共享/论坛），由 appcenter(8106)+infoservice(8107) 合并 |
+| Portal | `8107` | `source/ruoyi-modules/ruoyi-portal/src/main/resources/application.yml` | ruoyi-portal（拆分过渡中，仅剩 appcenter/forum/resources） |
+| Portal-Kernel | `8107` | `source/ruoyi-modules/ruoyi-portal-kernel/src/main/resources/application.yml` | 门户内核服务（统计/消息/模块注册表；原 ruoyi-portal 8107 移交） |
 | File | `8114` | `source/ruoyi-modules/ruoyi-file/src/main/resources/application.yml` | 文件服务（由 ruoyi-resource 改名）；避开本机占用的 `8104` |
 | Portal-RequiredKnowledge | `8109` | `source/ruoyi-modules/ruoyi-portal-requiredknowledge/src/main/resources/application.yml` | 应知应会服务（批次 A 自 portal 拆出） |
 | Monitor | `8190` | `source/ruoyi-visual/ruoyi-monitor/src/main/resources/application.yml` | Spring Boot Admin |

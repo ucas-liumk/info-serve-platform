@@ -57,14 +57,9 @@ class BcBoundaryTest {
     // 其源包不再存在于本模块，故删除以它为主语的规则（ArchUnit 默认 failOnEmptyShould=true，
     // 空规则会判失败）；其他规则仍将 requiredknowledge 列为禁止依赖的目标包，作为防御性约束保留。
 
-    @Test
-    void kernel_should_not_depend_on_content_bcs() {
-        noClasses().that().resideInAPackage("org.dromara.portal.kernel..")
-            .should().dependOnClassesThat().resideInAnyPackage(
-                "org.dromara.portal.appcenter..", "org.dromara.portal.resources..",
-                "org.dromara.portal.forum..", "org.dromara.portal.requiredknowledge..")
-            .check(classes);
-    }
+    // kernel 已拆为独立服务 ruoyi-portal-kernel（批次 A），其源包不再存在于本模块，
+    // 故删除以 kernel 为主语的规则（ArchUnit 默认 failOnEmptyShould=true，空规则会判失败）；
+    // 下面以内容 BC 为主语、kernel 为禁止依赖目标的规则保留，继续防守残留引用。
 
     @Test
     void content_bcs_should_not_depend_on_kernel_at_all() {
