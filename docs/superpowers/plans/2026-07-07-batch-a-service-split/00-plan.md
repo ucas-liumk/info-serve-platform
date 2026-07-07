@@ -57,6 +57,20 @@ Java 包名保持 `org.dromara.portal.<bc>` 不变（整包 git mv，diff 最小
 
 原 `ruoyi-portal-appcenter`/`ruoyi-portal-infoservice` 两条旧路由在 T10 删除。auth/system/file 路由不动。
 
+## 执行环境策略（2026-07-07 补充，subagent 必读）
+
+本机（Mac mini，24GB）**不跑全栈运行时**（17 容器 ≈15GB+ 超出 Docker Desktop 虚拟机合理配额；且本机无 mvn，构建一律走 Docker Maven 容器）。执行分工：
+
+- **Mac 执行**：全部代码改动、`docker run … maven:3.9-eclipse-temurin-17 mvn …` 编译/单测门禁、`bash -n` 与 `docker compose config` 静态校验、git 提交。任务文件里的 `mvn -o -ntp …` 命令一律替换为等价 Docker Maven 形式：
+  `docker run --rm -v "$PWD/source":/workspace -v /Users/macmini/.m2:/root/.m2 -w /workspace maven:3.9-eclipse-temurin-17 mvn -ntp <原参数>`
+  （执行前确保 Docker Desktop 已启动；仅 Maven 容器，内存无压力。）
+- **Windows 正本机执行（ssh info-serve-win，规范见 lab-remote 技能）**：所有「运行时验证」步骤——nacos-publish 发布、build-images、compose 起停、curl 冒烟、e2e、故障演练。收拢为三个检查点，由主会话（编排者）亲自驱动，不派给任务 subagent：
+  - **CP1**（T2 完成后）：RK 试点全链路（T2 Step 8-11）；
+  - **CP2**（T7 完成后）：kernel 拆出冒烟 + 首次跨进程 MQ/Dubbo 链路（T4 Step 8 手验、T7 Step 5-6）；
+  - **CP3**（T10/T11 完成后）：= T12 全量验收（T8/T9/T10 各自的运行时冒烟并入此处一次做完）。
+- 任务 subagent 遇到「运行时验证」步骤时：完成其静态部分（文件产出、config 校验），把运行时部分标注「移交检查点」后即可结束任务——**不要在 Mac 上尝试起全栈**。
+- Windows 侧检查点流程：`git fetch origin && git switch feature/batch-a-service-split && git pull` → 按任务步骤执行（bash 脚本经 Git Bash；不可用时 nacos-publish 改 Nacos 控制台手工发布，内容以 `source/script/config/nacos/*` 为准）。
+
 ## 任务索引与依赖
 
 | 任务 | 内容 | 前置 |
