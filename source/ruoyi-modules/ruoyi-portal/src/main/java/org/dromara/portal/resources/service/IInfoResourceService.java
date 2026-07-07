@@ -31,6 +31,9 @@ public interface IInfoResourceService {
 
     void previewPdf(Long resourceId, HttpServletResponse response) throws IOException;
 
+    /** 确保资料的 PDF 预览缓存已生成（MQ 消费线程调用，幂等） */
+    void ensurePreviewConverted(Long resourceId);
+
     void downloadFile(Long resourceId, HttpServletResponse response) throws IOException;
 
     void favorite(Long resourceId, boolean add);

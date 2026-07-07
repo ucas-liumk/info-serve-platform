@@ -16,6 +16,7 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.oss.core.OssClient;
 import org.dromara.common.oss.factory.OssFactory;
+import org.dromara.common.redis.utils.RedisUtils;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.portal.resources.domain.InfoResource;
 import org.dromara.portal.resources.domain.InfoResourceCategory;
@@ -31,11 +32,14 @@ import org.dromara.portal.resources.mapper.InfoResourceViewRecordMapper;
 import org.dromara.common.portalevent.publisher.PortalEventPublisher;
 import org.dromara.portal.api.event.PortalEventConstants;
 import org.dromara.portal.api.event.PortalNotificationEvent;
+import org.dromara.portal.resources.mq.ResourceConvertListener;
+import org.dromara.portal.resources.mq.ResourceConvertMessage;
 import org.dromara.portal.resources.service.IInfoResourceService;
+import org.dromara.portal.resources.support.DocumentPreviewConverter;
 import org.dromara.portal.resources.support.ResourceUserDisplayNameResolver;
 import org.dromara.file.api.RemoteFileService;
 import org.dromara.file.api.domain.RemoteFile;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +48,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,7 +56,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -77,18 +81,11 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     private final InfoResourceViewRecordMapper viewRecordMapper;
     private final PortalEventPublisher eventPublisher;
     private final ResourceUserDisplayNameResolver userDisplayNameResolver;
+    private final DocumentPreviewConverter previewConverter;
+    private final RabbitTemplate rabbitTemplate;
 
     @DubboReference
     private RemoteFileService remoteFileService;
-
-    @Value("${infoservice.preview-cache.dir:/ruoyi/infoservice/preview-cache}")
-    private String previewCacheDir;
-
-    @Value("${infoservice.preview-cache.soffice:soffice}")
-    private String sofficeCommand;
-
-    @Value("${infoservice.preview-cache.timeout-seconds:120}")
-    private long sofficeTimeoutSeconds;
 
     private LambdaQueryWrapper<InfoResource> buildWrapper(InfoResourceBo bo, boolean portal) {
         LambdaQueryWrapper<InfoResource> w = Wrappers.lambdaQuery();
@@ -280,8 +277,12 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
             throw new ServiceException("当前文件暂不支持在线预览，请下载后查看");
         }
 
-        Path pdfFile = ensurePdfPreviewFile(resource, remoteFile, suffix);
-        writePdfResponse(pdfFile, resolvePreviewPdfName(resource, remoteFile), response);
+        Path targetFile = previewConverter.cacheFileFor(resource, remoteFile);
+        if (!previewConverter.isReady(targetFile)) {
+            enqueueConversion(resource.getResourceId());
+            previewConverter.awaitReady(targetFile);
+        }
+        writePdfResponse(targetFile, resolvePreviewPdfName(resource, remoteFile), response);
     }
 
     @Override
@@ -346,6 +347,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         boolean inserted = baseMapper.insert(add) > 0;
         if (inserted && "0".equals(add.getStatus())) {
             sendResourceCreatedNotification(add);
+            enqueueConversionIfConvertible(add);
         }
         return inserted;
     }
@@ -504,105 +506,6 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         return resolveStorage(remoteFile).fileDownload(remoteFile.getName());
     }
 
-    private Path ensurePdfPreviewFile(InfoResource resource, RemoteFile remoteFile, String suffix) throws IOException {
-        Path cacheDir = Path.of(previewCacheDir);
-        Files.createDirectories(cacheDir);
-        Path targetFile = cacheDir.resolve(buildPdfCacheFileName(resource, remoteFile));
-        if (Files.exists(targetFile) && Files.size(targetFile) > 0) {
-            return targetFile;
-        }
-
-        Path downloadedFile = null;
-        Path workDir = Files.createTempDirectory(cacheDir, "convert-");
-        try {
-            downloadedFile = downloadRemoteFile(remoteFile);
-            Path sourceFile = workDir.resolve("source." + suffix);
-            Files.copy(downloadedFile, sourceFile, StandardCopyOption.REPLACE_EXISTING);
-            Path convertedFile = convertOfficeToPdf(sourceFile, workDir);
-            Path tempTarget = Files.createTempFile(cacheDir, targetFile.getFileName().toString(), ".tmp");
-            Files.move(convertedFile, tempTarget, StandardCopyOption.REPLACE_EXISTING);
-            Files.move(tempTarget, targetFile, StandardCopyOption.REPLACE_EXISTING);
-            return targetFile;
-        } finally {
-            if (downloadedFile != null) {
-                Files.deleteIfExists(downloadedFile);
-            }
-            FileUtils.del(workDir.toFile());
-        }
-    }
-
-    private Path convertOfficeToPdf(Path sourceFile, Path outputDir) throws IOException {
-        Files.createDirectories(outputDir.resolve("home"));
-        Path logFile = outputDir.resolve("soffice.log");
-        ProcessBuilder processBuilder = new ProcessBuilder(
-            sofficeCommand,
-            "--headless",
-            "--nologo",
-            "--nofirststartwizard",
-            "--convert-to",
-            "pdf",
-            "--outdir",
-            outputDir.toString(),
-            sourceFile.toString()
-        );
-        processBuilder.environment().put("HOME", outputDir.resolve("home").toString());
-        processBuilder.redirectErrorStream(true);
-        processBuilder.redirectOutput(logFile.toFile());
-
-        Process process;
-        try {
-            process = processBuilder.start();
-        } catch (IOException e) {
-            throw new ServiceException("未找到 LibreOffice 转换程序，请检查 soffice 配置");
-        }
-
-        boolean finished;
-        try {
-            finished = process.waitFor(Math.max(30, sofficeTimeoutSeconds), TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            process.destroyForcibly();
-            throw new ServiceException("PDF 转换被中断，请下载后查看");
-        }
-        if (!finished) {
-            process.destroyForcibly();
-            throw new ServiceException("PDF 转换超时，请下载后查看");
-        }
-        if (process.exitValue() != 0) {
-            throw new ServiceException("PDF 转换失败，请下载后查看");
-        }
-
-        Path expectedFile = outputDir.resolve("source.pdf");
-        if (Files.exists(expectedFile) && Files.size(expectedFile) > 0) {
-            return expectedFile;
-        }
-        try (var files = Files.list(outputDir)) {
-            return files
-                .filter(file -> file.getFileName().toString().toLowerCase().endsWith(".pdf"))
-                .filter(file -> {
-                    try {
-                        return Files.size(file) > 0;
-                    } catch (IOException e) {
-                        return false;
-                    }
-                })
-                .findFirst()
-                .orElseThrow(() -> new ServiceException("PDF 转换未生成有效文件，请下载后查看"));
-        }
-    }
-
-    private String buildPdfCacheFileName(InfoResource resource, RemoteFile remoteFile) {
-        long updatedAt = resource.getUpdateTime() != null
-            ? resource.getUpdateTime().getTime()
-            : resource.getCreateTime() == null ? 0L : resource.getCreateTime().getTime();
-        return "%s-%s-%s-%s.pdf".formatted(
-            resource.getResourceId(),
-            StringUtils.defaultString(String.valueOf(remoteFile.getOssId())),
-            StringUtils.defaultString(String.valueOf(resource.getFileSize())),
-            updatedAt
-        );
-    }
-
     private void writePdfResponse(Path pdfFile, String fileName, HttpServletResponse response) throws IOException {
         response.setContentType(MediaType.APPLICATION_PDF_VALUE);
         response.setContentLengthLong(Files.size(pdfFile));
@@ -710,6 +613,45 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
                 "新增资源：" + resource.getTitle(),
                 uploader + " 上传了新资源“" + resource.getTitle() + "”（" + fileName + "），可前往资料共享中查看。"
             ));
+    }
+
+    @Override
+    public void ensurePreviewConverted(Long resourceId) {
+        InfoResource resource = baseMapper.selectById(resourceId);
+        if (resource == null) {
+            return;
+        }
+        RemoteFile remoteFile = resolveRemoteFile(resource);
+        String suffix = resolveFileSuffix(resource, remoteFile);
+        if (!PDF_CONVERTIBLE_SUFFIXES.contains(suffix)) {
+            return;
+        }
+        try {
+            previewConverter.ensurePdfPreviewFile(resource, remoteFile, suffix);
+        } catch (IOException e) {
+            throw new IllegalStateException("资料预览转换失败 resourceId=" + resourceId, e);
+        }
+    }
+
+    private void enqueueConversion(Long resourceId) {
+        boolean first = RedisUtils.setObjectIfAbsent(
+            ResourceConvertListener.PENDING_KEY_PREFIX + resourceId, "1", Duration.ofMinutes(10));
+        if (!first) {
+            return;
+        }
+        ResourceConvertMessage message = new ResourceConvertMessage();
+        message.setMessageId(UUID.randomUUID().toString());
+        message.setResourceId(resourceId);
+        rabbitTemplate.convertAndSend(PortalEventConstants.QUEUE_RESOURCES_CONVERT, message);
+    }
+
+    private void enqueueConversionIfConvertible(InfoResource resource) {
+        String name = StringUtils.defaultString(resource.getOriginalName()).toLowerCase();
+        int dot = name.lastIndexOf('.');
+        String suffix = dot >= 0 ? name.substring(dot + 1) : "";
+        if (PDF_CONVERTIBLE_SUFFIXES.contains(suffix)) {
+            enqueueConversion(resource.getResourceId());
+        }
     }
 
     private boolean isActiveFilter(String value) {
