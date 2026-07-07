@@ -12,6 +12,7 @@
         <module>ruoyi-system</module>
         <module>ruoyi-file</module>
         <module>ruoyi-portal</module>
+        <module>ruoyi-portal-requiredknowledge</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>

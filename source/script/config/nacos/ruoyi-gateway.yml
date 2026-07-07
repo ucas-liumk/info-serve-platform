@@ -50,6 +50,13 @@ spring:
               filters:
                 - StripPrefix=1
             # 门户业务服务（应用中心/资料共享/服务论坛，API 路径保持兼容）
+            - id: portal-requiredknowledge
+              uri: lb://portal-requiredknowledge
+              predicates:
+                - Path=/infoservice/required-knowledge/**,/infoservice/portal/required-knowledge/**
+              filters:
+                - StripPrefix=1
+              order: -5
             - id: ruoyi-portal-appcenter
               uri: lb://ruoyi-portal
               predicates:

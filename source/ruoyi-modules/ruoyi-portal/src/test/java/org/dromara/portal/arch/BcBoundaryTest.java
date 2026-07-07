@@ -53,14 +53,9 @@ class BcBoundaryTest {
             .check(classes);
     }
 
-    @Test
-    void requiredknowledge_should_not_depend_on_other_content_bcs() {
-        noClasses().that().resideInAPackage("org.dromara.portal.requiredknowledge..")
-            .should().dependOnClassesThat().resideInAnyPackage(
-                "org.dromara.portal.appcenter..", "org.dromara.portal.resources..",
-                "org.dromara.portal.forum..")
-            .check(classes);
-    }
+    // requiredknowledge 已拆为独立服务 ruoyi-portal-requiredknowledge（批次 A），
+    // 其源包不再存在于本模块，故删除以它为主语的规则（ArchUnit 默认 failOnEmptyShould=true，
+    // 空规则会判失败）；其他规则仍将 requiredknowledge 列为禁止依赖的目标包，作为防御性约束保留。
 
     @Test
     void kernel_should_only_touch_content_bc_service_interfaces() {

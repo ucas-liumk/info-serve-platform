@@ -49,4 +49,8 @@ build_java_image() {
     --build-arg "JAR_FILE=target/ruoyi-portal.jar" \
     -f "${ROOT_DIR}/deploy/docker/portal.Dockerfile" \
     "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal"
+
+  build_java_image "infosys/ruoyi-cloud-plus-portal-requiredknowledge:2.6.2" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-requiredknowledge" \
+    "target/ruoyi-portal-requiredknowledge.jar"
 } 2>&1 | tee "${LOG_DIR}/docker-build-images.log"
