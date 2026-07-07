@@ -136,12 +136,12 @@ docker build -t "infosys/ruoyi-cloud-plus-portal-resources:2.6.2" \
 
 - [ ] **Step 6: compose（带转换缓存卷）**
 
-`deploy/compose/services/portal-resources.yml`：T2 Step 9 文件替换名字/镜像变量/端口（`8111`）之外，**追加**转换相关 env 与卷——键与值从 `deploy/docker-compose.yml` 现有 `ruoyi-portal` 服务条目照抄（相对路径多一层 `../`）：
+`deploy/compose/services/portal-resources.yml`：T2 Step 9 文件替换名字/镜像变量/端口（`8111`）之外，**追加**转换相关 env 与卷——键与值从 `deploy/docker-compose.yml` 现有 `ruoyi-portal` 服务条目照抄（svc.sh 带 --project-directory deploy/，相对路径与主 compose 同语义，直接照抄）：
 ```yaml
       INFOSERVICE_PREVIEW_CACHE_DIR: /ruoyi/portal/preview-cache
     volumes:
-      - ../../logs/portal-resources:/app/logs
-      - ../../data/preview-cache:/ruoyi/portal/preview-cache
+      - ../logs/portal-resources:/app/logs
+      - ../data/preview-cache:/ruoyi/portal/preview-cache
 ```
 > 以主 compose 里 ruoyi-portal 的 `INFOSERVICE_PREVIEW_CACHE_*` 实际键值为准逐键复制（可能还有 SOFFICE/TIMEOUT 两键）。
 校验：`docker compose --env-file deploy/.env -f deploy/compose/services/portal-resources.yml config --quiet`。
