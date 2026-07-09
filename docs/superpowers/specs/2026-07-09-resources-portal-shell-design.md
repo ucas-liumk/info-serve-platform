@@ -42,8 +42,8 @@ plus-ui/src/layout/portal-shell/
   types.ts             ModuleNavConfig 契约类型
 ```
 
-- 接入开关：路由 `meta.portalShell: true` → 走 `PortalShell`；否则维持现状（老壳与 `usesOwnShell` 存量名单不动、不再增长）。回退 = 摘除 meta 标记。
-- 老页面文件保留一个版本周期后再删。
+- 接入开关：路由 `meta.portalShell: true` → 走 `PortalShell`；否则维持现状（老壳与 `usesOwnShell` 存量名单不动、不再增长）。
+- 回退语义（2026-07-09 终审修正）：**正式回退 = git revert 整支**；摘除 meta 仅得到「降级但可用」的无壳列表页（原地瘦身后旧页形态不复存在，故不承诺一键复原旧体验）。
 
 ## 4. 模块导航契约（ModuleNavConfig，后续模块与第三方复用）
 
@@ -83,7 +83,7 @@ interface ModuleNavConfig {
 - **后端零改动**；首页与其余四个模块页面像素级零变化（逐页目检）；
 - 资料模块全功能等价：列表/筛选/分类/上传/预览/收藏/我的视图与改版前一致（对照现有 e2e 资料相关断言 + 手工清单）;
 - 门禁：`npm run build:prod` + `npm run design:audit`；
-- 回退路径：摘 `meta.portalShell` 即回旧页。
+- 回退路径：git revert 整支（摘 meta 仅为降级可用态，见 §3 修正）。
 
 ## 8. 决策记录
 

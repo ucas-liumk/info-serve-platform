@@ -37,7 +37,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:19100/   # 预期 200
 
 - 首页/论坛/应用中心/应知应会/态势页逐页打开：与改版前零差异；
 - 资料模块按 T6 Step 5 清单在 19100 真实环境复走一遍；
-- 回退演练（Mac dev 上做）：临时移除 InfoResources 路由的 `portalShell` meta → 旧版资料页完整复原 → 恢复 meta（结果记录，不提交临时改动）。
+- 回退演练（Mac dev 上做，终审修正语义）：临时移除 InfoResources 路由的 `portalShell` meta → 确认**降级可用态**（无壳列表页，列表/搜索/上传可用）而非旧页复原 → 恢复 meta（结果记录，不提交临时改动）。正式回退 = git revert 整支。
 
 - [ ] **Step 4: 用户目验（验收主体）**
 
