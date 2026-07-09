@@ -50,7 +50,7 @@ export interface ModuleNavConfig {
 | 文件 | 责任 | 任务 |
 |---|---|---|
 | `plus-ui/vitest.config.ts`、`src/layout/portal-shell/types.ts`、`configs/resources.ts`、`resolveModuleNav.ts`(+test) | 契约与解析器 | T1 |
-| `src/components/PortalUserMenu/index.vue` | 用户菜单+资料/密码弹窗+退出（自 home 抽取） | T2 |
+| `src/layout/portal/components/PortalUserMenu.vue` | 用户菜单+资料/密码弹窗+退出（自 home 抽取） | T2 |
 | `src/layout/portal-shell/TopBar.vue` | 一级导航 | T3 |
 | `src/layout/portal-shell/IconRail.vue`、`CategoryRail.vue` | 二级图标条/分类栏 | T4 |
 | `src/layout/portal-shell/PortalShell.vue`、`src/views/portal/resources/community.vue`、`router/index.ts`、`layout/portal/index.vue` | 壳层组装+首租户 | T5 |
