@@ -72,11 +72,11 @@ onMounted(async () => {
   text-decoration: none;
   border-radius: var(--ip-radius-sm);
 }
-.ps-topbar__logo { font-size: 24px; color: var(--ip-primary-600); }
+.ps-topbar__logo { font-size: var(--ip-font-title); color: var(--ip-primary-600); }
 .ps-topbar__title { font-size: var(--ip-font-title-sm); font-weight: 600; white-space: nowrap; }
 .ps-topbar__nav { display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; }
 .ps-topbar__item {
-  padding: 6px 12px;
+  padding: 8px 12px;
   border-radius: var(--ip-radius-full);
   font-size: var(--ip-font-body);
   color: var(--ip-neutral-600);

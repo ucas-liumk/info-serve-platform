@@ -47,12 +47,28 @@
             v-for="item in resources"
             :key="item.resourceId"
             :resource="item"
+            :manageable="scope === 'mine'"
             @preview="openPreview"
             @download="openDownload"
             @favorite="toggleFavorite"
+            @edit="openEditDialog"
+            @replace="openReplaceDialog"
+            @status="changeOwnStatus"
+            @delete="deleteOwnResource"
           />
         </div>
-        <ResourceList v-else :resources="resources" @preview="openPreview" @download="openDownload" @favorite="toggleFavorite" />
+        <ResourceList
+          v-else
+          :resources="resources"
+          :manageable="scope === 'mine'"
+          @preview="openPreview"
+          @download="openDownload"
+          @favorite="toggleFavorite"
+          @edit="openEditDialog"
+          @replace="openReplaceDialog"
+          @status="changeOwnStatus"
+          @delete="deleteOwnResource"
+        />
 
         <el-empty v-if="!loading && resources.length === 0" :description="emptyText" />
       </div>

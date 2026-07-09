@@ -45,6 +45,21 @@
           <Star v-else />
         </el-icon>
       </button>
+
+      <!-- scope=mine 时挂回自管理能力：编辑 / 替换 / 上下架 / 删除（handler 在页面侧） -->
+      <el-dropdown v-if="manageable" trigger="click" placement="bottom-end" @command="onManageCommand">
+        <button class="action-button manage" type="button" aria-label="管理" @click.stop>
+          <span class="i-material-symbols:more-vert manage-icon" aria-hidden="true" />
+        </button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="edit">编辑资料</el-dropdown-item>
+            <el-dropdown-item command="replace">替换文件</el-dropdown-item>
+            <el-dropdown-item command="status">{{ statusActionLabel }}</el-dropdown-item>
+            <el-dropdown-item divided command="delete">删除</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
   </article>
 </template>
@@ -61,15 +76,33 @@ import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-const props = defineProps<{
-  resource: InfoResource;
-}>();
+const props = withDefaults(
+  defineProps<{
+    resource: InfoResource;
+    manageable?: boolean;
+  }>(),
+  { manageable: false }
+);
 
 const emit = defineEmits<{
   (e: 'preview', resource: InfoResource): void;
   (e: 'download', resource: InfoResource): void;
   (e: 'favorite', resource: InfoResource): void;
+  (e: 'edit', resource: InfoResource): void;
+  (e: 'replace', resource: InfoResource): void;
+  (e: 'status', resource: InfoResource, status: string): void;
+  (e: 'delete', resource: InfoResource): void;
 }>();
+
+// 已发布('0')→操作为「下架」；其余('1'/待处理)→操作为「上架」，与页面 changeOwnStatus 语义一致
+const statusActionLabel = computed(() => (props.resource.status === '0' ? '下架' : '上架'));
+
+const onManageCommand = (command: string | number | object) => {
+  if (command === 'edit') emit('edit', props.resource);
+  else if (command === 'replace') emit('replace', props.resource);
+  else if (command === 'status') emit('status', props.resource, props.resource.status === '0' ? '1' : '0');
+  else if (command === 'delete') emit('delete', props.resource);
+};
 
 const IMAGE_SUFFIXES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
 const PDF_SUFFIXES = ['pdf'];
@@ -493,10 +526,15 @@ const formatSize = (size?: number) => {
     box-shadow 0.16s ease;
 }
 
-.action-button.favorite {
+.action-button.favorite,
+.action-button.manage {
   width: 32px;
   min-width: 32px;
   padding: 0;
+}
+
+.manage-icon {
+  font-size: var(--ip-font-title-sm);
 }
 
 .action-button:hover {

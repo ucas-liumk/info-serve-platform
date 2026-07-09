@@ -34,6 +34,21 @@
           </el-icon>
           {{ item.favorited ? '已收藏' : '收藏' }}
         </button>
+
+        <!-- scope=mine 时挂回自管理能力：编辑 / 替换 / 上下架 / 删除（handler 在页面侧） -->
+        <el-dropdown v-if="manageable" trigger="click" placement="bottom-end" @command="(cmd: string | number | object) => onManageCommand(cmd, item)">
+          <button class="row-manage" type="button" aria-label="管理" @click.stop>
+            <span class="i-material-symbols:more-vert" aria-hidden="true" />
+          </button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="edit">编辑资料</el-dropdown-item>
+              <el-dropdown-item command="replace">替换文件</el-dropdown-item>
+              <el-dropdown-item command="status">{{ item.status === '0' ? '下架' : '上架' }}</el-dropdown-item>
+              <el-dropdown-item divided command="delete">删除</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </article>
   </div>
@@ -43,15 +58,30 @@
 import { Document, Download, Star, StarFilled, View } from '@element-plus/icons-vue';
 import type { InfoResource } from '@/api/infoservice/types';
 
-defineProps<{
-  resources: InfoResource[];
-}>();
+withDefaults(
+  defineProps<{
+    resources: InfoResource[];
+    manageable?: boolean;
+  }>(),
+  { manageable: false }
+);
 
 const emit = defineEmits<{
   (e: 'preview', resource: InfoResource): void;
   (e: 'download', resource: InfoResource): void;
   (e: 'favorite', resource: InfoResource): void;
+  (e: 'edit', resource: InfoResource): void;
+  (e: 'replace', resource: InfoResource): void;
+  (e: 'status', resource: InfoResource, status: string): void;
+  (e: 'delete', resource: InfoResource): void;
 }>();
+
+const onManageCommand = (command: string | number | object, resource: InfoResource) => {
+  if (command === 'edit') emit('edit', resource);
+  else if (command === 'replace') emit('replace', resource);
+  else if (command === 'status') emit('status', resource, resource.status === '0' ? '1' : '0');
+  else if (command === 'delete') emit('delete', resource);
+};
 
 const formatSize = (size?: number) => {
   if (!size) return '-';
@@ -202,6 +232,31 @@ const formatSize = (size?: number) => {
   border-color: rgba(47, 138, 122, 0.38);
   background: var(--resource-accent-soft, #e7f4f0);
   color: var(--resource-accent, #2f8a7a);
+}
+
+.row-manage {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-sm);
+  padding: 0;
+  background: var(--ip-neutral-0);
+  color: var(--ip-neutral-500);
+  font-size: var(--ip-font-title-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--ip-motion-fast) var(--ip-motion-ease),
+    color var(--ip-motion-fast) var(--ip-motion-ease),
+    background var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.row-manage:hover {
+  border-color: var(--ip-primary-600);
+  color: var(--ip-primary-600);
+  background: var(--ip-primary-50);
 }
 
 @media (max-width: 760px) {

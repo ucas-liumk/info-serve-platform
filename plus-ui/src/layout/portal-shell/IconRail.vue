@@ -70,7 +70,7 @@ const isShortcutActive = (s: NavShortcut) => route.path === s.route && activeSco
 }
 .ps-rail__item:hover { color: var(--ip-neutral-0); background: var(--ip-neutral-700); }
 .ps-rail__item.is-active { color: var(--ip-neutral-0); background: var(--ip-primary-600); }
-.ps-rail__icon { font-size: 20px; }
+.ps-rail__icon { font-size: var(--ip-font-title-sm); }
 .ps-rail__label { font-size: var(--ip-font-caption); transform: scale(0.9); white-space: nowrap; }
 .ps-rail__badge {
   position: absolute; top: 2px; right: 4px;
