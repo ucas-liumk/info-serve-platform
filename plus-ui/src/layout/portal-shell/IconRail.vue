@@ -5,7 +5,7 @@
         v-for="d in domains" :key="d.key"
         :to="d.route"
         class="ps-rail__item"
-        :class="{ 'is-active': isActive(d.route) }"
+        :class="{ 'is-active': isActive(d) }"
       >
         <span class="ps-rail__badge" v-if="d.badge === 'soon'">待</span>
         <span :class="d.icon" class="ps-rail__icon" aria-hidden="true" />
@@ -28,16 +28,18 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import type { NavDomain, NavShortcut } from './types';
+import { pickActiveDomain } from './pickActiveDomain';
 
 const props = defineProps<{ domains: NavDomain[]; shortcuts: NavShortcut[] }>();
 const route = useRoute();
 
-// 域高亮：路径匹配且未处于任何捷径的 scope 态（捷径激活时域不抢高亮）
+// 域高亮：最长前缀胜出（嵌套子路由不双高亮父域），捷径 scope 激活时域不抢高亮
 const activeScope = () => (route.query.scope as string) || '';
-const isActive = (path: string) =>
-  (route.path === path || route.path.startsWith(path + '/')) && !props.shortcuts.some((s) => s.query.scope === activeScope());
+const activeDomainKey = computed(() => pickActiveDomain(route.path, activeScope(), props.domains, props.shortcuts));
+const isActive = (d: NavDomain) => d.key === activeDomainKey.value;
 const isShortcutActive = (s: NavShortcut) => route.path === s.route && activeScope() === s.query.scope;
 </script>
 
