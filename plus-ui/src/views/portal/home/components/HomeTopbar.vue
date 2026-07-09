@@ -17,23 +17,7 @@
         <span>{{ weekText }}</span>
       </div>
       <div class="status-row user-row">
-        <el-dropdown trigger="click" @command="handleUserCommand">
-          <button class="user-pill" type="button">
-            <span class="avatar">
-              <img v-if="userStore.avatar" :src="userStore.avatar" alt="" />
-              <el-icon v-else><UserFilled /></el-icon>
-            </span>
-            <span>{{ userLabel }}</span>
-            <el-icon class="down"><ArrowDown /></el-icon>
-          </button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="profile">个人信息</el-dropdown-item>
-              <el-dropdown-item command="password">修改密码</el-dropdown-item>
-              <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <PortalUserMenu />
         <span class="divider" aria-hidden="true"></span>
         <button class="manual-entry" type="button" title="系统使用手册" aria-label="系统使用手册" @click="handleManualClick">
           <el-icon><Memo /></el-icon>
@@ -47,21 +31,17 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { ArrowDown, Memo, UserFilled } from '@element-plus/icons-vue';
-import { useUserStore } from '@/store/modules/user';
+import { Memo } from '@element-plus/icons-vue';
 import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
+import PortalUserMenu from '@/layout/portal/components/PortalUserMenu.vue';
 import logoUrl from '@/assets/portal/home-logo.png';
 
 const emit = defineEmits<{
-  (e: 'command', command: string | number | object): void;
   (e: 'open-manual'): void;
 }>();
 
-const userStore = useUserStore();
 const now = ref(new Date());
 let timer: ReturnType<typeof setInterval> | undefined;
-
-const userLabel = computed(() => userStore.nickname || userStore.name || '当前用户');
 
 const dateText = computed(() => {
   const year = now.value.getFullYear();
@@ -78,7 +58,6 @@ const timeText = computed(() => {
 
 const weekText = computed(() => ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.value.getDay()]);
 
-const handleUserCommand = (command: string | number | object) => emit('command', command);
 const handleManualClick = () => emit('open-manual');
 
 onMounted(() => {
@@ -207,54 +186,6 @@ onBeforeUnmount(() => {
 
 .manual-entry .el-icon {
   font-size: 19px;
-}
-
-.user-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ip-primary-900);
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.user-pill:hover,
-.user-pill:focus-visible {
-  color: var(--ip-primary-600);
-  outline: none;
-}
-
-.avatar {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--ip-primary-600);
-  color: var(--ip-neutral-0);
-  box-shadow: 0 8px 14px rgba(33, 103, 220, 0.24);
-}
-
-.avatar .el-icon {
-  font-size: 22px;
-}
-
-.avatar img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.down {
-  font-size: 16px;
 }
 
 @media (max-width: 1460px) {
