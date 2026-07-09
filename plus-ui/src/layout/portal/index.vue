@@ -23,7 +23,6 @@ const usesPortalShell = computed(() => route.meta.portalShell === true);
 const usesOwnShell = computed(
   () =>
     route.name === 'InfoTools' ||
-    route.name === 'InfoResources' ||
     route.name === 'InfoResourcePreview' ||
     route.name === 'InfoForum' ||
     route.name === 'RequiredKnowledgeHome' ||

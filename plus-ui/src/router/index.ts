@@ -45,7 +45,7 @@ export const constantRoutes: RouteRecordRaw[] = [
     hidden: true,
     children: [
       { path: '', name: 'InfoPortalHome', component: () => import('@/views/portal/home/index.vue'), meta: { title: '服务概览' } },
-      { path: 'resources', name: 'InfoResources', component: () => import('@/views/portal/resources/index.vue'), meta: { title: '资料共享' } },
+      { path: 'resources', name: 'InfoResources', component: () => import('@/views/portal/resources/index.vue'), meta: { title: '资料共享', portalShell: true, portalModule: 'resources' } },
       {
         path: 'resources/preview/:resourceId',
         name: 'InfoResourcePreview',

@@ -1,108 +1,72 @@
 <template>
-  <div class="resources-app">
-    <ResourceSidebar
-      :categories="categories"
-      :category-total="categoryTotal"
-      :category-code="categoryCode"
-      @change-category="changeCategory"
-    />
+  <div class="resource-page">
+    <div class="resource-actions">
+      <!-- ↓ 原 topbar 的搜索框节点原样粘贴（keyword 绑定与回车/清空事件不改） -->
+      <div class="search-box">
+        <el-input
+          v-model="keyword"
+          class="resource-search"
+          clearable
+          placeholder="搜索资源标题、关键词、作者、标签等"
+          size="large"
+          @keyup.enter="reloadFirst"
+          @clear="reloadFirst"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <button class="search-button" type="button" @click="reloadFirst">搜索</button>
+      </div>
 
-    <main class="resource-main">
-      <header class="resource-topbar">
-        <div class="title-block">
-          <h1>{{ resourcePageTitle }}</h1>
-          <p>{{ resourcePageSubtitle }}</p>
-        </div>
+      <!-- ↓ 原 topbar 的上传按钮节点原样粘贴（打开 ResourceUploadDialog 的 handler 不改） -->
+      <button class="upload-button" type="button" @click="openCreateDialog">
+        <el-icon><UploadFilled /></el-icon>
+        <span>上传资料</span>
+      </button>
+    </div>
 
-        <div class="top-actions">
-          <div class="search-box">
-            <el-input
-              v-model="keyword"
-              class="resource-search"
-              clearable
-              placeholder="搜索资源标题、关键词、作者、标签等"
-              size="large"
-              @keyup.enter="reloadFirst"
-              @clear="reloadFirst"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-            <button class="search-button" type="button" @click="reloadFirst">搜索</button>
-          </div>
-
-          <PortalNotificationBell />
-          <button class="upload-button" type="button" @click="openCreateDialog">
-            <el-icon><UploadFilled /></el-icon>
-            <span>上传资料</span>
-          </button>
-          <button class="mine-button" type="button" @click="openMyResources">
-            <el-icon><User /></el-icon>
-            <span>我的资源</span>
-          </button>
-        </div>
-      </header>
-
-      <section v-loading="loading" class="resource-content">
-        <ResourceToolbar
-          :total="total"
-          :sort="sort"
-          :preview-type="previewType"
-          :uploaded-within="uploadedWithin"
-          :size-range="sizeRange"
-          :display-mode="displayMode"
-          @update:sort="changeSort"
-          @update:preview-type="changePreviewType"
-          @update:uploaded-within="changeUploadedWithin"
-          @update:size-range="changeSizeRange"
-          @update:display-mode="displayMode = $event"
-        />
-
-        <div class="resource-results">
-          <div v-if="displayMode === 'grid'" class="resource-grid">
-            <ResourceCard
-              v-for="item in resources"
-              :key="item.resourceId"
-              :resource="item"
-              @preview="openPreview"
-              @download="openDownload"
-              @favorite="toggleFavorite"
-            />
-          </div>
-          <ResourceList v-else :resources="resources" @preview="openPreview" @download="openDownload" @favorite="toggleFavorite" />
-
-          <el-empty v-if="!loading && resources.length === 0" description="暂无资料" />
-        </div>
-      </section>
-
-      <el-pagination
-        v-if="total > pageSize"
-        class="pager"
-        background
-        layout="prev, pager, next, jumper, total"
+    <section v-loading="loading" class="resource-content">
+      <ResourceToolbar
         :total="total"
-        :page-size="pageSize"
-        :current-page="pageNum"
-        @current-change="onPage"
+        :sort="sort"
+        :preview-type="previewType"
+        :uploaded-within="uploadedWithin"
+        :size-range="sizeRange"
+        :display-mode="displayMode"
+        @update:sort="changeSort"
+        @update:preview-type="changePreviewType"
+        @update:uploaded-within="changeUploadedWithin"
+        @update:size-range="changeSizeRange"
+        @update:display-mode="displayMode = $event"
       />
-    </main>
 
-    <MyResourcesDrawer
-      v-model="myResourcesVisible"
-      :resources="myResources"
-      :total="myResourcesTotal"
-      :loading="myResourcesLoading"
-      :active-tab="myResourceTab"
-      @change-tab="changeMyResourceTab"
-      @preview="openPreview"
-      @download="openDownload"
-      @edit="openEditDialog"
-      @replace="openReplaceDialog"
-      @status="changeOwnStatus"
-      @delete="deleteOwnResource"
-      @favorite="toggleFavorite"
-      @upload="openCreateDialog"
+      <div class="resource-results">
+        <div v-if="displayMode === 'grid'" class="resource-grid">
+          <ResourceCard
+            v-for="item in resources"
+            :key="item.resourceId"
+            :resource="item"
+            @preview="openPreview"
+            @download="openDownload"
+            @favorite="toggleFavorite"
+          />
+        </div>
+        <ResourceList v-else :resources="resources" @preview="openPreview" @download="openDownload" @favorite="toggleFavorite" />
+
+        <el-empty v-if="!loading && resources.length === 0" :description="emptyText" />
+      </div>
+    </section>
+
+    <el-pagination
+      v-if="total > pageSize"
+      class="pager"
+      background
+      layout="prev, pager, next, jumper, total"
+      :total="total"
+      :page-size="pageSize"
+      :current-page="pageNum"
+      @current-change="onPage"
     />
 
     <ResourceUploadDialog
@@ -117,13 +81,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Search, UploadFilled, User } from '@element-plus/icons-vue';
+import { Search, UploadFilled } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/modules/user';
 import { getToken } from '@/utils/auth';
-import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
 import {
   changePortalResourceStatus,
   createPortalResource,
@@ -137,16 +100,13 @@ import {
 } from '@/api/portal/resources';
 import type { InfoResource, ResourceCategory, ResourcePortalPayload, ResourceUploadResult } from '@/api/infoservice/types';
 import { downloadPortalResource } from './download';
-import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
 import ResourceCard from './components/ResourceCard.vue';
 import ResourceList from './components/ResourceList.vue';
-import ResourceSidebar from './components/ResourceSidebar.vue';
 import ResourceToolbar from './components/ResourceToolbar.vue';
 import ResourceUploadDialog from './components/ResourceUploadDialog.vue';
 
 type DisplayMode = 'grid' | 'list';
 type UploadMode = 'create' | 'edit';
-type MyResourceTab = 'uploads' | 'favorites' | 'downloads' | 'history';
 type ResourceSubmitPayload = {
   title: string;
   categoryId: number | string | undefined;
@@ -154,16 +114,15 @@ type ResourceSubmitPayload = {
   files?: File[];
 };
 
+const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const categories = ref<ResourceCategory[]>([]);
 const resources = ref<InfoResource[]>([]);
-const myResources = ref<InfoResource[]>([]);
 const editingResource = ref<InfoResource>();
 const keyword = ref('');
 const displayMode = ref<DisplayMode>('grid');
 const uploadMode = ref<UploadMode>('create');
-const myResourceTab = ref<MyResourceTab>('uploads');
 const categoryCode = ref('all');
 const previewType = ref('all');
 const uploadedWithin = ref('all');
@@ -172,18 +131,23 @@ const sort = ref('latest');
 const pageNum = ref(1);
 const pageSize = ref(15);
 const total = ref(0);
-const myResourcesTotal = ref(0);
 const loading = ref(false);
-const myResourcesLoading = ref(false);
-const myResourcesVisible = ref(false);
 const uploadVisible = ref(false);
 const uploading = ref(false);
 
 const isLoggedIn = computed(() => Boolean(userStore.token || getToken()));
-const categoryTotal = computed(() => categories.value.reduce((sum, item) => sum + (item.resourceCount || 0), 0));
-const activeCategory = computed(() => categories.value.find((item) => item.categoryCode === categoryCode.value));
-const resourcePageTitle = computed(() => (categoryCode.value === 'all' ? '全部资源' : activeCategory.value?.categoryName || '当前分类'));
-const resourcePageSubtitle = computed(() => `当前筛选共 ${total.value} 条资料`);
+
+// scope：public（默认）| mine | favorites —— 唯一来源是 URL
+const scope = computed(() => {
+  const s = route.query.scope as string;
+  return s === 'mine' || s === 'favorites' ? s : 'public';
+});
+
+const emptyText = computed(() => {
+  if (scope.value === 'mine') return '还没有上传过资料';
+  if (scope.value === 'favorites') return '还没有收藏资料';
+  return '暂无资料';
+});
 
 const ensureLogin = () => {
   if (isLoggedIn.value) {
@@ -202,7 +166,7 @@ const reload = async () => {
   loading.value = true;
   try {
     const res: any = await listResources({
-      scope: 'public',
+      scope: scope.value,
       categoryCode: categoryCode.value,
       keyword: keyword.value,
       previewType: previewType.value,
@@ -222,50 +186,6 @@ const reload = async () => {
 const reloadFirst = () => {
   pageNum.value = 1;
   reload();
-};
-
-const loadMyResources = async () => {
-  if (myResourceTab.value !== 'uploads' && myResourceTab.value !== 'favorites') {
-    myResources.value = [];
-    myResourcesTotal.value = 0;
-    return;
-  }
-  if (!ensureLogin()) {
-    return;
-  }
-  myResourcesLoading.value = true;
-  try {
-    const res: any = await listResources({
-      scope: myResourceTab.value === 'favorites' ? 'favorites' : 'mine',
-      sort: 'latest',
-      status: 'all',
-      pageNum: 1,
-      pageSize: 50
-    });
-    myResources.value = res.rows || [];
-    myResourcesTotal.value = res.total || 0;
-  } finally {
-    myResourcesLoading.value = false;
-  }
-};
-
-const openMyResources = async () => {
-  if (!ensureLogin()) {
-    return;
-  }
-  myResourcesVisible.value = true;
-  myResourceTab.value = 'uploads';
-  await loadMyResources();
-};
-
-const changeMyResourceTab = async (tab: MyResourceTab) => {
-  myResourceTab.value = tab;
-  await loadMyResources();
-};
-
-const changeCategory = (code: string) => {
-  categoryCode.value = code;
-  reloadFirst();
 };
 
 const changePreviewType = (value: string) => {
@@ -294,8 +214,8 @@ const onPage = (page: number) => {
 };
 
 const openPreview = (resource: InfoResource) => {
-  const route = router.resolve({ name: 'InfoResourcePreview', params: { resourceId: resource.resourceId } });
-  window.open(route.href, '_blank');
+  const target = router.resolve({ name: 'InfoResourcePreview', params: { resourceId: resource.resourceId } });
+  window.open(target.href, '_blank');
 };
 
 const openDownload = (resource: InfoResource) => {
@@ -310,7 +230,6 @@ const updateResourceFavoriteState = (resourceId: number | string, favorited: boo
     item.favoriteCount = favorited ? currentCount + 1 : Math.max(currentCount - 1, 0);
   };
   resources.value.forEach(update);
-  myResources.value.forEach(update);
 };
 
 const toggleFavorite = async (resource: InfoResource) => {
@@ -325,8 +244,9 @@ const toggleFavorite = async (resource: InfoResource) => {
   }
   updateResourceFavoriteState(resource.resourceId, nextFavorited);
   ElMessage.success(nextFavorited ? '已收藏' : '已取消收藏');
-  if (myResourcesVisible.value && myResourceTab.value === 'favorites') {
-    await loadMyResources();
+  // 收藏视图（scope=favorites）取消收藏后即时移出列表——原抽屉刷新的等价迁移
+  if (scope.value === 'favorites') {
+    await reload();
   }
 };
 
@@ -386,9 +306,6 @@ const fileTitle = (payload: ResourceSubmitPayload, file: File, total: number) =>
 const refreshOwnedViews = async () => {
   await loadCategories();
   await reload();
-  if (myResourcesVisible.value) {
-    await loadMyResources();
-  }
 };
 
 const submitResource = async (payload: ResourceSubmitPayload) => {
@@ -447,145 +364,33 @@ const deleteOwnResource = async (resource: InfoResource) => {
   await refreshOwnedViews();
 };
 
-onMounted(async () => {
-  await loadCategories();
-  await reload();
+// scope/category 唯一来源是 URL query：初始化与变更都从这里读，首屏只请求一次
+watch(
+  () => [route.query.scope, route.query.category],
+  () => {
+    categoryCode.value = (route.query.category as string) || 'all';
+    reloadFirst();
+  },
+  { immediate: true }
+);
+
+onMounted(() => {
+  loadCategories();
 });
 </script>
 
 <style scoped>
-.resources-app {
-  min-height: 100vh;
-  --resource-primary: #245f8f;
-  --resource-primary-deep: #183f63;
-  --resource-primary-soft: #eaf2f8;
-  --resource-accent: #2f8a7a;
-  --resource-accent-soft: #e7f4f0;
-  --resource-title: #14243a;
-  --resource-text: #32445c;
-  --resource-muted: #68788c;
-  --resource-weak: #96a1af;
-  --resource-border: #dce5ed;
-  --resource-input-border: #d3dee8;
-  display: grid;
-  grid-template-columns: 276px minmax(0, 1fr);
-  gap: 22px;
-  padding: 18px 28px 44px;
-  background: linear-gradient(180deg, rgba(241, 244, 248, 0.95) 0%, rgba(247, 249, 252, 0.82) 320px), #f5f7fa;
-  color: var(--resource-text);
-  font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+.resource-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.resources-app :deep(.el-input__wrapper),
-.resources-app :deep(.el-select__wrapper) {
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 0 0 1px var(--resource-input-border) inset;
-}
-
-.resources-app :deep(.el-input__wrapper:hover),
-.resources-app :deep(.el-select__wrapper:hover),
-.resources-app :deep(.el-input__wrapper.is-focus),
-.resources-app :deep(.el-select__wrapper.is-focused) {
-  box-shadow: 0 0 0 1px var(--resource-primary) inset;
-}
-
-.resources-app :deep(.el-input__inner),
-.resources-app :deep(.el-select__placeholder) {
-  color: var(--resource-text);
-  font-weight: 650;
-}
-
-.resources-app :deep(.el-input__inner::placeholder) {
-  color: var(--resource-muted);
-}
-
-.upload-button,
-.mine-button,
-.search-button {
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1;
-  font-weight: 850;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
-}
-
-.resource-main {
-  min-width: 0;
-  display: grid;
-  align-content: start;
-  gap: 12px;
-}
-
-.resource-topbar {
-  position: relative;
-  min-height: 86px;
-  display: grid;
-  grid-template-columns: minmax(220px, 390px) minmax(0, 1fr);
-  align-items: center;
-  gap: 18px;
-  box-sizing: border-box;
-  border: 1px solid var(--resource-border);
-  border-radius: 8px;
-  padding: 14px 16px 14px 20px;
-  overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
-}
-
-.resource-topbar::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--resource-accent);
-  pointer-events: none;
-}
-
-.title-block {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-}
-
-.title-block h1 {
-  margin: 0;
-  color: var(--resource-title);
-  font-size: 28px;
-  line-height: 1.15;
-  font-weight: 900;
-}
-
-.title-block p {
-  margin: 6px 0 0;
-  overflow: hidden;
-  color: var(--resource-muted);
-  font-size: 13px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.top-actions {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
+.resource-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .search-box {
@@ -604,58 +409,56 @@ onMounted(async () => {
 
 :deep(.resource-search .el-input__wrapper) {
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: var(--ip-radius-sm);
 }
 
 :deep(.resource-search .el-input__inner) {
-  font-size: 14px;
+  font-size: var(--ip-font-body);
 }
 
-.search-button {
-  border: 1px solid var(--resource-primary);
+.search-button,
+.upload-button {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--ip-primary-600);
+  border-radius: var(--ip-radius-sm);
   padding: 0 16px;
-  background: var(--resource-primary);
-  color: #fff;
+  background: var(--ip-primary-600);
+  color: var(--ip-neutral-0);
+  font-size: var(--ip-font-body);
+  line-height: 1;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--ip-motion-base) var(--ip-motion-ease),
+    border-color var(--ip-motion-base) var(--ip-motion-ease),
+    box-shadow var(--ip-motion-base) var(--ip-motion-ease),
+    transform var(--ip-motion-base) var(--ip-motion-ease);
 }
 
 .search-button:hover,
 .upload-button:hover {
-  background: var(--resource-primary-deep);
-  box-shadow: 0 8px 20px rgba(36, 95, 143, 0.18);
+  background: var(--ip-primary-700);
+  border-color: var(--ip-primary-700);
+  box-shadow: var(--ip-shadow-md);
   transform: translateY(-1px);
 }
 
 .upload-button {
   flex: 0 0 auto;
-  border: 1px solid var(--resource-primary);
-  padding: 0 15px;
-  background: var(--resource-primary);
-  color: #fff;
-}
-
-.mine-button {
-  flex: 0 0 auto;
-  border: 1px solid var(--resource-input-border);
-  padding: 0 15px;
-  background: #fff;
-  color: var(--resource-text);
-}
-
-.mine-button:hover {
-  border-color: var(--resource-primary);
-  background: var(--resource-primary-soft);
-  color: var(--resource-primary);
-  box-shadow: 0 8px 20px rgba(36, 95, 143, 0.1);
-  transform: translateY(-1px);
 }
 
 .resource-content {
   min-height: calc(100vh - 150px);
-  border: 1px solid var(--resource-border);
-  border-radius: 8px;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-sm);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+  background: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-md);
 }
 
 .resource-results {
@@ -675,59 +478,27 @@ onMounted(async () => {
   padding: 0;
 }
 
-.resources-app :deep(.el-pagination.is-background .el-pager li.is-active) {
-  background: var(--resource-primary);
-}
-
 @media (max-width: 1360px) {
-  .resources-app {
-    grid-template-columns: 256px minmax(0, 1fr);
-    padding-inline: 22px;
-  }
-
   .resource-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .resource-topbar {
-    grid-template-columns: 1fr;
-  }
-
-  .top-actions {
-    justify-content: flex-start;
   }
 }
 
 @media (max-width: 980px) {
-  .resources-app {
-    grid-template-columns: 1fr;
-    padding: 16px;
-  }
-
   .resource-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
-  .top-actions,
-  .search-box {
-    width: 100%;
-  }
-
-  .top-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
   .search-box {
     min-width: 0;
+    width: 100%;
     grid-template-columns: 1fr;
   }
 
-  .upload-button,
-  .mine-button,
-  .search-button {
+  .search-button,
+  .upload-button {
     width: 100%;
   }
 
