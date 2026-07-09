@@ -24,7 +24,7 @@ export default defineConfig(({ mode, command }) => {
       open: true,
       proxy: {
         [env.VITE_APP_BASE_API]: {
-          target: 'http://localhost:8180',
+          target: env.VITE_APP_PROXY_TARGET || 'http://localhost:8180',
           changeOrigin: true,
           ws: true,
           headers: {
