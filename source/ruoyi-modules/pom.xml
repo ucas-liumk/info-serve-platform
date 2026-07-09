@@ -11,7 +11,11 @@
     <modules>
         <module>ruoyi-system</module>
         <module>ruoyi-file</module>
-        <module>ruoyi-portal</module>
+        <module>ruoyi-portal-requiredknowledge</module>
+        <module>ruoyi-portal-kernel</module>
+        <module>ruoyi-portal-forum</module>
+        <module>ruoyi-portal-resources</module>
+        <module>ruoyi-portal-appcenter</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>

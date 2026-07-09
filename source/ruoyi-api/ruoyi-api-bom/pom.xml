@@ -34,6 +34,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 门户内核契约 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-api-portal-kernel</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 </project>

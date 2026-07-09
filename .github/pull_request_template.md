@@ -15,7 +15,7 @@
 - [ ] 前端：`cd plus-ui && npm run build:prod`
 - [ ] 前端样式：`cd plus-ui && npm run design:audit`
 - [ ] 后端：`cd source && mvn -o -ntp -Pdev -DskipTests -pl <模块> -am compile`
-- [ ] ruoyi-portal ArchUnit：`cd source && mvn -pl ruoyi-modules/ruoyi-portal -am -DskipTests=false test`
+- [ ] 门户模块单测（改动 portal-* 时）：`cd source && mvn -ntp -pl ruoyi-modules/<模块> -am -DskipTests=false test`
 - [ ] deploy：`docker compose --env-file .env config --quiet`
 - [ ] 行为冒烟 / curl：
 

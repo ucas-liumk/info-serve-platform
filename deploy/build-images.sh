@@ -43,10 +43,26 @@ build_java_image() {
     "${SOURCE_DIR}/ruoyi-visual/ruoyi-monitor" \
     "target/ruoyi-monitor.jar"
 
-  # portal 含文档转 PDF 预览，需 LibreOffice + CJK 字体，使用专用 Dockerfile
+  build_java_image "infosys/ruoyi-cloud-plus-portal-appcenter:2.6.2" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-appcenter" \
+    "target/ruoyi-portal-appcenter.jar"
+
+  build_java_image "infosys/ruoyi-cloud-plus-portal-requiredknowledge:2.6.2" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-requiredknowledge" \
+    "target/ruoyi-portal-requiredknowledge.jar"
+
+  build_java_image "infosys/ruoyi-cloud-plus-portal-kernel:2.6.2" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-kernel" \
+    "target/ruoyi-portal-kernel.jar"
+
+  build_java_image "infosys/ruoyi-cloud-plus-portal-forum:2.6.2" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-forum" \
+    "target/ruoyi-portal-forum.jar"
+
+  # portal-resources 含文档转 PDF 预览，需 LibreOffice + CJK 字体，使用专用 Dockerfile
   docker build \
-    -t "infosys/ruoyi-cloud-plus-portal:2.6.2" \
-    --build-arg "JAR_FILE=target/ruoyi-portal.jar" \
-    -f "${ROOT_DIR}/deploy/docker/portal.Dockerfile" \
-    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal"
+    -t "infosys/ruoyi-cloud-plus-portal-resources:2.6.2" \
+    --build-arg "JAR_FILE=target/ruoyi-portal-resources.jar" \
+    -f "${ROOT_DIR}/deploy/docker/resources.Dockerfile" \
+    "${SOURCE_DIR}/ruoyi-modules/ruoyi-portal-resources"
 } 2>&1 | tee "${LOG_DIR}/docker-build-images.log"

@@ -49,16 +49,47 @@ spring:
                 - Path=/file/**
               filters:
                 - StripPrefix=1
+            # 门户内核服务（统计/消息/模块注册表，从 ruoyi-portal 拆出）
+            - id: portal-kernel-messages
+              uri: lb://portal-kernel
+              predicates:
+                - Path=/appcenter/portal/messages/**
+              filters:
+                - StripPrefix=1
+              order: -10
+            - id: portal-kernel
+              uri: lb://portal-kernel
+              predicates:
+                - Path=/infoservice/portal/stats,/infoservice/portal/modules/**,/infoservice/module/**
+              filters:
+                - StripPrefix=1
+              order: -10
             # 门户业务服务（应用中心/资料共享/服务论坛，API 路径保持兼容）
-            - id: ruoyi-portal-appcenter
-              uri: lb://ruoyi-portal
+            - id: portal-requiredknowledge
+              uri: lb://portal-requiredknowledge
+              predicates:
+                - Path=/infoservice/required-knowledge/**,/infoservice/portal/required-knowledge/**
+              filters:
+                - StripPrefix=1
+              order: -5
+            - id: portal-forum
+              uri: lb://portal-forum
+              predicates:
+                - Path=/infoservice/forum/**,/infoservice/portal/forum/**
+              filters:
+                - StripPrefix=1
+              order: -5
+            - id: portal-resources
+              uri: lb://portal-resources
+              predicates:
+                - Path=/infoservice/resource/**,/infoservice/portal/resources/**
+              filters:
+                - StripPrefix=1
+              order: -5
+            - id: portal-appcenter
+              uri: lb://portal-appcenter
               predicates:
                 - Path=/appcenter/**
               filters:
                 - StripPrefix=1
-            - id: ruoyi-portal-infoservice
-              uri: lb://ruoyi-portal
-              predicates:
-                - Path=/infoservice/**
-              filters:
-                - StripPrefix=1
+              order: 0

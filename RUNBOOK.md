@@ -56,7 +56,7 @@ python3 scripts/generate-initdb.py
 > docker run --rm -v "$PWD":/workspace -v /Users/macmini/.m2:/root/.m2 -w /workspace \
 >   -e MAVEN_OPTS="-Xmx1280m -XX:MaxMetaspaceSize=384m" \
 >   maven:3.9-eclipse-temurin-17 mvn -ntp -Pprod -DskipTests \
->   -pl ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-file,ruoyi-modules/ruoyi-portal \
+>   -pl ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-file,ruoyi-modules/ruoyi-portal-kernel,ruoyi-modules/ruoyi-portal-appcenter,ruoyi-modules/ruoyi-portal-forum,ruoyi-modules/ruoyi-portal-requiredknowledge,ruoyi-modules/ruoyi-portal-resources \
 >   -am package
 > ```
 > 然后用 `deploy/build-images.sh` 中对应条目重建这些镜像。
@@ -71,11 +71,11 @@ docker run --rm \
   -w /workspace \
   maven:3.9-eclipse-temurin-17 \
   mvn -ntp -Pprod -DskipTests \
-    -pl ruoyi-visual/ruoyi-nacos,ruoyi-gateway,ruoyi-auth,ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-file,ruoyi-modules/ruoyi-portal,ruoyi-visual/ruoyi-monitor \
+    -pl ruoyi-visual/ruoyi-nacos,ruoyi-gateway,ruoyi-auth,ruoyi-modules/ruoyi-system,ruoyi-modules/ruoyi-file,ruoyi-modules/ruoyi-portal-kernel,ruoyi-modules/ruoyi-portal-appcenter,ruoyi-modules/ruoyi-portal-forum,ruoyi-modules/ruoyi-portal-requiredknowledge,ruoyi-modules/ruoyi-portal-resources,ruoyi-visual/ruoyi-monitor \
     -am package
 ```
 
-本机内存压力较大时，完整 Maven 构建可能被系统结束。可在依赖已缓存后，按模块离线补构建：
+本机内存压力较大时，完整 Maven 构建可能被系统结束。可在依赖已缓存后，按模块离线补构建（门户五模块 portal-kernel/appcenter/forum/requiredknowledge/resources 各自独立，按同法逐个替换模块名即可）：
 
 ```bash
 docker run --rm \
@@ -84,7 +84,7 @@ docker run --rm \
   -w /workspace \
   -e MAVEN_OPTS="-Xmx768m -XX:MaxMetaspaceSize=256m" \
   maven:3.9-eclipse-temurin-17 \
-  mvn -o -ntp -Pprod -DskipTests -pl ruoyi-modules/ruoyi-portal -am package
+  mvn -o -ntp -Pprod -DskipTests -pl ruoyi-modules/ruoyi-portal-kernel -am package
 
 docker run --rm \
   -v /Users/macmini/windows-info-serve/source:/workspace \
@@ -119,6 +119,16 @@ docker compose --env-file .env stop
 docker compose --env-file .env down
 ```
 
+### 门户业务服务独立启停（批次 A 起）
+
+平台底座（gateway/auth/system/file/monitor + 基础设施）仍由 deploy/docker-compose.yml 统一管理：
+`docker compose --env-file .env up -d`
+
+五个门户业务服务各自独立文件（deploy/compose/services/*.yml），用 svc.sh 单独操作，互不影响：
+`bash deploy/bin/svc.sh <start|stop|restart|status|logs> <portal-kernel|portal-appcenter|portal-forum|portal-requiredknowledge|portal-resources>`
+
+新装机全量启动顺序：基础设施+底座（主 compose）→ 五个业务服务（svc.sh 逐个 start，顺序任意）。
+
 ## 初始账号
 
 - 管理员：`admin / admin123`
@@ -150,7 +160,7 @@ docker compose --env-file .env down
 
 ## 说明
 
-- Nacos 配置由 `deploy/scripts/generate-initdb.py` 从 `source/script/config/nacos/` 生成到 `deploy/initdb-mysql/90-nacos-config-content.sql`，会同时更新 `dev` 与 `prod` 命名空间内容；业务库初始化生成到 `deploy/initdb-postgres/`。
+- Nacos 配置由 `deploy/scripts/generate-initdb.py` 从 `source/script/config/nacos/` 生成到 `deploy/initdb-mysql/90-nacos-config-content.sql`，会同时更新 `dev` 与 `prod` 命名空间内容；业务库初始化生成到 `deploy/initdb-postgres/`。新增服务专属 data-id 清单以脚本内 `new_configs` 为准；存量环境不重装 Nacos 配置库时，改用 `deploy/scripts/nacos-publish.sh` 按 dev/prod 双命名空间发布配置，**禁止 SQL 直写 `config_info`**（Nacos 对不存在的 data-id 有负缓存，SQL 直插后服务取不到）。
 - 服务内的 Nacos 地址通过环境变量和 JVM 参数覆盖为 `nacos:8848`，不使用官方 host network。
 - RabbitMQ 与 MinIO 使用独立容器，不复用本机其他项目。
 - 初始化 SQL 已统一添加 `SET NAMES utf8mb4`，避免中文配置和租户名称导入后乱码。
