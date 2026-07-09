@@ -160,3 +160,17 @@
 2. **截图回归**：`deploy/scripts/ui-capture.py` 采集关键页面截图（登录/门户四页/后台三页/移动端），重大样式改动前后各跑一次并对比归档。
 3. **评审清单**（合并前自查）：只用令牌？五态齐全？每屏一个 primary？无孤字断行/截断？焦点态可见？术语与 BC 一致？
 4. 本规范与 `tokens.scss` 同步修订；任何"规范说 A 代码是 B"都按缺陷处理。
+
+## 11. 门户壳层格律（Portal Shell v1，2026-07-09）
+
+门户模块页统一由壳层承载，模块不得自建顶栏/侧栏/整页背景。法源：spec `docs/superpowers/specs/2026-07-09-resources-portal-shell-design.md`。
+
+**三段结构**：TopBar（56px sticky，模块注册表驱动一级导航 + 消息铃 + 用户菜单）｜IconRail（48px 常驻：上=域导航，可带「待」徽标；下=个人捷径，横线分隔）｜CategoryRail（184px，可折叠至 16px，折叠态按 `portal-shell:<module>:cat-collapsed` 记忆）。
+
+**接入方式**：路由 meta `{ portalShell: true, portalModule: '<key>', portalNoCategory?: true }` + 在 `src/layout/portal-shell/configs/` 注册 `ModuleNavConfig`（类型见 `src/layout/portal-shell/types.ts`）。旧 `usesOwnShell` 名单已冻结，禁止新增。
+
+**交互契约**：分类与个人视图一律 URL query 驱动（`?category=`、`?scope=`），页面只观察 `route.query`，壳层与页面零回调耦合，链接可分享。
+
+**视觉红线**：仅 `--ip-*` 令牌；折叠过渡 `--ip-motion-panel`；所有交互元素有 hover 与 `:focus-visible`；图标用 UnoCSS Iconify 类（`i-material-symbols:*` 线性）；分类栏交付加载/空/错误/正常/收起五态。
+
+**迁移状态**：resources 已迁入（试点）；appcenter/forum/requiredknowledge/usage-dashboard 待迁；第三方模块自诞生即按本格律接入。mine 视图卡片管理菜单为模块内自管理范式（scope 感知的操作注入）。
