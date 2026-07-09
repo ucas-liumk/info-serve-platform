@@ -53,6 +53,12 @@ export const constantRoutes: RouteRecordRaw[] = [
         meta: { title: '资料预览' }
       },
       {
+        path: 'resources/community',
+        name: 'InfoResourceCommunity',
+        component: () => import('@/views/portal/resources/community.vue'),
+        meta: { title: '交流互动', portalShell: true, portalModule: 'resources', portalNoCategory: true }
+      },
+      {
         path: 'required-knowledge',
         name: 'RequiredKnowledgeHome',
         component: () => import('@/views/portal/required-knowledge/index.vue'),

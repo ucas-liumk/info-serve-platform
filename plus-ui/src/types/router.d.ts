@@ -8,6 +8,9 @@ declare module 'vue-router' {
     activeMenu?: string;
     icon?: string;
     breadcrumb?: boolean;
+    portalShell?: boolean;
+    portalModule?: string;
+    portalNoCategory?: boolean;
   }
 
   interface _RouteRecordBase {

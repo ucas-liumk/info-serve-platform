@@ -1,9 +1,12 @@
 <template>
   <div class="portal-layout" :class="{ 'home-mode': isHome }">
-    <PortalSidebar v-if="!isHome && !usesOwnShell" />
-    <section class="portal-main" :class="{ 'home-main': isHome, 'own-shell-main': usesOwnShell }">
-      <router-view />
-    </section>
+    <PortalShell v-if="usesPortalShell" />
+    <template v-else>
+      <PortalSidebar v-if="!isHome && !usesOwnShell" />
+      <section class="portal-main" :class="{ 'home-main': isHome, 'own-shell-main': usesOwnShell }">
+        <router-view />
+      </section>
+    </template>
   </div>
 </template>
 
@@ -11,9 +14,12 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import PortalSidebar from './components/PortalSidebar.vue';
+import PortalShell from '@/layout/portal-shell/PortalShell.vue';
 
 const route = useRoute();
 const isHome = computed(() => route.name === 'InfoPortalHome');
+const usesPortalShell = computed(() => route.meta.portalShell === true);
+// 冻结名单：新模块一律走 meta.portalShell，禁止再往这里加名字（spec 2026-07-09 §3）
 const usesOwnShell = computed(
   () =>
     route.name === 'InfoTools' ||
