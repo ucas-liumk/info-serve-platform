@@ -38,6 +38,13 @@ public class InfoResourceCategoryController extends BaseController {
         return R.ok(categoryService.queryList(bo));
     }
 
+    /** 树表全量平铺（C4）：含 parentId、含停用行、不分页，供前端 handleTree 组树 */
+    @SaCheckPermission("infoservice:resourceCategory:list")
+    @GetMapping("/treeList")
+    public R<List<InfoResourceCategoryVo>> treeList() {
+        return R.ok(categoryService.queryTreeList());
+    }
+
     @SaCheckPermission("infoservice:resourceCategory:query")
     @GetMapping("/{categoryId}")
     public R<InfoResourceCategoryVo> getInfo(@PathVariable Long categoryId) {

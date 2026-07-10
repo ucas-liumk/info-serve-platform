@@ -13,6 +13,8 @@ import java.util.Date;
 public class InfoResourceCategoryVo implements Serializable {
     @Serial private static final long serialVersionUID = 1L;
     private Long categoryId;
+    /** 父栏目ID（NULL=栏目，非空=分类，两级封顶） */
+    private Long parentId;
     private String categoryName;
     private String categoryCode;
     private String description;

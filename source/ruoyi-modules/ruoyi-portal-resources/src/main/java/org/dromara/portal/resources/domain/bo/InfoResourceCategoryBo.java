@@ -12,6 +12,8 @@ import org.dromara.portal.resources.domain.InfoResourceCategory;
 @AutoMapper(target = InfoResourceCategory.class)
 public class InfoResourceCategoryBo extends BaseEntity {
     private Long categoryId;
+    /** 父栏目ID（空=栏目，非空=分类，两级封顶） */
+    private Long parentId;
     @NotBlank(message = "分类名称不能为空")
     private String categoryName;
     @NotBlank(message = "分类编码不能为空")

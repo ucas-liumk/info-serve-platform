@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.portal.resources.mapper.InfoResourceMapper">
+
+    <!-- 门户分类树分面计数：一次 GROUP BY 聚合（禁逐分类 N+1）。
+         筛选语义与列表接口 buildWrapper 一致；租户条件由租户拦截器自动追加。 -->
+    <select id="countActiveByCategory" resultType="org.dromara.portal.resources.domain.vo.InfoResourceCategoryCountVo">
+        SELECT category_id, COUNT(*) AS resource_count
+        FROM info_resource
+        WHERE status = '0'
+          AND del_flag = '0'
+        <if test="keyword != null and keyword != ''">
+            AND (title LIKE CONCAT('%', #{keyword}, '%')
+                OR description LIKE CONCAT('%', #{keyword}, '%')
+                OR original_name LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="previewType != null and previewType != ''">
+            AND preview_type = #{previewType}
+        </if>
+        <if test="uploadedSince != null">
+            AND create_time &gt;= #{uploadedSince}
+        </if>
+        <if test="minFileSize != null">
+            AND file_size &gt;= #{minFileSize}
+        </if>
+        <if test="maxFileSize != null">
+            AND file_size &lt; #{maxFileSize}
+        </if>
+        GROUP BY category_id
+    </select>
+
+</mapper>

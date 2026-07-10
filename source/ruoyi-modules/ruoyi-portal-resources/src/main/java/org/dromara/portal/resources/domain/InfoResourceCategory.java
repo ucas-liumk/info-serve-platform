@@ -16,6 +16,8 @@ public class InfoResourceCategory extends BaseEntity {
     @Serial private static final long serialVersionUID = 1L;
     @TableId(value = "category_id")
     private Long categoryId;
+    /** 父栏目ID（NULL=栏目，非空=分类，两级封顶） */
+    private Long parentId;
     private String categoryName;
     private String categoryCode;
     private String description;

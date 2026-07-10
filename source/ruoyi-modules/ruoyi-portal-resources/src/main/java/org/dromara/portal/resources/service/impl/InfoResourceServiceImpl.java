@@ -35,6 +35,7 @@ import org.dromara.portal.api.event.PortalNotificationEvent;
 import org.dromara.portal.resources.mq.ResourceConvertListener;
 import org.dromara.portal.resources.mq.ResourceConvertMessage;
 import org.dromara.portal.resources.service.IInfoResourceService;
+import org.dromara.portal.resources.support.CategoryCodes;
 import org.dromara.portal.resources.support.DocumentPreviewConverter;
 import org.dromara.portal.resources.support.ResourceUserDisplayNameResolver;
 import org.dromara.file.api.RemoteFileService;
@@ -115,13 +116,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         } else if (isActiveFilter(bo.getStatus())) {
             w.eq(InfoResource::getStatus, bo.getStatus());
         }
-        if (StringUtils.isNotBlank(bo.getCategoryCode()) && !"all".equals(bo.getCategoryCode())) {
-            InfoResourceCategory category = categoryMapper.selectOne(
-                Wrappers.<InfoResourceCategory>lambdaQuery()
-                    .eq(InfoResourceCategory::getCategoryCode, bo.getCategoryCode())
-                    .eq(InfoResourceCategory::getStatus, "0"));
-            w.eq(InfoResource::getCategoryId, category == null ? -1L : category.getCategoryId());
-        }
+        applyCategoryCodes(w, bo.getCategoryCode());
         if (StringUtils.isNotBlank(bo.getKeyword())) {
             w.and(q -> q.like(InfoResource::getTitle, bo.getKeyword())
                 .or().like(InfoResource::getDescription, bo.getKeyword())
@@ -136,6 +131,30 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         applySizeRange(w, bo.getSizeRange());
         applySort(w, bo.getSort());
         return w;
+    }
+
+    /**
+     * C2 分类筛选：categoryCode 支持逗号分隔多值（'all' 哨兵与空白剔除后为空=不筛选）；
+     * 全无命中保持 eq(category_id, -1) 空集语义，单值命中保持 eq 语义与旧版 bit 级一致，
+     * 多值命中用 IN(命中的 categoryId 集)。
+     */
+    private void applyCategoryCodes(LambdaQueryWrapper<InfoResource> w, String categoryCode) {
+        List<String> codes = CategoryCodes.parse(categoryCode);
+        if (codes.isEmpty()) {
+            return;
+        }
+        List<Long> matchedIds = categoryMapper.selectList(
+                Wrappers.<InfoResourceCategory>lambdaQuery()
+                    .in(InfoResourceCategory::getCategoryCode, codes)
+                    .eq(InfoResourceCategory::getStatus, "0"))
+            .stream().map(InfoResourceCategory::getCategoryId).toList();
+        if (matchedIds.isEmpty()) {
+            w.eq(InfoResource::getCategoryId, -1L);
+        } else if (matchedIds.size() == 1) {
+            w.eq(InfoResource::getCategoryId, matchedIds.get(0));
+        } else {
+            w.in(InfoResource::getCategoryId, matchedIds);
+        }
     }
 
     private void fillResourceExt(List<InfoResourceVo> rows) {
@@ -580,6 +599,9 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         InfoResourceCategory category = categoryMapper.selectById(categoryId);
         if (category == null || !"0".equals(category.getStatus())) {
             throw new ServiceException("资料分类不存在或已停用");
+        }
+        if (category.getParentId() == null) {
+            throw new ServiceException("资料只能挂在栏目下的具体分类，请重新选择分类");
         }
     }
 

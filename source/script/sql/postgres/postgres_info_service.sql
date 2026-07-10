@@ -5,6 +5,7 @@
 
 CREATE TABLE IF NOT EXISTS info_resource_category (
     category_id   int8         NOT NULL,
+    parent_id     int8         DEFAULT NULL,
     category_name varchar(80)  NOT NULL,
     category_code varchar(80)  NOT NULL,
     description   varchar(500) DEFAULT NULL,
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS info_resource_category (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uk_info_resource_category_code ON info_resource_category (category_code) WHERE del_flag = '0';
 COMMENT ON TABLE info_resource_category IS '信息中心资料分类';
+COMMENT ON COLUMN info_resource_category.parent_id IS '父栏目ID（NULL=栏目，非空=分类，两级封顶）';
 
 CREATE TABLE IF NOT EXISTS info_resource (
     resource_id    int8          NOT NULL,
@@ -180,11 +182,13 @@ CREATE INDEX IF NOT EXISTS idx_info_resource_view_record_resource ON info_resour
 CREATE INDEX IF NOT EXISTS idx_info_resource_view_record_user ON info_resource_view_record (user_id, create_time);
 COMMENT ON TABLE info_resource_view_record IS '信息中心资料阅看记录';
 
-INSERT INTO info_resource_category (category_id, category_name, category_code, description, icon, order_num, create_time)
+-- 栏目/分类两级：parent_id 为空=栏目，非空=分类；300000「综合资料」为默认栏目，承接既有三个分类。
+INSERT INTO info_resource_category (category_id, parent_id, category_name, category_code, description, icon, order_num, create_time)
 VALUES
-(300001, '政策制度', 'policy', '规章制度、流程规范和政策类资料。', 'document', 1, now()),
-(300002, '技术文档', 'tech', '系统说明、操作手册和技术方案资料。', 'code', 2, now()),
-(300003, '常用模板', 'template', '工作模板、表单样例和可复用材料。', 'form', 3, now())
+(300000, NULL,   '综合资料', 'general', '默认栏目，承接通用共享资料分类。', 'folder', 0, now()),
+(300001, 300000, '政策制度', 'policy', '规章制度、流程规范和政策类资料。', 'document', 1, now()),
+(300002, 300000, '技术文档', 'tech', '系统说明、操作手册和技术方案资料。', 'code', 2, now()),
+(300003, 300000, '常用模板', 'template', '工作模板、表单样例和可复用材料。', 'form', 3, now())
 ON CONFLICT (category_id) DO NOTHING;
 
 INSERT INTO info_forum_board (board_id, board_name, board_code, description, order_num, create_time)
