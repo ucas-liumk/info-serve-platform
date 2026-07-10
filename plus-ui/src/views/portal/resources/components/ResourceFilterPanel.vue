@@ -29,6 +29,7 @@
           :aria-checked="groupAriaChecked(group)"
           :aria-label="`选择栏目「${group.categoryName}」全部分类`"
           @click.stop="onToggleGroup(group)"
+          @keydown.stop
         ></button>
         <span class="group-name">{{ group.categoryName }}</span>
         <em class="count">{{ groupResourceCount(group) }}</em>

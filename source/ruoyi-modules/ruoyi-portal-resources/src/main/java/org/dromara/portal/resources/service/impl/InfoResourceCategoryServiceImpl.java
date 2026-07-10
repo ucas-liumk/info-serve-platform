@@ -18,19 +18,26 @@ import org.dromara.portal.resources.domain.vo.InfoResourceCategoryTreeVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceCategoryVo;
 import org.dromara.portal.resources.mapper.InfoResourceCategoryMapper;
 import org.dromara.portal.resources.mapper.InfoResourceMapper;
+import org.dromara.common.tenant.helper.TenantHelper;
 import org.dromara.portal.resources.service.IInfoResourceCategoryService;
 import org.dromara.portal.resources.support.ResourceFacetParams;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
 public class InfoResourceCategoryServiceImpl implements IInfoResourceCategoryService {
+
+    /** 编码格式：与多值 categoryCode 逗号协议及门户 URL 传参安全对齐 */
+    private static final Pattern CODE_PATTERN = Pattern.compile("^[A-Za-z0-9_-]{1,80}$");
 
     private final InfoResourceCategoryMapper baseMapper;
     private final InfoResourceMapper resourceMapper;
@@ -66,8 +73,24 @@ public class InfoResourceCategoryServiceImpl implements IInfoResourceCategorySer
         // C3：平铺接口（上传弹窗 / 资料编辑下拉）只返回二级分类，结构与字段零变化
         List<InfoResourceCategoryVo> rows = baseMapper.selectVoList(
             buildWrapper(bo).isNotNull(InfoResourceCategory::getParentId));
+        if ("0".equals(bo.getStatus())) {
+            // 停用栏目整组隐藏（与 C1 树语义对齐）：防止资料被挂进门户左栏不可见的分类
+            Set<Long> activeSections = selectActiveSectionIds();
+            rows = rows.stream()
+                .filter(row -> row.getParentId() != null && activeSections.contains(row.getParentId()))
+                .toList();
+        }
         fillResourceCount(rows);
         return rows;
+    }
+
+    private Set<Long> selectActiveSectionIds() {
+        return baseMapper.selectList(Wrappers.<InfoResourceCategory>lambdaQuery()
+                .isNull(InfoResourceCategory::getParentId)
+                .eq(InfoResourceCategory::getStatus, "0"))
+            .stream()
+            .map(InfoResourceCategory::getCategoryId)
+            .collect(Collectors.toSet());
     }
 
     @Override
@@ -147,12 +170,12 @@ public class InfoResourceCategoryServiceImpl implements IInfoResourceCategorySer
         return rows;
     }
 
-    /** 树表计数：一次 GROUP BY 聚合填充（不带分面筛选） */
+    /** 树表计数：一次 GROUP BY 聚合填充。口径=全部未删（含已下架），与删除校验一致，避免"资料数 0 却拒删"的矛盾反馈 */
     private void fillResourceCountAggregated(List<InfoResourceCategoryVo> rows) {
         if (rows == null || rows.isEmpty()) {
             return;
         }
-        Map<Long, Long> counts = resourceMapper.countActiveByCategory(null, null, null, null, null)
+        Map<Long, Long> counts = resourceMapper.countUndeletedByCategory()
             .stream()
             .collect(Collectors.toMap(InfoResourceCategoryCountVo::getCategoryId,
                 InfoResourceCategoryCountVo::getResourceCount, (a, b) -> a));
@@ -166,6 +189,7 @@ public class InfoResourceCategoryServiceImpl implements IInfoResourceCategorySer
 
     @Override
     public Boolean insertByBo(InfoResourceCategoryBo bo) {
+        validateCodeFormat(bo);
         validateHierarchy(bo);
         validateCodeUnique(bo);
         InfoResourceCategory add = MapstructUtils.convert(bo, InfoResourceCategory.class);
@@ -173,11 +197,47 @@ public class InfoResourceCategoryServiceImpl implements IInfoResourceCategorySer
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(InfoResourceCategoryBo bo) {
+        validateCodeFormat(bo);
         validateHierarchy(bo);
         validateCodeUnique(bo);
+        validatePromotionToSection(bo);
         InfoResourceCategory up = MapstructUtils.convert(bo, InfoResourceCategory.class);
-        return baseMapper.updateById(up) > 0;
+        // 全局 update-strategy=NOT_NULL 会跳过实体上的 null 字段：parent_id 统一经 wrapper 显式落库，
+        // 否则「分类改回栏目」（parentId=null）静默不生效却返回成功（C5：parentId 为空=栏目）
+        up.setParentId(null);
+        return baseMapper.update(up, Wrappers.<InfoResourceCategory>lambdaUpdate()
+            .eq(InfoResourceCategory::getCategoryId, bo.getCategoryId())
+            .set(InfoResourceCategory::getParentId, bo.getParentId())) > 0;
+    }
+
+    /** 分类改回栏目（parentId 置空）前置校验：已挂资料的分类不能升级为栏目（资料只允许挂二级分类） */
+    private void validatePromotionToSection(InfoResourceCategoryBo bo) {
+        if (bo.getCategoryId() == null || bo.getParentId() != null) {
+            return;
+        }
+        InfoResourceCategory current = baseMapper.selectById(bo.getCategoryId());
+        if (current == null || current.getParentId() == null) {
+            return;
+        }
+        if (countAttachedResources(List.of(bo.getCategoryId())) > 0) {
+            throw new ServiceException("该分类下仍有资料，不能调整为栏目");
+        }
+    }
+
+    /** 编码格式校验：'all' 为门户筛选保留哨兵；逗号/空白会破坏多值 categoryCode 协议，一律拒绝 */
+    private void validateCodeFormat(InfoResourceCategoryBo bo) {
+        String code = bo.getCategoryCode();
+        if (StringUtils.isBlank(code)) {
+            return;
+        }
+        if ("all".equalsIgnoreCase(code)) {
+            throw new ServiceException("编码 all 为系统保留值，请更换编码");
+        }
+        if (!CODE_PATTERN.matcher(code).matches()) {
+            throw new ServiceException("分类编码仅支持字母、数字、中划线、下划线，长度不超过 80");
+        }
     }
 
     /**
@@ -235,6 +295,7 @@ public class InfoResourceCategoryServiceImpl implements IInfoResourceCategorySer
      * C5 删除校验：栏目下有未删子分类（含停用）不可删；分类下有未删资料不可删。
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean deleteWithValidByIds(Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return false;
@@ -244,11 +305,16 @@ public class InfoResourceCategoryServiceImpl implements IInfoResourceCategorySer
         if (childCount != null && childCount > 0) {
             throw new ServiceException("所选栏目下仍有分类，请先删除或迁移其分类");
         }
-        Long resourceCount = resourceMapper.selectCount(Wrappers.<InfoResource>lambdaQuery()
-            .in(InfoResource::getCategoryId, ids));
-        if (resourceCount != null && resourceCount > 0) {
-            throw new ServiceException("所选分类下仍有资料，请先删除或迁移其资料");
+        if (countAttachedResources(ids) > 0) {
+            throw new ServiceException("所选分类下仍有资料（含已下架或其他租户的资料），请先删除或迁移其资料");
         }
         return baseMapper.deleteByIds(ids) > 0;
+    }
+
+    /** 分类为全租户共享字典而资料表带租户列：守卫计数必须跨租户，防止 A 租户绕过 B 租户的挂接 */
+    private long countAttachedResources(Collection<Long> ids) {
+        Long count = TenantHelper.ignore(() -> resourceMapper.selectCount(
+            Wrappers.<InfoResource>lambdaQuery().in(InfoResource::getCategoryId, ids)));
+        return count == null ? 0L : count;
     }
 }

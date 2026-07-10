@@ -22,6 +22,18 @@ public interface InfoResourceMapper extends BaseMapperPlus<InfoResource, InfoRes
                                                             @Param("minFileSize") Long minFileSize,
                                                             @Param("maxFileSize") Long maxFileSize);
 
+    /**
+     * 未删资料按分类聚合计数（含已下架，口径与删除校验一致，供管理树表）。
+     * 逻辑删由 SQL 显式过滤；租户条件由拦截器自动追加。
+     */
+    @Select("""
+        select category_id, count(*) as resource_count
+        from info_resource
+        where del_flag = '0'
+        group by category_id
+        """)
+    List<InfoResourceCategoryCountVo> countUndeletedByCategory();
+
     /** 资料浏览+下载总量（资料 BC 自有口径，供内核统计聚合） */
     @Select("""
         select coalesce(sum(coalesce(view_count, 0) + coalesce(download_count, 0)), 0)

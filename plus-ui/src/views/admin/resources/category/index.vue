@@ -146,7 +146,15 @@ const form = ref<ResourceCategoryForm>({ ...initFormData });
 const rules = reactive<ElFormRules>({
   parentId: [{ required: true, message: '上级栏目不能为空', trigger: 'change' }],
   categoryName: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
-  categoryCode: [{ required: true, message: '编码不能为空', trigger: 'blur' }]
+  categoryCode: [
+    { required: true, message: '编码不能为空', trigger: 'blur' },
+    { pattern: /^[A-Za-z0-9_-]{1,80}$/, message: '仅支持字母、数字、中划线、下划线，不超过 80 字符', trigger: 'blur' },
+    {
+      validator: (_rule: unknown, value: string, callback: (error?: Error) => void) =>
+        value && value.toLowerCase() === 'all' ? callback(new Error('all 为系统保留编码，请更换')) : callback(),
+      trigger: 'blur'
+    }
+  ]
 });
 
 /** 是否栏目行（parentId 为空=一级栏目） */

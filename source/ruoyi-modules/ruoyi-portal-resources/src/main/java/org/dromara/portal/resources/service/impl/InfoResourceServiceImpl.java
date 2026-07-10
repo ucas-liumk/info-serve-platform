@@ -603,6 +603,11 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         if (category.getParentId() == null) {
             throw new ServiceException("资料只能挂在栏目下的具体分类，请重新选择分类");
         }
+        // 停用栏目在门户左栏整组隐藏：禁止把资料挂进用户看不见的分类（与 C1/C3 过滤语义对齐）
+        InfoResourceCategory section = categoryMapper.selectById(category.getParentId());
+        if (section == null || !"0".equals(section.getStatus())) {
+            throw new ServiceException("该分类所属栏目已停用，请选择其他分类");
+        }
     }
 
     private void assertStatusUsable(String status) {

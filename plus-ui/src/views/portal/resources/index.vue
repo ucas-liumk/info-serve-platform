@@ -198,24 +198,39 @@ const loadCategories = async () => {
   categories.value = res.data || [];
 };
 
-/** 分面计数树：同步关键词+工具条筛选，但不含分类勾选自身（标准分面语义） */
+/** 已提交的搜索关键词：勾选/排序/翻页只读它，避免输入半截的词被隐式带入列表而计数还是旧口径 */
+const committedKeyword = ref('');
+
+/** 请求序号：丢弃过期响应，防止快速连点勾选时旧结果覆盖新结果 */
+let reloadSeq = 0;
+let treeSeq = 0;
+
+/** 分面计数树：同步已提交关键词+工具条筛选，但不含分类勾选自身（标准分面语义） */
 const loadCategoryTree = async () => {
-  const res: any = await getResourceCategoryTree({
-    keyword: keyword.value,
-    previewType: previewType.value,
-    uploadedWithin: uploadedWithin.value,
-    sizeRange: sizeRange.value
-  });
-  categoryTree.value = res.data || [];
+  const seq = ++treeSeq;
+  try {
+    const res: any = await getResourceCategoryTree({
+      keyword: committedKeyword.value,
+      previewType: previewType.value,
+      uploadedWithin: uploadedWithin.value,
+      sizeRange: sizeRange.value
+    });
+    if (seq === treeSeq) {
+      categoryTree.value = res.data || [];
+    }
+  } catch {
+    // 计数树刷新失败保留旧数据，避免左栏闪空；错误提示由全局请求拦截器兜底
+  }
 };
 
 const reload = async () => {
+  const seq = ++reloadSeq;
   loading.value = true;
   try {
     const res: any = await listResources({
       scope: 'public',
       categoryCode: encodeCategoryCodes(selectedCategories.value),
-      keyword: keyword.value,
+      keyword: committedKeyword.value,
       previewType: previewType.value,
       uploadedWithin: uploadedWithin.value,
       sizeRange: sizeRange.value,
@@ -223,10 +238,21 @@ const reload = async () => {
       pageNum: pageNum.value,
       pageSize: pageSize.value
     });
+    if (seq !== reloadSeq) {
+      return;
+    }
     resources.value = res.rows || [];
     total.value = res.total || 0;
+    // 筛少后停留在越界深页码时钳回最后一页重取，防止“有总数却整页为空且分页器隐藏”
+    const lastPage = Math.max(1, Math.ceil(total.value / pageSize.value));
+    if (resources.value.length === 0 && total.value > 0 && pageNum.value > lastPage) {
+      pageNum.value = lastPage;
+      await reload();
+    }
   } finally {
-    loading.value = false;
+    if (seq === reloadSeq) {
+      loading.value = false;
+    }
   }
 };
 
@@ -235,10 +261,13 @@ const reloadFirst = () => {
   reload();
 };
 
-/** 关键词/工具条筛选变化：列表与分面计数并行刷新 */
+/** 关键词/工具条筛选变化：提交关键词，列表与分面计数并行刷新 */
 const reloadWithFacets = async () => {
+  committedKeyword.value = keyword.value;
   pageNum.value = 1;
-  await Promise.all([reload(), loadCategoryTree()]);
+  await Promise.all([reload(), loadCategoryTree()]).catch(() => {
+    // 列表失败由全局拦截器提示；此处仅防未处理的 Promise 拒绝
+  });
 };
 
 const loadMyResources = async () => {

@@ -180,6 +180,28 @@ class InfoResourceCategoryServiceImplTest {
     }
 
     @Test
+    void queryList_active_filter_hides_children_of_disabled_sections() {
+        InfoResourceCategoryBo bo = new InfoResourceCategoryBo();
+        bo.setStatus("0");
+        InfoResourceCategoryVo visible = new InfoResourceCategoryVo();
+        visible.setCategoryId(300001L);
+        visible.setParentId(300000L);
+        InfoResourceCategoryVo hidden = new InfoResourceCategoryVo();
+        hidden.setCategoryId(300009L);
+        hidden.setParentId(600000L);
+        when(baseMapper.selectVoList(any(Wrapper.class))).thenReturn(List.of(visible, hidden));
+        // 活跃栏目仅 300000：600000 视为停用栏目，其子分类须整组隐藏
+        when(baseMapper.selectList(any(Wrapper.class)))
+            .thenReturn(List.of(category(300000L, null, "general", "综合资料", 0)));
+        when(resourceMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+
+        List<InfoResourceCategoryVo> rows = service.queryList(bo);
+
+        assertEquals(1, rows.size());
+        assertEquals(300001L, rows.get(0).getCategoryId());
+    }
+
+    @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void portalCategories_filters_active_child_level() {
         when(baseMapper.selectVoList(any(Wrapper.class))).thenReturn(List.of());
@@ -205,8 +227,7 @@ class InfoResourceCategoryServiceImplTest {
         child.setCategoryId(300001L);
         child.setParentId(300000L);
         when(baseMapper.selectVoList(any(Wrapper.class))).thenReturn(List.of(section, child));
-        when(resourceMapper.countActiveByCategory(isNull(), isNull(), isNull(), isNull(), isNull()))
-            .thenReturn(List.of(count(300001L, 3L)));
+        when(resourceMapper.countUndeletedByCategory()).thenReturn(List.of(count(300001L, 3L)));
 
         List<InfoResourceCategoryVo> rows = service.queryTreeList();
 
@@ -269,6 +290,68 @@ class InfoResourceCategoryServiceImplTest {
 
         ServiceException ex = assertThrows(ServiceException.class, () -> service.updateByBo(bo));
         assertTrue(ex.getMessage().contains("分类"));
+    }
+
+    @Test
+    void update_child_promoted_to_section_rejected_when_resources_attached() {
+        InfoResourceCategoryBo bo = new InfoResourceCategoryBo();
+        bo.setCategoryId(300001L);
+        bo.setCategoryName("政策制度");
+        bo.setCategoryCode("policy");
+        when(baseMapper.exists(any(Wrapper.class))).thenReturn(false);
+        when(baseMapper.selectById(300001L)).thenReturn(category(300001L, 300000L, "policy", "政策制度", 1));
+        when(resourceMapper.selectCount(any(Wrapper.class))).thenReturn(2L);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.updateByBo(bo));
+        assertTrue(ex.getMessage().contains("不能调整为栏目"));
+        verify(baseMapper, never()).update(any(), any(Wrapper.class));
+    }
+
+    @Test
+    void update_persists_parent_id_via_wrapper_and_clears_entity_field() {
+        InfoResourceCategoryBo bo = new InfoResourceCategoryBo();
+        bo.setCategoryId(300001L);
+        bo.setCategoryName("政策制度");
+        bo.setCategoryCode("policy");
+        // 分类升级为栏目：parentId=null 必须显式落库而非被 NOT_NULL 策略跳过
+        when(baseMapper.exists(any(Wrapper.class))).thenReturn(false);
+        when(baseMapper.selectById(300001L)).thenReturn(category(300001L, 300000L, "policy", "政策制度", 1));
+        when(resourceMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(baseMapper.update(any(), any(Wrapper.class))).thenReturn(1);
+
+        InfoResourceCategory entity = new InfoResourceCategory();
+        entity.setParentId(300000L);
+        try (MockedStatic<MapstructUtils> ms = mockStatic(MapstructUtils.class)) {
+            ms.when(() -> MapstructUtils.convert(bo, InfoResourceCategory.class)).thenReturn(entity);
+            assertTrue(service.updateByBo(bo));
+        }
+        // 实体字段被置空（防 SET parent_id 双重赋值），parent_id 由 wrapper set 落库
+        assertNull(entity.getParentId());
+        verify(baseMapper).update(eq(entity), argThat(w ->
+            w instanceof com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<?> lw
+                && lw.getSqlSet() != null && lw.getSqlSet().contains("parent_id")));
+    }
+
+    @Test
+    void insert_rejected_when_code_is_reserved_all() {
+        InfoResourceCategoryBo bo = new InfoResourceCategoryBo();
+        bo.setCategoryName("全部");
+        bo.setCategoryCode("All");
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.insertByBo(bo));
+        assertTrue(ex.getMessage().contains("保留"));
+        verify(baseMapper, never()).insert(any(InfoResourceCategory.class));
+    }
+
+    @Test
+    void insert_rejected_when_code_breaks_comma_protocol() {
+        InfoResourceCategoryBo bo = new InfoResourceCategoryBo();
+        bo.setCategoryName("坏编码");
+        bo.setCategoryCode("a,b");
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.insertByBo(bo));
+        assertTrue(ex.getMessage().contains("编码"));
+        verify(baseMapper, never()).insert(any(InfoResourceCategory.class));
     }
 
     @Test

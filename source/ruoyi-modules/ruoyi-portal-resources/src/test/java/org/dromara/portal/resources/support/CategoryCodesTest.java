@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -23,6 +24,19 @@ class CategoryCodesTest {
     void all_sentinel_yields_empty() {
         assertTrue(CategoryCodes.parse("all").isEmpty());
         assertTrue(CategoryCodes.parse(" all , all ").isEmpty());
+    }
+
+    @Test
+    void parse_caps_entry_count_and_drops_overlong_codes() {
+        String overlong = "x".repeat(81);
+        StringBuilder input = new StringBuilder(overlong);
+        for (int i = 1; i <= 60; i++) {
+            input.append(",c").append(i);
+        }
+        List<String> parsed = CategoryCodes.parse(input.toString());
+        assertEquals(50, parsed.size());
+        assertEquals("c1", parsed.get(0));
+        assertFalse(parsed.contains(overlong));
     }
 
     @Test
