@@ -1,52 +1,60 @@
 # 资料共享 · 栏目→分类两级体系设计（左栏知网式分组树）
 
-状态：定稿（2026-07-10，样机与两项裁决经用户确认；样机存档 `.superpowers/brainstorm/95620-1783684824/content/section-category-tree.html`）
-背景：门户壳层试验已封存（tag `experiment/portal-shell-v1`），本设计是**对现有原版页面的小步微调**，参照知网左栏分组树。
+状态：v2 定稿（2026-07-10；v1 经四路代码侦察+批判核对修订，锚点均含真实文件:行号）
+背景：门户壳层试验已封存（tag `experiment/portal-shell-v1`），本设计是**对现有原版页面的小步微调**，参照知网左栏分组树。样机存档 `.superpowers/brainstorm/95620-1783684824/content/section-category-tree.html`。
 
-## 1. 需求与裁决记录
+## 1. 需求与裁决记录（用户确认项）
 
-- 资料页左栏承载**两级内容分类体系**：一级「栏目」为分组头，二级「分类」为组内条目；每个栏目含多个分类。类型/时间/大小筛选**留在工具条不动**（用户明确修正）。
-- 分类选择语义：**checkbox 多选并集** + 顶部已选 chip 单撤 + 「清除筛选」；栏目头 checkbox 可整组勾选（含半选态）；栏目头可折叠。
-- 分类条目带计数（右对齐灰字，选中变蓝）；计数响应关键词与工具条筛选（标准分面语义）。
-- 初始数据：建默认栏目**「综合资料」**，既有 3 分类（政策制度/技术文档/常用模板）归入；后续栏目规划由管理员在后台自行调整。
-- 管理后台：分类管理页升级为**栏目/分类两级树管理**（栏目增删改、分类归属调整）——栏目必须可维护，属本设计必做部分。
+- 资料页左栏承载**两级内容分类体系**：一级「栏目」为分组头，二级「分类」为组内条目。类型/时间/大小筛选**留在工具条不动**（用户明确修正）。
+- 分类 checkbox **多选并集** + 顶部已选 chip 单撤 + 「清除筛选」；栏目头 checkbox 整组勾选（三态含半选）；栏目头可折叠。
+- 分类条目带计数，计数=**分面语义**（响应关键词+工具条筛选，不含分类维度自身）。
+- 初始数据：默认栏目**「综合资料」**承接既有 3 分类（政策制度/技术文档/常用模板），后续栏目规划管理员后台自调。
+- 管理后台分类管理页升级为**栏目/分类两级树管理**，本轮必做。
 
-## 2. 数据模型（schema 变更，三件套强制）
+## 2. 数据模型（schema 变更，实为"四件套"）
 
-单表自引用：`info_resource_category` 增加 `parent_id int8 DEFAULT NULL`。
-- `parent_id IS NULL` = 栏目（一级）；`parent_id = <栏目id>` = 分类（二级）。层级固定两级，禁止分类再挂子级（服务层校验）。
-- 资料（`info_resource.category_id`）**只允许挂分类**（二级）；栏目不直接挂资料。
-- 迁移：新增栏目行「综合资料」（code `general`），既有全部分类行 `parent_id` 指向它。
-- 三件套：改种子 `postgres_info_service.sql` + 新增 `deploy/updates/0.3.6-resource-category-tree.sql` + `MANIFEST.md` 登记。`info_resource_category` 已在租户忽略清单，无租户列改动。
+`info_resource_category`（建表 `source/script/sql/postgres/postgres_info_service.sql:6-24`）增加 `parent_id int8 DEFAULT NULL`：
+- `parent_id IS NULL` = 栏目；`parent_id = <栏目id>` = 分类。两级封顶，服务层校验禁止三级。
+- 资料（`info_resource.category_id`）只允许挂二级分类；栏目不直接挂资料。
+- 默认栏目：**固定 category_id=300000，code `general`，名「综合资料」**（实施时核实 300000 无冲突；既有行 300001-300003）。code 与分类共用部分唯一索引 `uk_info_resource_category_code (category_code) WHERE del_flag='0'`（:23），服务层唯一校验须跨两级。
+- **四个动作**：①改源种子（建表+种子行加 parent_id、插栏目行）；②`deploy/scripts/generate-initdb.py` 重新生成 `deploy/initdb-postgres/dumps/` 副本并 diff 校验；③增量 `deploy/updates/0.3.7-resource-category-tree.sql`（幂等：`ADD COLUMN IF NOT EXISTS` + 栏目行 `ON CONFLICT DO NOTHING` + 孤儿分类兜底 `UPDATE ... SET parent_id=300000 WHERE parent_id IS NULL AND category_id<>300000`）；④MANIFEST 登记（**版本定 0.3.7**——0.3.6 行已被批次 A Nacos 配置占用且版本待核定，MANIFEST.md:30/44 装包规则要求版本包完整，故错开）。
+- 租户：`info_resource_category` 在租户忽略清单（application-common.yml:276），无租户列；`info_resource` 有 tenant_id——手写聚合 SQL 时租户插件对 resource 侧的自动条件需实施时验证。
 
-## 3. 后端（portal-resources 服务，Dubbo/MQ 契约零触碰）
+## 3. 后端（模块 `source/ruoyi-modules/ruoyi-portal-resources`，Dubbo/MQ 契约零触碰）
 
-1. **分类树接口**：现门户分类接口升级为返回两级树并带计数——`GET /portal/resources/categories` 返回 `[{栏目{code,name}, children:[{code,name,count}]}]`；入参接受与列表相同的筛选参数（keyword/previewType/uploadedWithin/sizeRange，**不含 categoryCode 自身**），count 按这些约束聚合（分面语义）。旧调用（无参）兼容：返回全量计数。
-2. **列表接口多值分类**：`categoryCode` 支持逗号分隔多值 → IN 查询；单值/缺省行为完全向后兼容。
-3. **管理端**：分类 CRUD 支持 parent_id（建栏目=parent_id 空；建分类=必选栏目）；删除栏目须为空（有子分类则拒绝）；返回树形列表接口供管理页。
-4. 单元测试：树组装/计数聚合/多值解析/两级校验（surefire 模块内）。
+1. **新增门户分类树接口** `GET /portal/resources/category-tree`：入参 keyword、previewType（兼容 fileType 合流，同 InfoResourceServiceImpl.java:130 语义）、uploadedWithin、sizeRange（枚举同现列表 :661-689）；**不含 categoryCode 自身；scope 固定 public 语义；sort 不参与**。返回 `[{categoryId,categoryCode,categoryName,children:[{...,resourceCount}]}]`（沿用现 Vo 命名惯例）。计数**一次 GROUP BY category_id 聚合**（禁止沿用 fillResourceCount 的 N+1，:42-47）；两级均过滤 status='0'，栏目停用则整组不出。
+2. **平铺旧接口形状不变**：`GET /portal/resources/categories`（上传弹窗消费，ResourceUploadDialog.vue:9,117）与管理端 `/resource/category/options`（资料编辑下拉，admin/resources/resource/index.vue:216）均改为**只返回二级分类**，字段结构不动——保证资料只能挂二级，旧消费方零改动。
+3. **列表接口 categoryCode 多值**：逗号分隔 → 解析为 code 集合；保留 'all' 哨兵跳过（isActiveFilter :657-659）与「无一命中 → eq categoryId -1L 空集」语义（:118-124）；部分命中 → IN(命中的 categoryId 集)。单值/缺省行为完全向后兼容（现门户前端自身就是单值调用方）。
+4. **管理端**：新增 `GET /resource/category/treeList`（全量不分页，供树表；旧分页 /list 保留不动）；CRUD 支持 parentId（建栏目=空；建分类=必选栏目且父必须是栏目→两级封顶校验）；**净新增删除校验**（现 deleteWithValidByIds 无任何校验 :96-98）：删栏目须无子分类（含停用未删的），删分类须无挂接资料（未删的），违者报友好错误。复用现有权限串 `infoservice:resourceCategory:*`，**菜单 SQL 零改动**（menu 3020 及按钮 3021-3024 原样复用）。
+5. **单元测试**（模块内新增，保持无 Spring 上下文纯单测风格，范本 ResourceConvertListenerTest）：树组装、分面计数入参映射、多值 categoryCode 解析（all/单值/多值/无命中）、两级封顶校验、删除校验。门禁命令（实测 3-10 秒）：`cd source && JAVA_HOME=$(/usr/libexec/java_home -v 17) '/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn' -o test -DskipTests=false -pl ruoyi-modules/ruoyi-portal-resources -am`。
 
 ## 4. 前端
 
-**门户（`views/portal/resources/`，基于 main 原版页面）**：
-- `ResourceFilterPanel` 重写为两级分组树面板：栏目组头（折叠 chevron + 组 checkbox 三态 + 组计数=子分类求和）、分类条目（checkbox + 计数）、底部「清除筛选」；样式全 `--ip-*` 令牌，折叠动效 `--ip-motion-*`，视觉克制对齐知网（细分割线、蓝选中态）。
-- 页面筛选状态改多值（`selectedCategories: string[]`），列表请求传逗号串；结果区顶部 chip 条（单撤销）；工具条与其余布局**零改动**。
-- 计数刷新时机：关键词/工具条筛选变化后随列表一起刷新（同一批请求）。
+**门户（三层链路同改：index.vue:3-8 → ResourceSidebar.vue:16-21 → ResourceFilterPanel.vue）**：
+- `ResourceFilterPanel` 重写为两级分组树：栏目组头（折叠 chevron + 三态 checkbox + 组计数=子分类求和）、分类条目（checkbox + 计数）、底部「清除筛选」。**样式令牌化是净新增迁移**（现组件全硬编码色 :49-135）：全部用 `--ip-*`/`--ip-motion-*`（tokens.scss:8-81，main 已有）；不新增任何硬编码色/字号/圆角（design:audit 棘轮，基线 hardcodedHex 121/rgba 73/fontSize 21/radius 14），删旧硬编码后跑 `--update-baseline` 下调并提交基线文件。
+- 状态模型：`selectedCategories: string[]`，**空数组=全部**（请求省略 categoryCode）；多值传逗号串。页面标题（index.vue:184-185 现依赖单值）重定义：空→「全部资源」，单选→分类名，多选→「已选 N 个分类」。chip 条渲染于结果区顶部，单撤销；「清除筛选」清空数组。
+- 计数联动（净新增，现 loadCategories 仅 onMounted/上传后触发 :450-453,386-392）：关键词/工具条变化 → **并行**发列表 + category-tree 两请求（同筛选参数、不含 categoryCode）；**勾选分类只刷列表不刷计数**（标准分面语义）。上传成功后两者都刷。
+- 纯函数抽取 + vitest：树三态归并（组勾选/半选计算）、chip 增删、逗号串编解码；`package.json` 补 `"test": "vitest run"` 脚本（vitest 4.0.18 已在 devDependencies，现无 test 脚本）。**npm 工作流，禁 pnpm i**。
+- 上传弹窗/工具条/卡片列表零改动（平铺接口形状不变保证）。
 
-**管理后台（`views/admin/resources/category/`）**：升级为两级树表（RuoYi tree-table 惯例）：栏目行可展开、行内新增子分类、编辑/停用/删除；分类行可改归属栏目。
+**管理后台（`views/admin/resources/category/index.vue` 整页范式替换）**：照部门管理页范式（dept/index.vue:44-47 row-key+tree-props、handleTree :211、展开折叠 :248-258、行内新增传父 :67-69）：全量树表（吃 treeList 接口，不分页）、**去掉 selection 批量删改行内删除**（dept/menu 惯例）、栏目行内「新增分类」按钮、弹窗增「上级栏目」选择（建栏目=空/建分类=必选，el-tree-select check-strictly 或栏目下拉）、行内 el-switch 停用保留（停用不级联，门户侧按 §3.1 过滤）。`types.ts` ResourceCategory/ResourceCategoryForm 加 parentId/children；`admin.ts` 补 treeList API。
 
 ## 5. 不变量与验收
 
-- 工具条、卡片列表、上传/预览/收藏等其余功能零变化；其他页面零变化。
-- 组合筛选正确性：多选并集、栏目整组勾选=其全部子分类、chip 撤销与清除全部、计数与列表总数一致性抽查。
-- 兼容性：旧单值 categoryCode 调用方（若有）不受影响；未归栏目的分类不应存在（迁移兜底：任何孤儿分类归入默认栏目）。
-- 门禁：前端 build:prod + design:audit（棘轮不升）+ vitest；后端模块 `-DskipTests=false test`；**改完先真机截图比对样机，用户认可后关单**。
-- 发布：schema 走三件套；Nacos 配置无变更；仅 portal-resources 服务镜像 + 前端 dist 需要重建部署。
+- 工具条、卡片列表、上传/预览/收藏、我的资源抽屉及其他页面零变化；菜单/权限零变化；Nacos 配置零变更。
+- 组合筛选正确性：多选并集、栏目整组勾选=其全部子分类、chip 撤销与清除全部、计数与列表总数一致性抽查、'all'/单值旧语义回归。
+- 门禁：后端模块 test（§3.5 命令）；前端 `npm run build:prod` + `npm run design:audit`（棘轮不升、删旧硬编码后下调基线）+ `npm test`（vitest）。
+- 发布面：portal-resources 镜像 + 前端 dist + 0.3.7 增量 SQL（PG ry-cloud）。**改完真机截图比对样机，用户认可后关单。**
 
 ## 6. 决策记录
 
-- [x] 左栏=栏目→分类两级树；类型/时间/大小留工具条（2026-07-10 用户修正并确认）
+- [x] 左栏=栏目→分类两级树；类型/时间/大小留工具条（2026-07-10 用户修正确认）
 - [x] 多选+chip；栏目头三态整组勾选（用户确认）
-- [x] 默认栏目「综合资料」承接存量分类，后台自调（用户确认）
+- [x] 默认栏目「综合资料」（id 300000/code general）承接存量分类，后台自调（用户确认）
 - [x] 单表 parent_id 自引用，两级封顶；资料只挂二级
-- [x] 管理后台树管理纳入本轮必做
+- [x] 新增树接口，平铺旧接口只出二级、形状不变（上传弹窗/资料编辑下拉零改动）
+- [x] 多值解析保留 'all' 哨兵与 -1L 空集语义；空选=全部
+- [x] 计数分面语义：勾选分类不刷计数；scope 固定 public；GROUP BY 一次聚合
+- [x] 增量版本 0.3.7（0.3.6 已被批次 A 占用）；种子"四件套"（源+dump 再生成+增量+MANIFEST）
+- [x] 管理页照 dept 树表范式整页替换，去批量删；菜单/权限串零改动
+- [x] 删除校验净新增：栏目须空、分类须无资料；停用不级联
