@@ -167,7 +167,7 @@
 
 **三段结构**：TopBar（56px sticky，模块注册表驱动一级导航 + 消息铃 + 用户菜单）｜IconRail（48px 常驻：上=域导航，可带「待」徽标；下=个人捷径，横线分隔）｜CategoryRail（184px，可折叠至 16px，折叠态按 `portal-shell:<module>:cat-collapsed` 记忆）。
 
-**接入方式**：路由 meta `{ portalShell: true, portalModule: '<key>', portalNoCategory?: true }` + 在 `src/layout/portal-shell/configs/` 注册 `ModuleNavConfig`（类型见 `src/layout/portal-shell/types.ts`）。旧 `usesOwnShell` 名单已冻结，禁止新增。**无分类语义的域路由必须显式标 `portalNoCategory: true`**（契约的 category 是模块级、有无分类是域级——不标则 CategoryRail 会错误渲染）。
+**接入方式**：路由 meta `{ portalShell: true, portalModule: '<key>', portalNoCategory?: true }` + 在 `src/layout/portal-shell/configs/` 注册 `ModuleNavConfig`（类型见 `src/layout/portal-shell/types.ts`）。旧 `usesOwnShell` 名单已冻结，禁止新增。**无分类语义的域路由必须显式标 `portalNoCategory: true`**（契约的 category 是模块级、有无分类是域级——不标则 CategoryRail 会错误渲染）。**模块导航配置中的图标类名必须同步登记 `uno.config.ts` safelist（动态字符串对 UnoCSS 静态扫描不可见）。**
 
 **交互契约**：分类与个人视图一律 URL query 驱动（`?category=`、`?scope=`），页面只观察 `route.query`，壳层与页面零回调耦合，链接可分享。
 

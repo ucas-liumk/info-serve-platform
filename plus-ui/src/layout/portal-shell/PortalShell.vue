@@ -35,13 +35,13 @@ const showCategory = computed(() => !route.meta.portalNoCategory);
 <style scoped>
 .ps-shell { display: flex; flex-direction: column; min-height: 100vh; background: var(--ip-neutral-50); }
 .ps-shell__body { display: flex; flex: 1; min-height: 0; }
-.ps-shell__main { flex: 1; min-width: 0; padding: 16px 24px; max-width: var(--ip-layout-max); }
+.ps-shell__main { flex: 1; min-width: 0; padding: 24px; max-width: var(--ip-layout-max); }
 @media (max-width: 979px) {
   /* 试点期移动端保功能：分类栏隐藏，图标条转横条 */
   .ps-shell__body { flex-direction: column; }
   .ps-shell__body :deep(.ps-rail) { flex-direction: row; width: 100%; height: 48px; padding: 4px 8px; }
   .ps-shell__body :deep(.ps-rail__spacer) { flex: 1; }
-  .ps-shell__body :deep(.ps-rail__shortcuts) { border-top: none; border-left: 1px solid var(--ip-neutral-700); padding: 0 0 0 8px; flex-direction: row; }
+  .ps-shell__body :deep(.ps-rail__shortcuts) { border-top: none; border-left: 1px solid var(--ip-neutral-200); padding: 0 0 0 8px; flex-direction: row; }
   .ps-shell__body :deep(.ps-rail__domains) { flex-direction: row; }
   .ps-shell__body :deep(.ps-cat) { display: none; }
 }

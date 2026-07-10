@@ -47,31 +47,43 @@ const isShortcutActive = (s: NavShortcut) => route.path === s.route && activeSco
 .ps-rail {
   display: flex;
   flex-direction: column;
-  width: 48px;
+  width: 64px;
   flex-shrink: 0;
-  padding: 8px 4px;
-  background: var(--ip-neutral-900);
+  padding: 8px 0;
+  background: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
   gap: 4px;
 }
 .ps-rail__domains, .ps-rail__shortcuts { display: flex; flex-direction: column; gap: 4px; }
 .ps-rail__spacer { flex: 1; }
-.ps-rail__shortcuts { border-top: 1px solid var(--ip-neutral-700); padding-top: 8px; }
+.ps-rail__shortcuts { border-top: 1px solid var(--ip-neutral-200); padding-top: 8px; }
 .ps-rail__item {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  margin: 0 6px;
   padding: 8px 0;
-  border-radius: var(--ip-radius-sm);
-  color: var(--ip-neutral-400);
+  border-radius: var(--ip-radius-md);
+  color: var(--ip-neutral-500);
   text-decoration: none;
   transition: color var(--ip-motion-fast) var(--ip-motion-ease), background-color var(--ip-motion-fast) var(--ip-motion-ease);
 }
-.ps-rail__item:hover { color: var(--ip-neutral-0); background: var(--ip-neutral-700); }
-.ps-rail__item.is-active { color: var(--ip-neutral-0); background: var(--ip-primary-600); }
+.ps-rail__item:hover { color: var(--ip-neutral-700); background: var(--ip-neutral-100); }
+.ps-rail__item.is-active { color: var(--ip-primary-700); background: var(--ip-primary-50); }
+.ps-rail__item.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: var(--ip-radius-full);
+  background: var(--ip-primary-600);
+}
 .ps-rail__icon { font-size: var(--ip-font-title-sm); }
-.ps-rail__label { font-size: var(--ip-font-caption); transform: scale(0.9); white-space: nowrap; }
+.ps-rail__label { font-size: var(--ip-font-caption); white-space: nowrap; }
 .ps-rail__badge {
   position: absolute; top: 2px; right: 4px;
   padding: 0 4px;

@@ -61,7 +61,6 @@ onMounted(async () => {
   height: 56px;
   padding: 0 24px;
   background: var(--ip-neutral-0);
-  border-bottom: 1px solid var(--ip-neutral-200);
   box-shadow: var(--ip-shadow-sm);
 }
 .ps-topbar__brand {

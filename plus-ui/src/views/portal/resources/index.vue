@@ -464,6 +464,20 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
+/* 搜索为描边副按钮；上传保持本屏唯一实心 primary（design-system §7.1） */
+.search-button {
+  background: var(--ip-neutral-0);
+  color: var(--ip-primary-600);
+}
+
+.search-button:hover {
+  background: var(--ip-primary-50);
+  border-color: var(--ip-primary-700);
+  color: var(--ip-primary-700);
+  box-shadow: none;
+  transform: none;
+}
+
 .upload-button {
   flex: 0 0 auto;
 }
