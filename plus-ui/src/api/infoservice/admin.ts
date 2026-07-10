@@ -57,6 +57,11 @@ export function listResourceCategoryOptions(query?: ResourceCategoryQuery): Axio
   return request({ url: '/infoservice/resource/category/options', method: 'get', params: query });
 }
 
+/** 栏目/分类树表全量平铺（含 parentId、含停用行、不分页），前端 handleTree 组树（契约 C4） */
+export function listResourceCategoryTree(): AxiosPromise<ResourceCategory[]> {
+  return request({ url: '/infoservice/resource/category/treeList', method: 'get' });
+}
+
 export function getResourceCategory(categoryId: string | number): AxiosPromise<ResourceCategory> {
   return request({ url: `/infoservice/resource/category/${categoryId}`, method: 'get' });
 }

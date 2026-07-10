@@ -1,11 +1,6 @@
 <template>
   <div class="resources-app">
-    <ResourceSidebar
-      :categories="categories"
-      :category-total="categoryTotal"
-      :category-code="categoryCode"
-      @change-category="changeCategory"
-    />
+    <ResourceSidebar :category-tree="categoryTree" :selected-categories="selectedCategories" @update:selected-categories="changeSelectedCategories" />
 
     <main class="resource-main">
       <header class="resource-topbar">
@@ -22,14 +17,14 @@
               clearable
               placeholder="搜索资源标题、关键词、作者、标签等"
               size="large"
-              @keyup.enter="reloadFirst"
-              @clear="reloadFirst"
+              @keyup.enter="reloadWithFacets"
+              @clear="reloadWithFacets"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
               </template>
             </el-input>
-            <button class="search-button" type="button" @click="reloadFirst">搜索</button>
+            <button class="search-button" type="button" @click="reloadWithFacets">搜索</button>
           </div>
 
           <PortalNotificationBell />
@@ -58,6 +53,8 @@
           @update:size-range="changeSizeRange"
           @update:display-mode="displayMode = $event"
         />
+
+        <ResourceCategoryChips :chips="selectedChips" @remove="removeChip" />
 
         <div class="resource-results">
           <div v-if="displayMode === 'grid'" class="resource-grid">
@@ -129,16 +126,19 @@ import {
   createPortalResource,
   deletePortalResource,
   favoritePortalResource,
+  getResourceCategoryTree,
   listResourceCategories,
   listResources,
   unfavoritePortalResource,
   updatePortalResource,
   uploadPortalResourceFile
 } from '@/api/portal/resources';
-import type { InfoResource, ResourceCategory, ResourcePortalPayload, ResourceUploadResult } from '@/api/infoservice/types';
+import type { CategoryTreeNode, InfoResource, ResourceCategory, ResourcePortalPayload, ResourceUploadResult } from '@/api/infoservice/types';
 import { downloadPortalResource } from './download';
+import { buildSelectedChips, encodeCategoryCodes, removeCategory, resolveSelectionTitle } from './categoryFacets';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
 import ResourceCard from './components/ResourceCard.vue';
+import ResourceCategoryChips from './components/ResourceCategoryChips.vue';
 import ResourceList from './components/ResourceList.vue';
 import ResourceSidebar from './components/ResourceSidebar.vue';
 import ResourceToolbar from './components/ResourceToolbar.vue';
@@ -157,6 +157,7 @@ type ResourceSubmitPayload = {
 const router = useRouter();
 const userStore = useUserStore();
 const categories = ref<ResourceCategory[]>([]);
+const categoryTree = ref<CategoryTreeNode[]>([]);
 const resources = ref<InfoResource[]>([]);
 const myResources = ref<InfoResource[]>([]);
 const editingResource = ref<InfoResource>();
@@ -164,7 +165,7 @@ const keyword = ref('');
 const displayMode = ref<DisplayMode>('grid');
 const uploadMode = ref<UploadMode>('create');
 const myResourceTab = ref<MyResourceTab>('uploads');
-const categoryCode = ref('all');
+const selectedCategories = ref<string[]>([]);
 const previewType = ref('all');
 const uploadedWithin = ref('all');
 const sizeRange = ref('all');
@@ -180,10 +181,9 @@ const uploadVisible = ref(false);
 const uploading = ref(false);
 
 const isLoggedIn = computed(() => Boolean(userStore.token || getToken()));
-const categoryTotal = computed(() => categories.value.reduce((sum, item) => sum + (item.resourceCount || 0), 0));
-const activeCategory = computed(() => categories.value.find((item) => item.categoryCode === categoryCode.value));
-const resourcePageTitle = computed(() => (categoryCode.value === 'all' ? '全部资源' : activeCategory.value?.categoryName || '当前分类'));
+const resourcePageTitle = computed(() => resolveSelectionTitle(categoryTree.value, selectedCategories.value));
 const resourcePageSubtitle = computed(() => `当前筛选共 ${total.value} 条资料`);
+const selectedChips = computed(() => buildSelectedChips(categoryTree.value, selectedCategories.value));
 
 const ensureLogin = () => {
   if (isLoggedIn.value) {
@@ -198,12 +198,23 @@ const loadCategories = async () => {
   categories.value = res.data || [];
 };
 
+/** 分面计数树：同步关键词+工具条筛选，但不含分类勾选自身（标准分面语义） */
+const loadCategoryTree = async () => {
+  const res: any = await getResourceCategoryTree({
+    keyword: keyword.value,
+    previewType: previewType.value,
+    uploadedWithin: uploadedWithin.value,
+    sizeRange: sizeRange.value
+  });
+  categoryTree.value = res.data || [];
+};
+
 const reload = async () => {
   loading.value = true;
   try {
     const res: any = await listResources({
       scope: 'public',
-      categoryCode: categoryCode.value,
+      categoryCode: encodeCategoryCodes(selectedCategories.value),
       keyword: keyword.value,
       previewType: previewType.value,
       uploadedWithin: uploadedWithin.value,
@@ -222,6 +233,12 @@ const reload = async () => {
 const reloadFirst = () => {
   pageNum.value = 1;
   reload();
+};
+
+/** 关键词/工具条筛选变化：列表与分面计数并行刷新 */
+const reloadWithFacets = async () => {
+  pageNum.value = 1;
+  await Promise.all([reload(), loadCategoryTree()]);
 };
 
 const loadMyResources = async () => {
@@ -263,24 +280,29 @@ const changeMyResourceTab = async (tab: MyResourceTab) => {
   await loadMyResources();
 };
 
-const changeCategory = (code: string) => {
-  categoryCode.value = code;
+/** 勾选分类只刷列表不刷计数（分面语义） */
+const changeSelectedCategories = (next: string[]) => {
+  selectedCategories.value = next;
   reloadFirst();
+};
+
+const removeChip = (code: string) => {
+  changeSelectedCategories(removeCategory(selectedCategories.value, code));
 };
 
 const changePreviewType = (value: string) => {
   previewType.value = value;
-  reloadFirst();
+  reloadWithFacets();
 };
 
 const changeUploadedWithin = (value: string) => {
   uploadedWithin.value = value;
-  reloadFirst();
+  reloadWithFacets();
 };
 
 const changeSizeRange = (value: string) => {
   sizeRange.value = value;
-  reloadFirst();
+  reloadWithFacets();
 };
 
 const changeSort = (value: string) => {
@@ -384,8 +406,7 @@ const fileTitle = (payload: ResourceSubmitPayload, file: File, total: number) =>
 };
 
 const refreshOwnedViews = async () => {
-  await loadCategories();
-  await reload();
+  await Promise.all([loadCategories(), loadCategoryTree(), reload()]);
   if (myResourcesVisible.value) {
     await loadMyResources();
   }
@@ -448,8 +469,7 @@ const deleteOwnResource = async (resource: InfoResource) => {
 };
 
 onMounted(async () => {
-  await loadCategories();
-  await reload();
+  await Promise.all([loadCategories(), loadCategoryTree(), reload()]);
 });
 </script>
 
