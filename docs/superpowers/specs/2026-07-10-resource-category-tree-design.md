@@ -55,6 +55,22 @@
 - **前端**：上传/编辑弹窗分类改**按栏目分组的多选下拉**（el-option-group=栏目，选项=分类，必选≥1）；管理端资料编辑同步多选；卡片徽标仍显示主分类名。
 - **验证**：上传一份挂两个分类的文件 → 在两个分类勾选下均可筛出（E2E）。前置依赖：OSS endpoint 修复（否则上传本身不可用，见遗留基建问题）。
 
+## 5.6 增补：预览页改版——WPS 式阅读器 + 右栏功能区（2026-07-11 用户定稿）
+
+原型 v3 经用户确认（存档 `.superpowers/brainstorm/95463-1783789992/content/studio-panel-v2.html`）。本轮范围=左侧 WPS 化 + 右栏功能区框架接入「我的笔记」「交流互动」；OCR/朗读/摘要/导图为「即将上线」占位磁贴（配置驱动，慢慢扩展）；产出库与 `info_resource_artifact` 表**留待下轮**（裁决已定：产出全员共享——谁先生成大家复用）。
+
+**左侧（PdfPreviewer.vue，基于 EmbedPDF 插件正门 API，禁新增 shadow DOM hack）**：
+- 新增 WPS 式视图工具条：`✋拖拽`（pan 插件 toggle，再点恢复选择）、`连页`（spread=none）、`单页`（spread=none + fitPage 缩放，就近语义映射并注释说明）、`双页连续`（spread=odd）、`左旋/右旋`（rotate 插件）；按钮带 active 态。
+- 新增底部翻页条：⏮ ◀ `当前页/总页` ▶ ⏭（scroll/viewport 插件页码状态订阅 + scrollToPage）。
+- 内建工具栏保留（缩放/搜索/缩略图侧栏继续用内建 UI）；`PDFViewerExpose.registry`（Promise<PluginRegistry>）驱动，插件 id/能力接口从 `@embedpdf/plugin-{pan,spread,rotate,zoom,scroll,viewport}` 的 d.ts 现场核实。
+
+**右栏（ResourcePreviewContextPanel.vue 整页重写为「功能区」）**：
+- 题头「功能区」+ ⓘ 弹层（资料信息 dl + 阅看记录列表收编于此）。
+- 磁贴 2 列网格，**配置驱动**数组 `[{key,name,icon,tone,status:'active'|'soon'}]`：我的笔记/交流互动=active，OCR 识别/语音朗读/智能摘要/思维导图=soon（不可点、「即将上线」角标）。
+- 工作区默认=**交流互动**（公开笔记流 + 发布框，发布即公开；我的公开条目可编辑/删除）；「我的笔记」=编辑器（默认私有，保留公开开关）+ 我的列表，条目操作：编辑/删除/**分享到交流互动**（visibility→public）/**取消分享**（→private）——全部走现有 notes API（my/public/post/put/delete），后端零改动。
+- 磁贴粉彩底色以 **tokens.scss 新增 --ip-tile-* 令牌**实现（该文件不在 design:audit 扫描面，组件内零新硬编码色）。
+- 门禁：vitest + design:audit 棘轮不升 + build + eslint；真机截图对照原型验收。
+
 ## 6. 决策记录
 
 - [x] 左栏=栏目→分类两级树；类型/时间/大小留工具条（2026-07-10 用户修正确认）
