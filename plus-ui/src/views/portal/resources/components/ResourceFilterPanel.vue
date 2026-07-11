@@ -165,8 +165,10 @@ const clearSelection = () => emit('update:selected', []);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 16px;
-  color: var(--ip-neutral-800);
+  padding: 10px 16px;
+  background: var(--ip-neutral-50);
+  border-left: 3px solid var(--ip-primary-500);
+  color: var(--ip-neutral-900);
   font-size: var(--ip-font-body);
   font-weight: 700;
   cursor: pointer;
@@ -174,7 +176,12 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .group-header:hover {
-  background: var(--ip-neutral-50);
+  background: var(--ip-neutral-100);
+}
+
+.group-header .count {
+  font-weight: 700;
+  color: var(--ip-neutral-500);
 }
 
 .group-name,
@@ -249,7 +256,9 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .group-body {
-  padding: 0 10px 8px 30px;
+  margin: 4px 10px 8px 25px;
+  padding-left: 8px;
+  border-left: 2px solid var(--ip-neutral-100);
 }
 
 .category-row {
@@ -261,9 +270,9 @@ const clearSelection = () => emit('update:selected', []);
   border-radius: var(--ip-radius-sm);
   padding: 6px 8px;
   background: transparent;
-  color: var(--ip-neutral-700);
+  color: var(--ip-neutral-600);
   font-size: var(--ip-font-body);
-  font-weight: 600;
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
   transition:

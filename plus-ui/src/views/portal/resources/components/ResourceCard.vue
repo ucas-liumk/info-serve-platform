@@ -55,7 +55,14 @@ import { Download, Star, StarFilled, View } from '@element-plus/icons-vue';
 import { resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/portal/resources';
 import type { InfoResource } from '@/api/infoservice/types';
 import { getToken } from '@/utils/auth';
-import { getCachedThumbnail, setCachedThumbnail } from '../thumbnailCache';
+import {
+  acquireThumbnailSlot,
+  getCachedThumbnail,
+  isThumbnailBlocked,
+  markThumbnailFailed,
+  setCachedThumbnail,
+  THUMBNAIL_FETCH_TIMEOUT_MS
+} from '../thumbnailCache';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
 
@@ -114,7 +121,11 @@ let loadingTask: ReturnType<typeof getDocument> | null = null;
 
 const typeClass = computed(() => props.resource.previewType || 'file');
 const normalizedPreviewType = computed(() => String(props.resource.previewType || '').toLowerCase());
-const normalizedSuffix = computed(() => String(props.resource.fileSuffix || '').replace(/^\./, '').toLowerCase());
+const normalizedSuffix = computed(() =>
+  String(props.resource.fileSuffix || '')
+    .replace(/^\./, '')
+    .toLowerCase()
+);
 
 const isImageResource = computed(() => {
   const mimeType = String(props.resource.mimeType || '').toLowerCase();
@@ -189,16 +200,28 @@ const renderPdfThumbnail = async () => {
   clearCanvas();
   if (!url) return;
 
+  if (isThumbnailBlocked(props.resource)) return;
+
   await nextTick();
   const canvas = thumbnailCanvasRef.value;
   if (!canvas || token !== renderToken) return;
 
+  const releaseSlot = await acquireThumbnailSlot();
+  if (token !== renderToken) {
+    releaseSlot();
+    return;
+  }
+  let timeoutTimer: ReturnType<typeof setTimeout> | undefined;
   try {
     loadingTask = getDocument({
       url,
       withCredentials: false,
       disableAutoFetch: true
     });
+    const timedTask = loadingTask;
+    timeoutTimer = setTimeout(() => {
+      void timedTask.destroy();
+    }, THUMBNAIL_FETCH_TIMEOUT_MS);
     const doc = await loadingTask.promise;
     if (token !== renderToken) {
       await cleanupDocument(doc);
@@ -235,8 +258,12 @@ const renderPdfThumbnail = async () => {
     if (token === renderToken) {
       pdfThumbnailReady.value = false;
     }
+    // 超时/网络失败进入负缓存：本会话内不再对该资源重试，避免反复占用连接
+    markThumbnailFailed(props.resource);
     console.warn('Resource thumbnail render failed', error);
   } finally {
+    clearTimeout(timeoutTimer);
+    releaseSlot();
     if (token === renderToken) {
       loadingTask = null;
     }
