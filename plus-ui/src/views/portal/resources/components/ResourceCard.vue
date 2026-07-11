@@ -335,6 +335,8 @@ const formatSize = (size?: number) => {
   align-self: start;
   width: 112px;
   height: 142px;
+  /* 纯装饰层（aria-hidden）：缩略图渲染后不得拦截与操作按钮重叠区域的点击 */
+  pointer-events: none;
 }
 
 .preview-sheet {
