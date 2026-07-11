@@ -33,13 +33,18 @@ export function getResource(resourceId: ResourceId): AxiosPromise<InfoResource> 
   return request({ url: `/infoservice/portal/resources/${resourceId}`, method: 'get' });
 }
 
-export function uploadPortalResourceFile(data: FormData): AxiosPromise<ResourceUploadResult> {
+export function uploadPortalResourceFile(data: FormData, onUploadProgress?: (percent: number) => void): AxiosPromise<ResourceUploadResult> {
   return request({
     url: '/infoservice/portal/resources/upload',
     method: 'post',
     data,
     timeout: 5 * 60 * 1000,
-    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false },
+    onUploadProgress: (event: { loaded: number; total?: number }) => {
+      if (onUploadProgress && event.total) {
+        onUploadProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    }
   });
 }
 

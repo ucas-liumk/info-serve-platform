@@ -108,6 +108,7 @@
       :resource="editingResource"
       :mode="uploadMode"
       :submitting="uploading"
+      :progress="uploadProgress"
       @submit="submitResource"
     />
   </div>
@@ -132,7 +133,7 @@ import {
   updatePortalResource,
   uploadPortalResourceFile
 } from '@/api/portal/resources';
-import type { CategoryTreeNode, InfoResource, ResourcePortalPayload, ResourceUploadResult } from '@/api/infoservice/types';
+import type { CategoryTreeNode, InfoResource, ResourcePortalPayload, ResourceUploadProgress, ResourceUploadResult } from '@/api/infoservice/types';
 import { downloadPortalResource } from './download';
 import { buildSelectedChips, encodeCategoryCodes, removeCategory, resolveSelectionTitle } from './categoryFacets';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
@@ -177,6 +178,7 @@ const myResourcesLoading = ref(false);
 const myResourcesVisible = ref(false);
 const uploadVisible = ref(false);
 const uploading = ref(false);
+const uploadProgress = ref<ResourceUploadProgress[]>([]);
 
 const isLoggedIn = computed(() => Boolean(userStore.token || getToken()));
 const resourcePageTitle = computed(() => resolveSelectionTitle(categoryTree.value, selectedCategories.value));
@@ -396,10 +398,20 @@ const openReplaceDialog = (resource: InfoResource) => {
   openEditDialog(resource);
 };
 
-const uploadFile = async (file: File) => {
+/** 不可变更新进度列表中的一项 */
+const patchProgress = (index: number, patch: Partial<ResourceUploadProgress>) => {
+  uploadProgress.value = uploadProgress.value.map((item, i) => (i === index ? { ...item, ...patch } : item));
+};
+
+const uploadFile = async (file: File, progressIndex?: number) => {
   const formData = new FormData();
   formData.append('file', file);
-  const upRes: any = await uploadPortalResourceFile(formData);
+  const upRes: any = await uploadPortalResourceFile(formData, (percent) => {
+    if (progressIndex != null) {
+      // 100% 表示传输完成，进入服务端处理段（OSS 写入/落库），由调用方置 processing
+      patchProgress(progressIndex, { percent, status: percent >= 100 ? 'processing' : 'uploading' });
+    }
+  });
   return upRes.data as ResourceUploadResult;
 };
 
@@ -438,19 +450,23 @@ const refreshOwnedViews = async () => {
 
 const submitResource = async (payload: ResourceSubmitPayload) => {
   uploading.value = true;
+  const files = payload.files || [];
+  uploadProgress.value = files.map((file) => ({ name: file.name, percent: 0, status: 'pending' as const }));
   try {
-    const files = payload.files || [];
     if (uploadMode.value === 'edit' && editingResource.value) {
-      const uploaded = files[0] ? await uploadFile(files[0]) : undefined;
+      const uploaded = files[0] ? await uploadFile(files[0], 0) : undefined;
       await updatePortalResource(editingResource.value.resourceId, buildPayload(payload, uploaded));
+      if (files[0]) {
+        patchProgress(0, { percent: 100, status: 'done' });
+      }
       ElMessage.success('资料已保存');
     } else {
       if (files.length === 0) {
         ElMessage.warning('请选择文件');
         return;
       }
-      for (const file of files) {
-        const uploaded = await uploadFile(file);
+      for (const [index, file] of files.entries()) {
+        const uploaded = await uploadFile(file, index);
         await createPortalResource(
           buildPayload(
             {
@@ -461,6 +477,7 @@ const submitResource = async (payload: ResourceSubmitPayload) => {
             uploaded
           )
         );
+        patchProgress(index, { percent: 100, status: 'done' });
       }
       ElMessage.success(files.length === 1 ? '资料已发布，可在我的资源中管理' : `已发布 ${files.length} 份资料，可在我的资源中管理`);
     }

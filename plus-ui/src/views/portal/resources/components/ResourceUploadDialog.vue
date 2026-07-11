@@ -29,11 +29,21 @@
             </label>
             <ul v-if="selectedFiles.length" class="selected-files">
               <li v-for="(file, index) in selectedFiles" :key="`${file.name}-${file.lastModified}-${index}`">
-                <span>
-                  <strong>{{ file.name }}</strong>
-                  <em>{{ formatSize(file.size) }}</em>
-                </span>
-                <button type="button" @click="removeSelectedFile(index)">移除</button>
+                <div class="file-line">
+                  <span class="file-meta">
+                    <strong>{{ file.name }}</strong>
+                    <em>{{ formatSize(file.size) }}</em>
+                  </span>
+                  <button v-if="!submitting" class="file-remove" type="button" @click="removeSelectedFile(index)">移除</button>
+                  <span v-else class="file-state">{{ progressLabel(index) }}</span>
+                </div>
+                <el-progress
+                  v-if="progressFor(index)"
+                  :percentage="progressFor(index)?.percent ?? 0"
+                  :stroke-width="4"
+                  :show-text="false"
+                  :status="progressFor(index)?.status === 'done' ? 'success' : undefined"
+                />
               </li>
             </ul>
           </div>
@@ -43,7 +53,7 @@
     <template #footer>
       <button class="dialog-cancel" type="button" @click="visible = false">取消</button>
       <button class="dialog-submit" type="button" :disabled="submitting" @click="submit">
-        {{ submitting ? '保存中' : isEdit ? '保存修改' : '发布资料' }}
+        {{ submitting ? submittingLabel : isEdit ? '保存修改' : '发布资料' }}
       </button>
     </template>
   </el-dialog>
@@ -54,7 +64,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
-import type { CategoryTreeNode, InfoResource } from '@/api/infoservice/types';
+import type { CategoryTreeNode, InfoResource, ResourceUploadProgress } from '@/api/infoservice/types';
 
 const props = withDefaults(
   defineProps<{
@@ -63,10 +73,12 @@ const props = withDefaults(
     resource?: InfoResource;
     mode?: 'create' | 'edit';
     submitting?: boolean;
+    progress?: ResourceUploadProgress[];
   }>(),
   {
     mode: 'create',
-    submitting: false
+    submitting: false,
+    progress: () => []
   }
 );
 
@@ -167,6 +179,29 @@ const removeSelectedFile = (index: number) => {
     fileInputRef.value.value = '';
   }
   formRef.value?.validateField('file');
+};
+
+const submittingLabel = computed(() => {
+  if (!props.progress.length) return '保存中';
+  const done = props.progress.filter((item) => item.status === 'done').length;
+  return props.progress.length > 1 ? `保存中 ${done}/${props.progress.length}` : '保存中';
+});
+
+const progressFor = (index: number): ResourceUploadProgress | undefined => (props.submitting ? props.progress[index] : undefined);
+
+const progressLabel = (index: number) => {
+  const item = progressFor(index);
+  if (!item) return '等待中';
+  switch (item.status) {
+    case 'uploading':
+      return `上传中 ${item.percent}%`;
+    case 'processing':
+      return '服务器处理中…';
+    case 'done':
+      return '已完成';
+    default:
+      return '等待中';
+  }
 };
 
 const formatSize = (size?: number) => {
@@ -303,8 +338,8 @@ watch(
 
 .selected-files {
   max-height: min(260px, 34vh);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   margin: 0;
   overflow: auto;
@@ -313,45 +348,55 @@ watch(
 }
 
 .selected-files li {
-  min-height: 40px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 8px;
-  padding: 8px 9px;
+  padding: 8px 10px;
   background: #fff;
   box-shadow: 0 4px 12px rgba(20, 36, 67, 0.04);
 }
 
-.selected-files li span {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
+.file-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-.selected-files li strong,
-.selected-files li em {
+.file-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.file-meta strong,
+.file-meta em {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.selected-files li strong {
+.file-meta strong {
+  min-width: 0;
   color: var(--resource-title, #14243a);
   font-size: 13px;
   font-weight: 850;
 }
 
-.selected-files li em {
+.file-meta em {
+  flex-shrink: 0;
   color: var(--resource-weak, #96a1af);
   font-size: 12px;
   font-style: normal;
   font-weight: 700;
 }
 
-.selected-files li button {
+.file-remove {
+  flex-shrink: 0;
   height: 28px;
   border: 1px solid var(--resource-border, #dce5ed);
   border-radius: 7px;
@@ -363,10 +408,17 @@ watch(
   cursor: pointer;
 }
 
-.selected-files li button:hover {
+.file-remove:hover {
   border-color: #d93026;
   background: #fff2f1;
   color: #d93026;
+}
+
+.file-state {
+  flex-shrink: 0;
+  color: var(--resource-primary, #245f8f);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .dialog-submit,

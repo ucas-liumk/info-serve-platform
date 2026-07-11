@@ -165,6 +165,13 @@ export interface ResourcePortalQuery extends PageQuery {
   status?: string;
 }
 
+/** 上传进度条目（uploading=传输中百分比；processing=服务端落库/OSS 写入；done=完成） */
+export interface ResourceUploadProgress {
+  name: string;
+  percent: number;
+  status: 'pending' | 'uploading' | 'processing' | 'done';
+}
+
 export interface ResourcePortalPayload {
   title: string;
   description?: string;
