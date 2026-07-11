@@ -48,6 +48,8 @@ export interface InfoResource {
   description: string;
   categoryId: number;
   categoryName: string;
+  /** 多分类全量（categoryId/categoryName 为主分类） */
+  categoryIds?: Array<number | string>;
   ossId: number | string;
   originalName: string;
   fileSuffix: string;
@@ -131,6 +133,7 @@ export interface InfoResourceForm {
   title: string;
   description: string;
   categoryId: number | string | undefined;
+  categoryIds?: Array<number | string>;
   ossId: number | string | undefined;
   originalName: string;
   fileSuffix: string;
@@ -166,6 +169,7 @@ export interface ResourcePortalPayload {
   title: string;
   description?: string;
   categoryId: number | string | undefined;
+  categoryIds?: Array<number | string>;
   ossId?: number | string | undefined;
   originalName?: string;
   fileSuffix?: string;

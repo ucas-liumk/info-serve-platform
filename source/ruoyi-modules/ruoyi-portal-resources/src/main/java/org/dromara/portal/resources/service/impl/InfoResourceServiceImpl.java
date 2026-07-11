@@ -25,6 +25,8 @@ import org.dromara.portal.resources.domain.InfoResourceViewRecord;
 import org.dromara.portal.resources.domain.bo.InfoResourceBo;
 import org.dromara.portal.resources.domain.vo.InfoResourceVo;
 import org.dromara.portal.resources.domain.vo.ResourceUploadVo;
+import org.dromara.portal.resources.domain.InfoResourceCategoryLink;
+import org.dromara.portal.resources.mapper.InfoResourceCategoryLinkMapper;
 import org.dromara.portal.resources.mapper.InfoResourceCategoryMapper;
 import org.dromara.portal.resources.mapper.InfoResourceFavoriteMapper;
 import org.dromara.portal.resources.mapper.InfoResourceMapper;
@@ -37,6 +39,7 @@ import org.dromara.portal.resources.mq.ResourceConvertMessage;
 import org.dromara.portal.resources.service.IInfoResourceService;
 import org.dromara.portal.resources.support.CategoryCodes;
 import org.dromara.portal.resources.support.DocumentPreviewConverter;
+import org.dromara.portal.resources.support.ResourceQueryFilters;
 import org.dromara.portal.resources.support.ResourceUserDisplayNameResolver;
 import org.dromara.file.api.RemoteFileService;
 import org.dromara.file.api.domain.RemoteFile;
@@ -56,6 +59,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -67,7 +71,6 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
 
     private static final String SCOPE_MINE = "mine";
     private static final String SCOPE_FAVORITES = "favorites";
-    private static final long ONE_MB = 1024L * 1024L;
     private static final Set<String> PDF_CONVERTIBLE_SUFFIXES = Set.of(
         "doc", "docx", "docm", "dot", "dotx", "dotm",
         "xls", "xlsx", "xlsm", "xlt", "xltx", "xltm", "csv", "tsv",
@@ -78,6 +81,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
 
     private final InfoResourceMapper baseMapper;
     private final InfoResourceCategoryMapper categoryMapper;
+    private final InfoResourceCategoryLinkMapper categoryLinkMapper;
     private final InfoResourceFavoriteMapper favoriteMapper;
     private final InfoResourceViewRecordMapper viewRecordMapper;
     private final PortalEventPublisher eventPublisher;
@@ -92,11 +96,13 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         LambdaQueryWrapper<InfoResource> w = Wrappers.lambdaQuery();
         boolean mineScope = portal && SCOPE_MINE.equals(bo.getScope());
         boolean favoritesScope = portal && SCOPE_FAVORITES.equals(bo.getScope());
-        w.eq(bo.getCategoryId() != null, InfoResource::getCategoryId, bo.getCategoryId());
+        if (bo.getCategoryId() != null) {
+            applyCategoryFilter(w, List.of(bo.getCategoryId()));
+        }
         if (portal) {
             if (mineScope) {
                 w.eq(InfoResource::getCreateBy, requireLogin());
-                if (isActiveFilter(bo.getStatus())) {
+                if (ResourceQueryFilters.isActiveFilter(bo.getStatus())) {
                     w.eq(InfoResource::getStatus, bo.getStatus());
                 }
             } else {
@@ -113,7 +119,7 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
                     }
                 }
             }
-        } else if (isActiveFilter(bo.getStatus())) {
+        } else if (ResourceQueryFilters.isActiveFilter(bo.getStatus())) {
             w.eq(InfoResource::getStatus, bo.getStatus());
         }
         applyCategoryCodes(w, bo.getCategoryCode());
@@ -123,20 +129,19 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
                 .or().like(InfoResource::getOriginalName, bo.getKeyword()));
         }
         String previewType = StringUtils.defaultIfBlank(bo.getPreviewType(), bo.getFileType());
-        if (isActiveFilter(previewType)) {
+        if (ResourceQueryFilters.isActiveFilter(previewType)) {
             w.eq(InfoResource::getPreviewType, previewType);
         }
-        Date uploadedSince = resolveUploadedSince(bo.getUploadedWithin());
+        Date uploadedSince = ResourceQueryFilters.resolveUploadedSince(bo.getUploadedWithin());
         w.ge(uploadedSince != null, InfoResource::getCreateTime, uploadedSince);
-        applySizeRange(w, bo.getSizeRange());
-        applySort(w, bo.getSort());
+        ResourceQueryFilters.applySizeRange(w, bo.getSizeRange());
+        ResourceQueryFilters.applySort(w, bo.getSort());
         return w;
     }
 
     /**
      * C2 分类筛选：categoryCode 支持逗号分隔多值（'all' 哨兵与空白剔除后为空=不筛选）；
-     * 全无命中保持 eq(category_id, -1) 空集语义，单值命中保持 eq 语义与旧版 bit 级一致，
-     * 多值命中用 IN(命中的 categoryId 集)。
+     * 全无命中保持 eq(category_id, -1) 空集语义；命中走关联表 EXISTS（资料多分类后的事实源）。
      */
     private void applyCategoryCodes(LambdaQueryWrapper<InfoResource> w, String categoryCode) {
         List<String> codes = CategoryCodes.parse(categoryCode);
@@ -150,11 +155,23 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
             .stream().map(InfoResourceCategory::getCategoryId).toList();
         if (matchedIds.isEmpty()) {
             w.eq(InfoResource::getCategoryId, -1L);
-        } else if (matchedIds.size() == 1) {
-            w.eq(InfoResource::getCategoryId, matchedIds.get(0));
-        } else {
-            w.in(InfoResource::getCategoryId, matchedIds);
+            return;
         }
+        applyCategoryFilter(w, matchedIds);
+    }
+
+    /**
+     * 分类命中过滤：关联表为事实源，EXISTS 使多分类资料在其任一分类下可见（并集）。
+     * 子查询内外层列必须带表名限定（info_resource.resource_id），否则自指恒真；
+     * id 均来自库内 Long，直接内联无注入面；关联表租户条件由拦截器自动追加。
+     */
+    private void applyCategoryFilter(LambdaQueryWrapper<InfoResource> w, List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return;
+        }
+        String ids = categoryIds.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        w.exists("select 1 from info_resource_category_link ircl"
+            + " where ircl.resource_id = info_resource.resource_id and ircl.category_id in (" + ids + ")");
     }
 
     private void fillResourceExt(List<InfoResourceVo> rows) {
@@ -178,8 +195,15 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
             ? Collections.emptyMap()
             : favoriteMapper.selectList(Wrappers.<InfoResourceFavorite>lambdaQuery().in(InfoResourceFavorite::getResourceId, resourceIds))
                 .stream().collect(Collectors.groupingBy(InfoResourceFavorite::getResourceId, Collectors.counting()));
+        Map<Long, List<Long>> linkedCategoryIds = resourceIds.isEmpty()
+            ? Collections.emptyMap()
+            : categoryLinkMapper.selectByResourceIds(resourceIds).stream()
+                .collect(Collectors.groupingBy(InfoResourceCategoryLink::getResourceId,
+                    Collectors.mapping(InfoResourceCategoryLink::getCategoryId, Collectors.toList())));
         rows.forEach(row -> {
             row.setCategoryName(categoryNames.get(row.getCategoryId()));
+            row.setCategoryIds(linkedCategoryIds.getOrDefault(row.getResourceId(),
+                row.getCategoryId() == null ? List.of() : List.of(row.getCategoryId())));
             boolean mine = currentUserId != null && currentUserId.equals(row.getCreateBy());
             row.setCanManage(mine);
             row.setOwnerName(StringUtils.defaultIfBlank(ownerNames.get(row.getCreateBy()), mine ? currentDisplayName : "平台用户"));
@@ -348,48 +372,67 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(InfoResourceBo bo) {
+        List<Long> categoryIds = prepareCategories(bo);
         InfoResource add = MapstructUtils.convert(bo, InfoResource.class);
-        assertCategoryUsable(add.getCategoryId());
+        add.setCategoryId(categoryIds.get(0));
         fillResourceDefaults(add);
-        return baseMapper.insert(add) > 0;
-    }
-
-    @Override
-    public Boolean insertPortalByBo(InfoResourceBo bo) {
-        requireLogin();
-        InfoResource add = MapstructUtils.convert(bo, InfoResource.class);
-        assertCategoryUsable(add.getCategoryId());
-        fillResourceDefaults(add);
-        assertStatusUsable(add.getStatus());
-        add.setStatus(StringUtils.defaultIfBlank(add.getStatus(), "0"));
         boolean inserted = baseMapper.insert(add) > 0;
-        if (inserted && "0".equals(add.getStatus())) {
-            sendResourceCreatedNotification(add);
-            enqueueConversionIfConvertible(add);
+        if (inserted) {
+            replaceCategoryLinks(add.getResourceId(), categoryIds);
         }
         return inserted;
     }
 
     @Override
-    public Boolean updateByBo(InfoResourceBo bo) {
-        InfoResource up = MapstructUtils.convert(bo, InfoResource.class);
-        assertCategoryUsable(up.getCategoryId());
-        if (StringUtils.isBlank(up.getPreviewType())) {
-            up.setPreviewType(resolvePreviewType(up.getMimeType(), up.getOriginalName()));
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean insertPortalByBo(InfoResourceBo bo) {
+        requireLogin();
+        List<Long> categoryIds = prepareCategories(bo);
+        InfoResource add = MapstructUtils.convert(bo, InfoResource.class);
+        add.setCategoryId(categoryIds.get(0));
+        fillResourceDefaults(add);
+        assertStatusUsable(add.getStatus());
+        add.setStatus(StringUtils.defaultIfBlank(add.getStatus(), "0"));
+        boolean inserted = baseMapper.insert(add) > 0;
+        if (inserted) {
+            replaceCategoryLinks(add.getResourceId(), categoryIds);
+            if ("0".equals(add.getStatus())) {
+                sendResourceCreatedNotification(add);
+                enqueueConversionIfConvertible(add);
+            }
         }
-        return baseMapper.updateById(up) > 0;
+        return inserted;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean updateByBo(InfoResourceBo bo) {
+        List<Long> categoryIds = prepareCategories(bo);
+        InfoResource up = MapstructUtils.convert(bo, InfoResource.class);
+        up.setCategoryId(categoryIds.get(0));
+        if (StringUtils.isBlank(up.getPreviewType())) {
+            up.setPreviewType(resolvePreviewType(up.getMimeType(), up.getOriginalName()));
+        }
+        boolean updated = baseMapper.updateById(up) > 0;
+        if (updated) {
+            replaceCategoryLinks(up.getResourceId(), categoryIds);
+        }
+        return updated;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public Boolean updateOwnByBo(InfoResourceBo bo) {
         InfoResource current = assertOwnedResource(bo.getResourceId());
+        List<Long> categoryIds = prepareCategories(bo);
         InfoResource up = MapstructUtils.convert(bo, InfoResource.class);
         up.setResourceId(current.getResourceId());
         up.setStatus(null);
         up.setDownloadCount(null);
         up.setViewCount(null);
-        assertCategoryUsable(up.getCategoryId());
+        up.setCategoryId(categoryIds.get(0));
         if (up.getOssId() == null) {
             up.setOssId(current.getOssId());
             up.setOriginalName(current.getOriginalName());
@@ -400,7 +443,32 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         } else if (StringUtils.isBlank(up.getPreviewType())) {
             up.setPreviewType(resolvePreviewType(up.getMimeType(), up.getOriginalName()));
         }
-        return baseMapper.updateById(up) > 0;
+        boolean updated = baseMapper.updateById(up) > 0;
+        if (updated) {
+            replaceCategoryLinks(up.getResourceId(), categoryIds);
+        }
+        return updated;
+    }
+
+    /** 多分类归一：categoryIds 优先（去空去重保序），缺省回退单值 categoryId；逐个校验可用 */
+    private List<Long> prepareCategories(InfoResourceBo bo) {
+        List<Long> ids;
+        if (bo.getCategoryIds() != null && !bo.getCategoryIds().isEmpty()) {
+            ids = bo.getCategoryIds().stream().filter(Objects::nonNull).distinct().toList();
+        } else {
+            ids = bo.getCategoryId() == null ? List.of() : List.of(bo.getCategoryId());
+        }
+        if (ids.isEmpty()) {
+            throw new ServiceException("资料分类不能为空");
+        }
+        ids.forEach(this::assertCategoryUsable);
+        return ids;
+    }
+
+    /** 整替关联行（事务内）：先删后插，幂等 */
+    private void replaceCategoryLinks(Long resourceId, List<Long> categoryIds) {
+        categoryLinkMapper.deleteByResourceId(resourceId);
+        categoryLinkMapper.insertLinks(resourceId, categoryIds);
     }
 
     @Override
@@ -681,51 +749,6 @@ public class InfoResourceServiceImpl implements IInfoResourceService {
         }
     }
 
-    private boolean isActiveFilter(String value) {
-        return StringUtils.isNotBlank(value) && !"all".equals(value);
-    }
-
-    private Date resolveUploadedSince(String uploadedWithin) {
-        if (!isActiveFilter(uploadedWithin)) {
-            return null;
-        }
-        Calendar calendar = Calendar.getInstance();
-        switch (uploadedWithin) {
-            case "week" -> calendar.add(Calendar.DATE, -7);
-            case "month" -> calendar.add(Calendar.MONTH, -1);
-            case "quarter" -> calendar.add(Calendar.MONTH, -3);
-            case "year" -> calendar.add(Calendar.YEAR, -1);
-            default -> {
-                return null;
-            }
-        }
-        return calendar.getTime();
-    }
-
-    private void applySizeRange(LambdaQueryWrapper<InfoResource> w, String sizeRange) {
-        if (!isActiveFilter(sizeRange)) {
-            return;
-        }
-        switch (sizeRange) {
-            case "small" -> w.lt(InfoResource::getFileSize, ONE_MB);
-            case "medium" -> w.ge(InfoResource::getFileSize, ONE_MB).lt(InfoResource::getFileSize, 10 * ONE_MB);
-            case "large" -> w.ge(InfoResource::getFileSize, 10 * ONE_MB);
-            default -> {
-            }
-        }
-    }
-
-    private void applySort(LambdaQueryWrapper<InfoResource> w, String sort) {
-        if ("downloads".equals(sort)) {
-            w.orderByDesc(InfoResource::getDownloadCount).orderByDesc(InfoResource::getCreateTime);
-        } else if ("views".equals(sort)) {
-            w.orderByDesc(InfoResource::getViewCount).orderByDesc(InfoResource::getCreateTime);
-        } else if ("hot".equals(sort)) {
-            w.orderByDesc(InfoResource::getDownloadCount).orderByDesc(InfoResource::getViewCount).orderByDesc(InfoResource::getCreateTime);
-        } else {
-            w.orderByDesc(InfoResource::getCreateTime);
-        }
-    }
 
     private String resolvePreviewType(String contentType, String originalName) {
         String lowerType = StringUtils.defaultString(contentType).toLowerCase();

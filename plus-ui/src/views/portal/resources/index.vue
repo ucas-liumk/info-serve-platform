@@ -104,7 +104,7 @@
 
     <ResourceUploadDialog
       v-model="uploadVisible"
-      :categories="categories"
+      :category-tree="categoryTree"
       :resource="editingResource"
       :mode="uploadMode"
       :submitting="uploading"
@@ -127,13 +127,12 @@ import {
   deletePortalResource,
   favoritePortalResource,
   getResourceCategoryTree,
-  listResourceCategories,
   listResources,
   unfavoritePortalResource,
   updatePortalResource,
   uploadPortalResourceFile
 } from '@/api/portal/resources';
-import type { CategoryTreeNode, InfoResource, ResourceCategory, ResourcePortalPayload, ResourceUploadResult } from '@/api/infoservice/types';
+import type { CategoryTreeNode, InfoResource, ResourcePortalPayload, ResourceUploadResult } from '@/api/infoservice/types';
 import { downloadPortalResource } from './download';
 import { buildSelectedChips, encodeCategoryCodes, removeCategory, resolveSelectionTitle } from './categoryFacets';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
@@ -149,14 +148,13 @@ type UploadMode = 'create' | 'edit';
 type MyResourceTab = 'uploads' | 'favorites' | 'downloads' | 'history';
 type ResourceSubmitPayload = {
   title: string;
-  categoryId: number | string | undefined;
+  categoryIds: Array<number | string>;
   description: string;
   files?: File[];
 };
 
 const router = useRouter();
 const userStore = useUserStore();
-const categories = ref<ResourceCategory[]>([]);
 const categoryTree = ref<CategoryTreeNode[]>([]);
 const resources = ref<InfoResource[]>([]);
 const myResources = ref<InfoResource[]>([]);
@@ -191,11 +189,6 @@ const ensureLogin = () => {
   }
   ElMessage.warning('请先登录后操作');
   return false;
-};
-
-const loadCategories = async () => {
-  const res: any = await listResourceCategories();
-  categories.value = res.data || [];
 };
 
 /** 已提交的搜索关键词：勾选/排序/翻页只读它，避免输入半截的词被隐式带入列表而计数还是旧口径 */
@@ -410,11 +403,13 @@ const uploadFile = async (file: File) => {
   return upRes.data as ResourceUploadResult;
 };
 
-const buildPayload = (base: { title: string; categoryId: number | string | undefined; description: string }, file?: ResourceUploadResult) => {
+const buildPayload = (base: { title: string; categoryIds: Array<number | string>; description: string }, file?: ResourceUploadResult) => {
   const currentResource = editingResource.value;
   return {
     title: base.title,
-    categoryId: base.categoryId,
+    // categoryId=主分类（首个），与后端 Bo 校验及旧展示路径兼容；categoryIds 为全量
+    categoryId: base.categoryIds[0],
+    categoryIds: [...base.categoryIds],
     description: base.description,
     ossId: file?.ossId ?? currentResource?.ossId,
     originalName: file?.originalName ?? currentResource?.originalName,
@@ -435,7 +430,7 @@ const fileTitle = (payload: ResourceSubmitPayload, file: File, total: number) =>
 };
 
 const refreshOwnedViews = async () => {
-  await Promise.all([loadCategories(), loadCategoryTree(), reload()]);
+  await Promise.all([loadCategoryTree(), reload()]);
   if (myResourcesVisible.value) {
     await loadMyResources();
   }
@@ -460,7 +455,7 @@ const submitResource = async (payload: ResourceSubmitPayload) => {
           buildPayload(
             {
               title: fileTitle(payload, file, files.length),
-              categoryId: payload.categoryId,
+              categoryIds: payload.categoryIds,
               description: payload.description
             },
             uploaded
@@ -498,7 +493,7 @@ const deleteOwnResource = async (resource: InfoResource) => {
 };
 
 onMounted(async () => {
-  await Promise.all([loadCategories(), loadCategoryTree(), reload()]);
+  await Promise.all([loadCategoryTree(), reload()]);
 });
 </script>
 

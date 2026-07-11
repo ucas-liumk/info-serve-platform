@@ -3,30 +3,32 @@
 <mapper namespace="org.dromara.portal.resources.mapper.InfoResourceMapper">
 
     <!-- 门户分类树分面计数：一次 GROUP BY 聚合（禁逐分类 N+1）。
+         走关联表（多分类事实源）：一份资料在其每个分类下都计数；
          筛选语义与列表接口 buildWrapper 一致；租户条件由租户拦截器自动追加。 -->
     <select id="countActiveByCategory" resultType="org.dromara.portal.resources.domain.vo.InfoResourceCategoryCountVo">
-        SELECT category_id, COUNT(*) AS resource_count
-        FROM info_resource
-        WHERE status = '0'
-          AND del_flag = '0'
+        SELECT l.category_id, COUNT(*) AS resource_count
+        FROM info_resource_category_link l
+        JOIN info_resource r ON r.resource_id = l.resource_id
+        WHERE r.status = '0'
+          AND r.del_flag = '0'
         <if test="keyword != null and keyword != ''">
-            AND (title LIKE CONCAT('%', #{keyword}, '%')
-                OR description LIKE CONCAT('%', #{keyword}, '%')
-                OR original_name LIKE CONCAT('%', #{keyword}, '%'))
+            AND (r.title LIKE CONCAT('%', #{keyword}, '%')
+                OR r.description LIKE CONCAT('%', #{keyword}, '%')
+                OR r.original_name LIKE CONCAT('%', #{keyword}, '%'))
         </if>
         <if test="previewType != null and previewType != ''">
-            AND preview_type = #{previewType}
+            AND r.preview_type = #{previewType}
         </if>
         <if test="uploadedSince != null">
-            AND create_time &gt;= #{uploadedSince}
+            AND r.create_time &gt;= #{uploadedSince}
         </if>
         <if test="minFileSize != null">
-            AND file_size &gt;= #{minFileSize}
+            AND r.file_size &gt;= #{minFileSize}
         </if>
         <if test="maxFileSize != null">
-            AND file_size &lt; #{maxFileSize}
+            AND r.file_size &lt; #{maxFileSize}
         </if>
-        GROUP BY category_id
+        GROUP BY l.category_id
     </select>
 
 </mapper>

@@ -24,13 +24,14 @@ public interface InfoResourceMapper extends BaseMapperPlus<InfoResource, InfoRes
 
     /**
      * 未删资料按分类聚合计数（含已下架，口径与删除校验一致，供管理树表）。
-     * 逻辑删由 SQL 显式过滤；租户条件由拦截器自动追加。
+     * 走关联表（多分类事实源）：一份资料在其每个分类下都计数；租户条件由拦截器自动追加。
      */
     @Select("""
-        select category_id, count(*) as resource_count
-        from info_resource
-        where del_flag = '0'
-        group by category_id
+        select l.category_id, count(*) as resource_count
+        from info_resource_category_link l
+        join info_resource r on r.resource_id = l.resource_id
+        where r.del_flag = '0'
+        group by l.category_id
         """)
     List<InfoResourceCategoryCountVo> countUndeletedByCategory();
 

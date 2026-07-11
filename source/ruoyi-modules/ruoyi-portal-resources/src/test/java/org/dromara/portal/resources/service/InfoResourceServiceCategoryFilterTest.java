@@ -16,6 +16,7 @@ import org.dromara.portal.resources.domain.InfoResource;
 import org.dromara.portal.resources.domain.InfoResourceCategory;
 import org.dromara.portal.resources.domain.bo.InfoResourceBo;
 import org.dromara.portal.resources.domain.vo.InfoResourceVo;
+import org.dromara.portal.resources.mapper.InfoResourceCategoryLinkMapper;
 import org.dromara.portal.resources.mapper.InfoResourceCategoryMapper;
 import org.dromara.portal.resources.mapper.InfoResourceFavoriteMapper;
 import org.dromara.portal.resources.mapper.InfoResourceMapper;
@@ -48,9 +49,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * C2 列表接口 categoryCode 多值：'all' 哨兵跳过、单值 eq 语义 bit 级保留、
- * 多值部分命中 IN(命中集)、全无命中 eq(category_id, -1) 空集。
- * 另验资料只允许挂二级分类（栏目不直接挂资料）。
+ * C2 列表接口 categoryCode 多值：'all' 哨兵跳过、全无命中 eq(category_id, -1) 空集、
+ * 命中走关联表 EXISTS（资料多分类事实源，任一分类命中即可见）。
+ * 另验资料只允许挂二级分类（栏目不直接挂资料）与多分类写入整替关联行。
  */
 @ExtendWith(MockitoExtension.class)
 class InfoResourceServiceCategoryFilterTest {
@@ -76,6 +77,8 @@ class InfoResourceServiceCategoryFilterTest {
     private InfoResourceMapper baseMapper;
     @Mock
     private InfoResourceCategoryMapper categoryMapper;
+    @Mock
+    private InfoResourceCategoryLinkMapper categoryLinkMapper;
     @Mock
     private InfoResourceFavoriteMapper favoriteMapper;
     @Mock
@@ -132,28 +135,40 @@ class InfoResourceServiceCategoryFilterTest {
     }
 
     @Test
-    void single_code_hit_keeps_eq_semantics() {
+    void single_code_hit_filters_via_link_exists() {
         when(categoryMapper.selectList(any(Wrapper.class)))
             .thenReturn(List.of(activeCategory(300001L, "policy")));
 
         LambdaQueryWrapper<InfoResource> w = capturePortalWrapper(portalBo("policy"));
 
         String sql = w.getSqlSegment();
-        assertTrue(sql.contains("category_id ="), "单值命中保持 eq 语义");
-        assertFalse(sql.contains("category_id IN"));
-        assertTrue(w.getParamNameValuePairs().containsValue(300001L));
+        assertTrue(sql.contains("info_resource_category_link"), "命中走关联表 EXISTS");
+        assertTrue(sql.contains("info_resource.resource_id"), "外层列必须带表名限定，防子查询自指恒真");
+        assertTrue(sql.contains("(300001)"));
     }
 
     @Test
-    void multi_codes_partial_hit_filters_in_matched_ids() {
+    void multi_codes_partial_hit_filters_via_link_exists_in_matched_ids() {
         when(categoryMapper.selectList(any(Wrapper.class)))
             .thenReturn(List.of(activeCategory(300001L, "policy"), activeCategory(300002L, "tech")));
 
         LambdaQueryWrapper<InfoResource> w = capturePortalWrapper(portalBo("policy,tech,missing"));
 
-        assertTrue(w.getSqlSegment().contains("category_id IN"));
-        assertTrue(w.getParamNameValuePairs().containsValue(300001L));
-        assertTrue(w.getParamNameValuePairs().containsValue(300002L));
+        String sql = w.getSqlSegment();
+        assertTrue(sql.contains("info_resource_category_link"));
+        assertTrue(sql.contains("300001, 300002"));
+    }
+
+    @Test
+    void legacy_single_category_id_param_filters_via_link_exists() {
+        InfoResourceBo bo = new InfoResourceBo();
+        bo.setCategoryId(300001L);
+
+        LambdaQueryWrapper<InfoResource> w = capturePortalWrapper(bo);
+
+        String sql = w.getSqlSegment();
+        assertTrue(sql.contains("info_resource_category_link"));
+        assertTrue(sql.contains("(300001)"));
     }
 
     @Test
@@ -170,19 +185,42 @@ class InfoResourceServiceCategoryFilterTest {
     void insert_rejects_resource_attached_to_section_level_category() {
         InfoResourceBo bo = new InfoResourceBo();
         bo.setCategoryId(300000L);
-        InfoResource entity = new InfoResource();
-        entity.setCategoryId(300000L);
         InfoResourceCategory section = new InfoResourceCategory();
         section.setCategoryId(300000L);
         section.setStatus("0");
         section.setParentId(null);
         when(categoryMapper.selectById(300000L)).thenReturn(section);
 
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.insertByBo(bo));
+        assertTrue(ex.getMessage().contains("分类"));
+        verify(baseMapper, never()).insert(any(InfoResource.class));
+        verifyNoInteractions(categoryLinkMapper);
+    }
+
+    @Test
+    void insert_with_multiple_categories_writes_all_links_and_first_as_primary() {
+        InfoResourceBo bo = new InfoResourceBo();
+        bo.setCategoryId(300002L);
+        bo.setCategoryIds(List.of(300001L, 300002L, 300001L));
+        InfoResourceCategory sectionRow = new InfoResourceCategory();
+        sectionRow.setCategoryId(300000L);
+        sectionRow.setStatus("0");
+        sectionRow.setParentId(null);
+        when(categoryMapper.selectById(300000L)).thenReturn(sectionRow);
+        when(categoryMapper.selectById(300001L)).thenReturn(activeCategory(300001L, "policy"));
+        when(categoryMapper.selectById(300002L)).thenReturn(activeCategory(300002L, "tech"));
+        InfoResource entity = new InfoResource();
+        entity.setResourceId(42L);
+        when(baseMapper.insert(entity)).thenReturn(1);
+
         try (MockedStatic<MapstructUtils> ms = mockStatic(MapstructUtils.class)) {
             ms.when(() -> MapstructUtils.convert(bo, InfoResource.class)).thenReturn(entity);
-            ServiceException ex = assertThrows(ServiceException.class, () -> service.insertByBo(bo));
-            assertTrue(ex.getMessage().contains("分类"));
+            assertTrue(service.insertByBo(bo));
         }
-        verify(baseMapper, never()).insert(any(InfoResource.class));
+
+        // categoryIds 优先且去重保序：主分类=首个（300001，而非 bo.categoryId 的 300002）
+        assertTrue(Long.valueOf(300001L).equals(entity.getCategoryId()));
+        verify(categoryLinkMapper).deleteByResourceId(42L);
+        verify(categoryLinkMapper).insertLinks(42L, List.of(300001L, 300002L));
     }
 }

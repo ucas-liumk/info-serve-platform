@@ -53,6 +53,17 @@ CREATE INDEX IF NOT EXISTS idx_info_resource_category ON info_resource (category
 CREATE INDEX IF NOT EXISTS idx_info_resource_status ON info_resource (tenant_id, status, del_flag);
 COMMENT ON TABLE info_resource IS '信息中心共享资料';
 
+CREATE TABLE IF NOT EXISTS info_resource_category_link (
+    resource_id  int8        NOT NULL,
+    category_id  int8        NOT NULL,
+    tenant_id    varchar(20) DEFAULT '000000',
+    create_time  timestamp   DEFAULT now(),
+    CONSTRAINT pk_info_resource_category_link PRIMARY KEY (resource_id, category_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ircl_category ON info_resource_category_link (category_id);
+CREATE INDEX IF NOT EXISTS idx_ircl_tenant ON info_resource_category_link (tenant_id);
+COMMENT ON TABLE info_resource_category_link IS '资料-分类多对多关联（资料可挂多个二级分类；info_resource.category_id 为主分类）';
+
 CREATE TABLE IF NOT EXISTS info_forum_board (
     board_id    int8         NOT NULL,
     board_name  varchar(80)  NOT NULL,

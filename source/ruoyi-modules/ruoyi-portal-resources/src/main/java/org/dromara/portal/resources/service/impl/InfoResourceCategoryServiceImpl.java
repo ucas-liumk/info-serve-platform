@@ -16,6 +16,7 @@ import org.dromara.portal.resources.domain.bo.InfoResourceCategoryBo;
 import org.dromara.portal.resources.domain.vo.InfoResourceCategoryCountVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceCategoryTreeVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceCategoryVo;
+import org.dromara.portal.resources.mapper.InfoResourceCategoryLinkMapper;
 import org.dromara.portal.resources.mapper.InfoResourceCategoryMapper;
 import org.dromara.portal.resources.mapper.InfoResourceMapper;
 import org.dromara.common.tenant.helper.TenantHelper;
@@ -41,6 +42,7 @@ public class InfoResourceCategoryServiceImpl implements IInfoResourceCategorySer
 
     private final InfoResourceCategoryMapper baseMapper;
     private final InfoResourceMapper resourceMapper;
+    private final InfoResourceCategoryLinkMapper categoryLinkMapper;
 
     private LambdaQueryWrapper<InfoResourceCategory> buildWrapper(InfoResourceCategoryBo bo) {
         LambdaQueryWrapper<InfoResourceCategory> w = Wrappers.lambdaQuery();
@@ -311,10 +313,10 @@ public class InfoResourceCategoryServiceImpl implements IInfoResourceCategorySer
         return baseMapper.deleteByIds(ids) > 0;
     }
 
-    /** 分类为全租户共享字典而资料表带租户列：守卫计数必须跨租户，防止 A 租户绕过 B 租户的挂接 */
+    /** 分类为全租户共享字典而资料/关联表带租户列：守卫计数必须跨租户，防止 A 租户绕过 B 租户的挂接。
+     * 走关联表（多分类事实源），只计未删资料 */
     private long countAttachedResources(Collection<Long> ids) {
-        Long count = TenantHelper.ignore(() -> resourceMapper.selectCount(
-            Wrappers.<InfoResource>lambdaQuery().in(InfoResource::getCategoryId, ids)));
+        Long count = TenantHelper.ignore(() -> categoryLinkMapper.countUndeletedResourcesByCategoryIds(ids));
         return count == null ? 0L : count;
     }
 }

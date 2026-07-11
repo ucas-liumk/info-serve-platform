@@ -4,9 +4,11 @@
       <el-form-item label="标题" prop="title">
         <el-input v-model="form.title" maxlength="160" :placeholder="titlePlaceholder" />
       </el-form-item>
-      <el-form-item label="分类" prop="categoryId">
-        <el-select v-model="form.categoryId" placeholder="请选择分类" class="full">
-          <el-option v-for="cat in categories" :key="cat.categoryId" :label="cat.categoryName" :value="cat.categoryId" />
+      <el-form-item label="分类" prop="categoryIds">
+        <el-select v-model="form.categoryIds" multiple placeholder="请选择分类（可多选、可跨栏目）" class="full">
+          <el-option-group v-for="group in categoryTree" :key="group.categoryId" :label="group.categoryName">
+            <el-option v-for="cat in group.children ?? []" :key="cat.categoryId" :label="cat.categoryName" :value="cat.categoryId" />
+          </el-option-group>
         </el-select>
       </el-form-item>
       <el-form-item label="简介">
@@ -52,12 +54,12 @@ import { computed, nextTick, reactive, ref, watch } from 'vue';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
-import type { InfoResource, ResourceCategory } from '@/api/infoservice/types';
+import type { CategoryTreeNode, InfoResource } from '@/api/infoservice/types';
 
 const props = withDefaults(
   defineProps<{
     modelValue: boolean;
-    categories: ResourceCategory[];
+    categoryTree: CategoryTreeNode[];
     resource?: InfoResource;
     mode?: 'create' | 'edit';
     submitting?: boolean;
@@ -70,7 +72,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
-  (e: 'submit', payload: { title: string; categoryId: number | string | undefined; description: string; files?: File[] }): void;
+  (e: 'submit', payload: { title: string; categoryIds: Array<number | string>; description: string; files?: File[] }): void;
 }>();
 
 const formRef = ref<FormInstance>();
@@ -78,7 +80,7 @@ const fileInputRef = ref<HTMLInputElement>();
 const selectedFiles = ref<File[]>([]);
 const form = reactive({
   title: '',
-  categoryId: undefined as number | string | undefined,
+  categoryIds: [] as Array<number | string>,
   description: '',
   file: ''
 });
@@ -108,13 +110,24 @@ const selectedSummary = computed(() => {
 
 const rules = computed<FormRules>(() => ({
   title: isEdit.value ? [{ required: true, message: '请输入资料标题', trigger: 'blur' }] : [],
-  categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
+  categoryIds: [
+    {
+      required: true,
+      validator: (_rule: unknown, value: Array<number | string>, callback: (error?: Error) => void) =>
+        value && value.length > 0 ? callback() : callback(new Error('请至少选择一个分类')),
+      trigger: 'change'
+    }
+  ],
   file: isEdit.value ? [] : [{ required: true, message: '请选择文件', trigger: 'change' }]
 }));
 
 const resetForm = () => {
   form.title = props.resource?.title || '';
-  form.categoryId = props.resource?.categoryId || props.categories[0]?.categoryId;
+  form.categoryIds = props.resource?.categoryIds?.length
+    ? [...props.resource.categoryIds]
+    : props.resource?.categoryId != null
+      ? [props.resource.categoryId]
+      : [];
   form.description = props.resource?.description || '';
   form.file = '';
   selectedFiles.value = [];
@@ -171,7 +184,7 @@ const submit = async () => {
   }
   emit('submit', {
     title: form.title,
-    categoryId: form.categoryId,
+    categoryIds: [...form.categoryIds],
     description: form.description,
     files: [...selectedFiles.value]
   });

@@ -16,6 +16,7 @@ import org.dromara.portal.resources.domain.bo.InfoResourceCategoryBo;
 import org.dromara.portal.resources.domain.vo.InfoResourceCategoryCountVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceCategoryTreeVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceCategoryVo;
+import org.dromara.portal.resources.mapper.InfoResourceCategoryLinkMapper;
 import org.dromara.portal.resources.mapper.InfoResourceCategoryMapper;
 import org.dromara.portal.resources.mapper.InfoResourceMapper;
 import org.dromara.portal.resources.service.impl.InfoResourceCategoryServiceImpl;
@@ -78,6 +79,9 @@ class InfoResourceCategoryServiceImplTest {
 
     @Mock
     private InfoResourceMapper resourceMapper;
+
+    @Mock
+    private InfoResourceCategoryLinkMapper categoryLinkMapper;
 
     @InjectMocks
     private InfoResourceCategoryServiceImpl service;
@@ -300,7 +304,7 @@ class InfoResourceCategoryServiceImplTest {
         bo.setCategoryCode("policy");
         when(baseMapper.exists(any(Wrapper.class))).thenReturn(false);
         when(baseMapper.selectById(300001L)).thenReturn(category(300001L, 300000L, "policy", "政策制度", 1));
-        when(resourceMapper.selectCount(any(Wrapper.class))).thenReturn(2L);
+        when(categoryLinkMapper.countUndeletedResourcesByCategoryIds(List.of(300001L))).thenReturn(2L);
 
         ServiceException ex = assertThrows(ServiceException.class, () -> service.updateByBo(bo));
         assertTrue(ex.getMessage().contains("不能调整为栏目"));
@@ -316,7 +320,7 @@ class InfoResourceCategoryServiceImplTest {
         // 分类升级为栏目：parentId=null 必须显式落库而非被 NOT_NULL 策略跳过
         when(baseMapper.exists(any(Wrapper.class))).thenReturn(false);
         when(baseMapper.selectById(300001L)).thenReturn(category(300001L, 300000L, "policy", "政策制度", 1));
-        when(resourceMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(categoryLinkMapper.countUndeletedResourcesByCategoryIds(List.of(300001L))).thenReturn(0L);
         when(baseMapper.update(any(), any(Wrapper.class))).thenReturn(1);
 
         InfoResourceCategory entity = new InfoResourceCategory();
@@ -404,7 +408,7 @@ class InfoResourceCategoryServiceImplTest {
     @Test
     void delete_child_rejected_when_resources_attached() {
         when(baseMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
-        when(resourceMapper.selectCount(any(Wrapper.class))).thenReturn(3L);
+        when(categoryLinkMapper.countUndeletedResourcesByCategoryIds(List.of(300001L))).thenReturn(3L);
 
         ServiceException ex = assertThrows(ServiceException.class,
             () -> service.deleteWithValidByIds(List.of(300001L)));
@@ -415,7 +419,7 @@ class InfoResourceCategoryServiceImplTest {
     @Test
     void delete_succeeds_when_no_children_and_no_resources() {
         when(baseMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
-        when(resourceMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(categoryLinkMapper.countUndeletedResourcesByCategoryIds(List.of(300002L))).thenReturn(0L);
         when(baseMapper.deleteByIds(List.of(300002L))).thenReturn(1);
 
         assertTrue(service.deleteWithValidByIds(List.of(300002L)));

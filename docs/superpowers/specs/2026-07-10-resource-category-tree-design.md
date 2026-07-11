@@ -46,6 +46,15 @@
 - 门禁：后端模块 test（§3.5 命令）；前端 `npm run build:prod` + `npm run design:audit`（棘轮不升、删旧硬编码后下调基线）+ `npm test`（vitest）。
 - 发布面：portal-resources 镜像 + 前端 dist + 0.3.7 增量 SQL（PG ry-cloud）。**改完真机截图比对样机，用户认可后关单。**
 
+## 5.5 增补：资料多分类（2026-07-10 用户新增需求）
+
+一份资料可属于**多个分类**（分类可跨栏目，"属于多个栏目"由此传递成立；资料仍只挂二级分类）。
+
+- **数据模型**：新关联表 `info_resource_category_link(resource_id, category_id, tenant_id, create_time)`，PK(resource_id, category_id) + category_id 索引；**带 tenant_id 列**（避免动 Nacos 租户忽略清单，插入时随资料租户自动填充）。`info_resource.category_id` 保留为**主分类**（多选的第一个，供卡片徽标/旧展示路径），关联表为筛选/计数/删除守卫的唯一事实源。增量 `0.3.8-resource-multi-category.sql`：建表 + 从 category_id 回填（ON CONFLICT DO NOTHING，幂等）+ MANIFEST 登记；种子同步。
+- **后端**：Bo 加 `categoryIds`（数组，与旧 categoryId 兼容：只传单值视为 [单值]）；新增/修改资料=逐个校验可用 + category_id 取首个 + 事务内整替关联行。列表 categoryCode 筛选改 `EXISTS(关联表 IN 命中分类)`（并集；'all'/-1L 语义保留）；分面计数与管理树计数改 join 关联表 COUNT(DISTINCT resource_id)（一份资料在其每个分类下都计数，标准分面）；删除守卫计数改关联表（跨租户不变）；Vo 加 categoryIds（编辑回显）。
+- **前端**：上传/编辑弹窗分类改**按栏目分组的多选下拉**（el-option-group=栏目，选项=分类，必选≥1）；管理端资料编辑同步多选；卡片徽标仍显示主分类名。
+- **验证**：上传一份挂两个分类的文件 → 在两个分类勾选下均可筛出（E2E）。前置依赖：OSS endpoint 修复（否则上传本身不可用，见遗留基建问题）。
+
 ## 6. 决策记录
 
 - [x] 左栏=栏目→分类两级树；类型/时间/大小留工具条（2026-07-10 用户修正确认）

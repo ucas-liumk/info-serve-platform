@@ -7,6 +7,7 @@ import org.dromara.portal.resources.domain.InfoResource;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 @Data
 @AutoMapper(target = InfoResource.class)
@@ -17,6 +18,8 @@ public class InfoResourceVo implements Serializable {
     private String description;
     private Long categoryId;
     private String categoryName;
+    /** 多分类全量（关联表事实源；categoryId/categoryName 为主分类） */
+    private List<Long> categoryIds;
     private Long ossId;
     private String originalName;
     private String fileSuffix;
