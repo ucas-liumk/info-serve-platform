@@ -31,6 +31,17 @@
       </div>
     </header>
 
+    <PdfWpsToolbar
+      v-if="src"
+      :pan-active="panActive"
+      :page-mode="pageMode"
+      :disabled="!controlsReady"
+      @toggle-pan="togglePan"
+      @set-page-mode="setPageMode"
+      @rotate-left="rotateLeft"
+      @rotate-right="rotateRight"
+    />
+
     <section class="pdf-stage">
       <div v-if="!src" class="pdf-message">
         <strong>暂未获取到预览地址</strong>
@@ -52,15 +63,33 @@
         </div>
       </template>
     </section>
+
+    <footer v-if="src" class="pdf-pagebar">
+      <button type="button" class="page-nav" title="第一页" :disabled="!prevEnabled" @click="goFirstPage">
+        <el-icon><DArrowLeft /></el-icon>
+      </button>
+      <button type="button" class="page-nav" title="上一页" :disabled="!prevEnabled" @click="goPrevPage">
+        <el-icon><ArrowLeft /></el-icon>
+      </button>
+      <span class="page-indicator" aria-label="当前页 / 总页数">{{ pageIndicator }}</span>
+      <button type="button" class="page-nav" title="下一页" :disabled="!nextEnabled" @click="goNextPage">
+        <el-icon><ArrowRight /></el-icon>
+      </button>
+      <button type="button" class="page-nav" title="最后一页" :disabled="!nextEnabled" @click="goLastPage">
+        <el-icon><DArrowRight /></el-icon>
+      </button>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { Back, Close, Download } from '@element-plus/icons-vue';
+import { ArrowLeft, ArrowRight, Back, Close, DArrowLeft, DArrowRight, Download } from '@element-plus/icons-vue';
 import { PDFViewer } from '@embedpdf/vue-pdf-viewer';
 import pdfiumWasmAssetUrl from '@embedpdf/pdfium/pdfium.wasm?url';
 import type { PDFViewerConfig, PDFViewerExpose } from '@embedpdf/vue-pdf-viewer';
+import PdfWpsToolbar from './PdfWpsToolbar.vue';
+import { usePdfWpsViewer } from './usePdfWpsViewer';
 
 const props = defineProps<{
   src: string;
@@ -86,6 +115,26 @@ const viewerReady = ref(false);
 const embedViewerRef = ref<PDFViewerExpose | null>(null);
 const localizationTimerIds = new Set<number>();
 let localizationObserver: MutationObserver | null = null;
+
+/** WPS 式控制条状态与动作（EmbedPDF 插件正门 API，见 usePdfWpsViewer.ts） */
+const {
+  panActive,
+  pageMode,
+  controlsReady,
+  pageIndicator,
+  prevEnabled,
+  nextEnabled,
+  connect: connectWpsControls,
+  disconnect: disconnectWpsControls,
+  togglePan,
+  setPageMode,
+  rotateLeft,
+  rotateRight,
+  goFirstPage,
+  goPrevPage,
+  goNextPage,
+  goLastPage
+} = usePdfWpsViewer();
 
 const EMBEDPDF_LOCALE = 'zh-CN';
 
@@ -268,6 +317,7 @@ watch(
   () => {
     viewerReady.value = false;
     stopEmbedPdfLocalization();
+    disconnectWpsControls();
   }
 );
 
@@ -278,6 +328,7 @@ const handleInit = () => {
 const handleReady = () => {
   viewerReady.value = true;
   scheduleEmbedPdfLocalization();
+  void connectWpsControls(embedViewerRef.value);
 };
 
 const translatePlainText = (value: string | null | undefined) => {
@@ -382,6 +433,7 @@ const stopEmbedPdfLocalization = () => {
 
 onBeforeUnmount(() => {
   stopEmbedPdfLocalization();
+  disconnectWpsControls();
 });
 </script>
 
@@ -532,6 +584,52 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow: hidden;
   background: #dbe2ec;
+}
+
+.pdf-pagebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--ip-neutral-100);
+  background: var(--ip-neutral-50);
+}
+
+.page-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  background: transparent;
+  color: var(--ip-neutral-500);
+  cursor: pointer;
+  transition:
+    background var(--ip-motion-fast) var(--ip-motion-ease),
+    color var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.page-nav:hover:not(:disabled) {
+  background: var(--ip-primary-50);
+  color: var(--ip-primary-600);
+}
+
+.page-nav:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.page-indicator {
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-sm);
+  padding: 3px 10px;
+  background: var(--ip-neutral-0);
+  color: var(--ip-neutral-700);
+  font-size: var(--ip-font-caption);
+  line-height: 1.4;
 }
 
 .embedpdf-surface {
