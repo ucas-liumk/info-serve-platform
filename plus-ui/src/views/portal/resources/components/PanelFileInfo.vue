@@ -1,5 +1,5 @@
 <template>
-  <div class="info-popover" role="dialog" aria-label="资料信息">
+  <div class="file-info" aria-label="文件信息">
     <dl class="info-list">
       <template v-for="item in items" :key="item.label">
         <dt>{{ item.label }}</dt>
@@ -33,18 +33,12 @@ defineProps<{
 </script>
 
 <style scoped>
-.info-popover {
-  position: absolute;
-  top: calc(100% - 4px);
-  right: 12px;
-  z-index: 20;
-  width: 300px;
-  max-width: calc(100vw - 48px);
+.file-info {
+  margin: 8px 14px;
   border: 1px solid var(--resource-border);
   border-radius: var(--ip-radius-md);
   padding: 12px 14px;
-  background: var(--ip-neutral-0);
-  box-shadow: var(--ip-shadow-lg);
+  background: var(--ip-neutral-50);
 }
 
 .info-list {
@@ -83,7 +77,7 @@ defineProps<{
 
 .record-list {
   margin: 0;
-  max-height: 180px;
+  max-height: 320px;
   overflow: auto;
   padding: 0;
   list-style: none;

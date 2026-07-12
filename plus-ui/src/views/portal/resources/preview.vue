@@ -47,7 +47,6 @@
         :resource="resource"
         :resource-id="resourceId"
         :type-label="typeLabel"
-        @back="goResourceList"
         @download="downloadResource"
         @close="closePreview"
       />

@@ -18,18 +18,18 @@ const tileByKey = (key: string) => {
 };
 
 describe('STUDIO_TILES 配置', () => {
-  it('按原型顺序给出六个磁贴', () => {
-    expect(STUDIO_TILES.map((tile) => tile.key)).toEqual(['note', 'chat', 'ocr', 'tts', 'summary', 'mindmap']);
+  it('按定稿顺序给出七个磁贴（文件信息紧随两个互动功能）', () => {
+    expect(STUDIO_TILES.map((tile) => tile.key)).toEqual(['note', 'chat', 'info', 'ocr', 'tts', 'summary', 'mindmap']);
   });
 
-  it('我的笔记/交流互动为 active，其余四个为 soon', () => {
-    expect(STUDIO_TILES.filter((tile) => tile.status === 'active').map((tile) => tile.key)).toEqual(['note', 'chat']);
+  it('我的笔记/交流互动/文件信息为 active，其余四个为 soon', () => {
+    expect(STUDIO_TILES.filter((tile) => tile.status === 'active').map((tile) => tile.key)).toEqual(['note', 'chat', 'info']);
     expect(STUDIO_TILES.filter((tile) => tile.status === 'soon').map((tile) => tile.key)).toEqual(['ocr', 'tts', 'summary', 'mindmap']);
   });
 
-  it('色调与图标按定稿逐一对应', () => {
-    expect(STUDIO_TILES.map((tile) => tile.tone)).toEqual(['blue', 'green', 'amber', 'purple', 'cyan', 'pink']);
-    expect(STUDIO_TILES.map((tile) => tile.icon)).toEqual(['📝', '💬', '🔍', '🔊', '✨', '🧠']);
+  it('色调与图标按定稿逐一对应（政务风 Element 线性图标名，非 emoji）', () => {
+    expect(STUDIO_TILES.map((tile) => tile.tone)).toEqual(['blue', 'green', 'cyan', 'amber', 'purple', 'pink', 'blue']);
+    expect(STUDIO_TILES.map((tile) => tile.icon)).toEqual(['Notebook', 'ChatDotRound', 'Document', 'Aim', 'Headset', 'MagicStick', 'Share']);
   });
 
   it('配置为冻结只读数组（不可变）', () => {
@@ -42,6 +42,7 @@ describe('isWorkspaceTile', () => {
   it('active 磁贴是工作区磁贴，soon 磁贴不是', () => {
     expect(isWorkspaceTile(tileByKey('note'))).toBe(true);
     expect(isWorkspaceTile(tileByKey('chat'))).toBe(true);
+    expect(isWorkspaceTile(tileByKey('info'))).toBe(true);
     expect(isWorkspaceTile(tileByKey('ocr'))).toBe(false);
     expect(isWorkspaceTile(tileByKey('mindmap'))).toBe(false);
   });
@@ -56,6 +57,7 @@ describe('reducePanelState 面板状态机', () => {
   it('点 active 磁贴展开对应工作区（独占显示）', () => {
     expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('note') })).toEqual({ view: 'note', collapsed: false });
     expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('chat') })).toEqual({ view: 'chat', collapsed: false });
+    expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('info') })).toEqual({ view: 'info', collapsed: false });
   });
 
   it('收起态点 active 磁贴：展开面板并打开该工作区', () => {

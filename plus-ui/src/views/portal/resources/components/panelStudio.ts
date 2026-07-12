@@ -4,7 +4,7 @@
  */
 import type { InfoResource } from '@/api/infoservice/types';
 
-export type WorkspaceKey = 'note' | 'chat';
+export type WorkspaceKey = 'note' | 'chat' | 'info';
 export type TileStatus = 'active' | 'soon';
 export type TileTone = 'blue' | 'green' | 'amber' | 'purple' | 'cyan' | 'pink';
 
@@ -16,17 +16,21 @@ export interface StudioTile {
   readonly status: TileStatus;
 }
 
-/** 六磁贴定稿：我的笔记/交流互动可用，OCR/朗读/摘要/导图为「即将上线」占位 */
+/**
+ * 七磁贴定稿：我的笔记/交流互动/文件信息可用，OCR/朗读/摘要/导图为「即将上线」占位。
+ * icon 为 @element-plus/icons-vue 组件名（政务风线性图标，组件侧经映射表渲染）。
+ */
 export const STUDIO_TILES: readonly StudioTile[] = Object.freeze([
-  Object.freeze({ key: 'note', name: '我的笔记', icon: '📝', tone: 'blue', status: 'active' } as StudioTile),
-  Object.freeze({ key: 'chat', name: '交流互动', icon: '💬', tone: 'green', status: 'active' } as StudioTile),
-  Object.freeze({ key: 'ocr', name: 'OCR 识别', icon: '🔍', tone: 'amber', status: 'soon' } as StudioTile),
-  Object.freeze({ key: 'tts', name: '语音朗读', icon: '🔊', tone: 'purple', status: 'soon' } as StudioTile),
-  Object.freeze({ key: 'summary', name: '智能摘要', icon: '✨', tone: 'cyan', status: 'soon' } as StudioTile),
-  Object.freeze({ key: 'mindmap', name: '思维导图', icon: '🧠', tone: 'pink', status: 'soon' } as StudioTile)
+  Object.freeze({ key: 'note', name: '我的笔记', icon: 'Notebook', tone: 'blue', status: 'active' } as StudioTile),
+  Object.freeze({ key: 'chat', name: '交流互动', icon: 'ChatDotRound', tone: 'green', status: 'active' } as StudioTile),
+  Object.freeze({ key: 'info', name: '文件信息', icon: 'Document', tone: 'cyan', status: 'active' } as StudioTile),
+  Object.freeze({ key: 'ocr', name: 'OCR 识别', icon: 'Aim', tone: 'amber', status: 'soon' } as StudioTile),
+  Object.freeze({ key: 'tts', name: '语音朗读', icon: 'Headset', tone: 'purple', status: 'soon' } as StudioTile),
+  Object.freeze({ key: 'summary', name: '智能摘要', icon: 'MagicStick', tone: 'pink', status: 'soon' } as StudioTile),
+  Object.freeze({ key: 'mindmap', name: '思维导图', icon: 'Share', tone: 'blue', status: 'soon' } as StudioTile)
 ]);
 
-const WORKSPACE_KEYS: readonly WorkspaceKey[] = Object.freeze(['note', 'chat']);
+const WORKSPACE_KEYS: readonly WorkspaceKey[] = Object.freeze(['note', 'chat', 'info']);
 
 /** 磁贴是否为可切换的工作区磁贴（active 且落在已实现工作区集合内） */
 export const isWorkspaceTile = (tile: StudioTile): boolean => tile.status === 'active' && (WORKSPACE_KEYS as readonly string[]).includes(tile.key);

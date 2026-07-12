@@ -78,6 +78,13 @@
 3. **标题移右栏**：左侧删除整条文件头（PdfPreviewer 只剩 WPS 工具条+画布+翻页条，原生预览同步去头），右栏顶部新增文档头：类型徽标+标题(ellipsis+tooltip)+返回/下载/关闭图标按钮（preview.vue 事件下沉至面板 emits）。
    - 修复副产物：全局 aside 样式注入 `padding:8px 24px` 曾把收起轨内容压到 30px——面板显式 `padding:0`，间距由内部元素自控；design:audit 基线随硬编码色减少下调至 hex 113/rgba 68。
 
+### 5.6.2 增补：右栏四处再调整（2026-07-12 用户定稿）
+
+1. **标题两行**：doc-head 标题由单行 ellipsis 改 `-webkit-line-clamp:2` 两行钳制（word-break:break-all，完整名保留在 title tooltip）。
+2. **隐藏返回**：返回与关闭功能重复，按用户裁决隐藏返回按钮（doc-head 与收起轨均只剩 下载/关闭）；面板 `back` emit 一并移除，恢复只需重挂按钮+emit。
+3. **文件信息工作区**：左侧文件头删除后元信息无处安放——新增第七块 active 磁贴「文件信息」（key `info`），独占展开显示资料元数据 dl（六项）+ 阅看记录列表（进入时懒加载）；原题头 ⓘ 弹层撤销，PanelInfoPopover.vue 改造为内嵌块 PanelFileInfo.vue（git mv 保history）。
+4. **政务风磁贴**：emoji 图标弃用，改 @element-plus/icons-vue 线性图标（Notebook/ChatDotRound/Document/Aim/Headset/MagicStick/Share，配置存组件名、组件侧 TILE_GLYPHS 映射）；磁贴整卡糖果色改为白底描边卡片 + 粉彩衬底图标芯片（tone 只作用于芯片），新增 `--ip-tile-*-ink` 六个深色令牌（tokens.scss，不入审计扫描面）；soon 磁贴灰化芯片+描边角标。
+
 ## 6. 决策记录
 
 - [x] 左栏=栏目→分类两级树；类型/时间/大小留工具条（2026-07-10 用户修正确认）

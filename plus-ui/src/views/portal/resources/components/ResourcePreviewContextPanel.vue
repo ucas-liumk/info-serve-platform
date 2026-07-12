@@ -5,9 +5,6 @@
         <span class="doc-mark">{{ docMark }}</span>
         <strong class="doc-title" :title="docTitle">{{ docTitle }}</strong>
         <div class="doc-actions">
-          <button class="doc-button" type="button" title="返回资料列表" @click="emit('back')">
-            <el-icon><Back /></el-icon>
-          </button>
           <button class="doc-button" type="button" title="下载原文件" @click="emit('download')">
             <el-icon><Download /></el-icon>
           </button>
@@ -17,30 +14,22 @@
         </div>
       </header>
 
-      <div v-click-outside="closeInfoPopover" class="panel-head">
+      <div class="panel-head">
         <template v-if="activeTile">
           <button class="crumb-back" type="button" title="关闭，返回功能区" @click="closeWorkspace">
             <el-icon><ArrowLeft /></el-icon>
             功能区
           </button>
-          <span class="crumb-current">{{ activeTile.icon }} {{ activeTile.name }}</span>
+          <span class="crumb-current">
+            <el-icon class="crumb-glyph"><component :is="tileGlyph(activeTile)" /></el-icon>
+            {{ activeTile.name }}
+          </span>
         </template>
         <span v-else class="panel-title">功能区</span>
         <span class="head-spacer"></span>
-        <button
-          class="info-button"
-          :class="{ 'is-open': infoPopoverOpen }"
-          type="button"
-          aria-label="资料信息"
-          :aria-expanded="infoPopoverOpen"
-          @click="toggleInfoPopover"
-        >
-          ⓘ
-        </button>
         <button class="collapse-button" type="button" title="收起功能区" @click="toggleCollapse">
           <el-icon><DArrowRight /></el-icon>
         </button>
-        <PanelInfoPopover v-if="infoPopoverOpen" :items="infoItems" :records="viewRecords" :loading="listLoading.records" />
       </div>
 
       <template v-if="!activeTile">
@@ -54,7 +43,9 @@
             :disabled="tile.status !== 'active'"
             @click="handleTileClick(tile)"
           >
-            <span class="tile-icon">{{ tile.icon }}</span>
+            <span class="tile-chip">
+              <el-icon><component :is="tileGlyph(tile)" /></el-icon>
+            </span>
             <span v-if="tile.status === 'soon'" class="tile-soon">即将上线</span>
             <span class="tile-name">{{ tile.name }}</span>
           </button>
@@ -147,6 +138,11 @@
           <el-empty v-if="!listLoading.my && myNotes.length === 0" :image-size="90" description="还没有笔记" />
         </div>
       </section>
+
+      <section v-else-if="panel.view === 'info'" class="workspace">
+        <p class="workspace-title">文件信息 · 资料元数据与阅看记录</p>
+        <PanelFileInfo :items="infoItems" :records="viewRecords" :loading="listLoading.records" />
+      </section>
     </template>
 
     <div v-else class="rail">
@@ -164,14 +160,13 @@
           :title="tile.status === 'soon' ? `${tile.name}（即将上线）` : tile.name"
           @click="handleTileClick(tile)"
         >
-          <span class="rail-icon">{{ tile.icon }}</span>
+          <span class="tile-chip">
+            <el-icon><component :is="tileGlyph(tile)" /></el-icon>
+          </span>
           <span class="rail-name">{{ tile.name }}</span>
         </button>
       </div>
       <div class="rail-foot">
-        <button class="doc-button" type="button" title="返回资料列表" @click="emit('back')">
-          <el-icon><Back /></el-icon>
-        </button>
         <button class="doc-button" type="button" title="下载原文件" @click="emit('download')">
           <el-icon><Download /></el-icon>
         </button>
@@ -184,9 +179,23 @@
 </template>
 
 <script setup lang="ts">
+import type { Component } from 'vue';
 import { computed, reactive, ref, watch } from 'vue';
-import { ClickOutside as vClickOutside, ElMessage, ElMessageBox } from 'element-plus';
-import { ArrowLeft, Back, Close, DArrowLeft, DArrowRight, Download } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import {
+  Aim,
+  ArrowLeft,
+  ChatDotRound,
+  Close,
+  DArrowLeft,
+  DArrowRight,
+  Document,
+  Download,
+  Headset,
+  MagicStick,
+  Notebook,
+  Share
+} from '@element-plus/icons-vue';
 import {
   createResourceNote,
   deleteResourceNote,
@@ -198,7 +207,7 @@ import {
 import type { InfoResource, ResourceNote, ResourceNotePayload, ResourceViewRecord } from '@/api/infoservice/types';
 import type { PanelState, StudioTile } from './panelStudio';
 import { buildResourceInfoItems, DEFAULT_PANEL_STATE, formatDateTime, reducePanelState, STUDIO_TILES } from './panelStudio';
-import PanelInfoPopover from './PanelInfoPopover.vue';
+import PanelFileInfo from './PanelFileInfo.vue';
 
 const props = defineProps<{
   resource?: InfoResource;
@@ -208,14 +217,25 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  back: [];
   download: [];
   close: [];
 }>();
 
+/** 磁贴图标名 → Element 线性图标组件（政务风；新增磁贴时在此补映射） */
+const TILE_GLYPHS: Record<string, Component> = {
+  Notebook,
+  ChatDotRound,
+  Document,
+  Aim,
+  Headset,
+  MagicStick,
+  Share
+};
+
+const tileGlyph = (tile: StudioTile): Component => TILE_GLYPHS[tile.icon] ?? Document;
+
 const tiles = STUDIO_TILES;
 const panel = ref<PanelState>(DEFAULT_PANEL_STATE);
-const infoPopoverOpen = ref(false);
 const infoItems = computed(() => buildResourceInfoItems(props.resource));
 const activeTile = computed(() => tiles.find((tile) => tile.key === panel.value.view));
 const docTitle = computed(() => props.resource?.title || props.resource?.originalName || '资料预览');
@@ -291,23 +311,13 @@ const refreshNotes = async () => {
   await Promise.all([loadMyNotes(), loadPublicNotes()]);
 };
 
-const toggleInfoPopover = () => {
-  infoPopoverOpen.value = !infoPopoverOpen.value;
-  if (infoPopoverOpen.value && !listLoaded.records) {
-    loadViewRecords();
-  }
-};
-
-const closeInfoPopover = () => {
-  infoPopoverOpen.value = false;
-};
-
 const handleTileClick = (tile: StudioTile) => {
   const next = reducePanelState(panel.value, { type: 'clickTile', tile });
   if (next === panel.value) return;
   panel.value = next;
   if (next.view === 'note' && !listLoaded.my) loadMyNotes();
   if (next.view === 'chat' && !listLoaded.public) loadPublicNotes();
+  if (next.view === 'info' && !listLoaded.records) loadViewRecords();
 };
 
 const closeWorkspace = () => {
@@ -316,7 +326,6 @@ const closeWorkspace = () => {
 
 const toggleCollapse = () => {
   panel.value = reducePanelState(panel.value, { type: 'toggleCollapse' });
-  closeInfoPopover();
 };
 
 const saveNote = async (payload: ResourceNotePayload, noteId?: number | string) => {
@@ -416,7 +425,6 @@ const changeNoteVisibility = async (note: ResourceNote, visibility: 'public' | '
 watch(
   () => props.resourceId,
   () => {
-    infoPopoverOpen.value = false;
     panel.value = DEFAULT_PANEL_STATE;
     myNotes.value = [];
     publicNotes.value = [];
@@ -473,14 +481,18 @@ watch(
 }
 
 .doc-title {
+  /* 两行钳制：完整名进 title tooltip，超两行才省略 */
+  display: -webkit-box;
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   color: var(--resource-title);
   font-size: var(--ip-font-body);
+  line-height: 1.4;
   font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-all;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .doc-actions {
@@ -551,6 +563,9 @@ watch(
 }
 
 .crumb-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   overflow: hidden;
   color: var(--resource-title);
   font-size: var(--ip-font-hint);
@@ -561,32 +576,12 @@ watch(
 
 .crumb-current::before {
   content: '/';
-  margin-right: 8px;
+  margin-right: 3px;
   color: var(--ip-neutral-200);
   font-weight: 750;
 }
 
-.info-button {
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  border: 1px solid var(--resource-border);
-  border-radius: var(--ip-radius-full);
-  background: var(--ip-neutral-0);
-  color: var(--resource-muted);
-  font-size: var(--ip-font-body);
-  cursor: pointer;
-  transition:
-    color var(--ip-motion-fast) var(--ip-motion-ease),
-    border-color var(--ip-motion-fast) var(--ip-motion-ease);
-}
-
-.info-button:hover,
-.info-button.is-open {
-  border-color: var(--ip-primary-200);
+.crumb-glyph {
   color: var(--resource-primary);
 }
 
@@ -620,11 +615,13 @@ watch(
   padding: 12px 14px;
 }
 
+/* 政务风磁贴：白底描边卡片 + 粉彩衬底线性图标（tone 只作用于图标衬底，不再整卡糖果色） */
 .tile {
   position: relative;
-  border: 2px solid transparent;
+  border: 1px solid var(--ip-neutral-100);
   border-radius: var(--ip-radius-md);
-  padding: 11px 12px 9px;
+  padding: 11px 12px 10px;
+  background: var(--ip-neutral-0);
   text-align: left;
   cursor: pointer;
   transition:
@@ -638,53 +635,76 @@ watch(
 }
 
 .tile:not(:disabled):hover {
+  border-color: var(--ip-primary-200);
   transform: translateY(-1px);
   box-shadow: var(--ip-shadow-md);
 }
 
-.tile--blue {
-  background: var(--ip-tile-blue);
-}
-
-.tile--green {
-  background: var(--ip-tile-green);
-}
-
-.tile--amber {
-  background: var(--ip-tile-amber);
-}
-
-.tile--purple {
-  background: var(--ip-tile-purple);
-}
-
-.tile--cyan {
-  background: var(--ip-tile-cyan);
-}
-
-.tile--pink {
-  background: var(--ip-tile-pink);
-}
-
-.tile-icon {
+.tile-chip {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ip-radius-sm);
   font-size: var(--ip-font-emphasis);
+}
+
+.tile--blue .tile-chip {
+  background: var(--ip-tile-blue);
+  color: var(--ip-tile-blue-ink);
+}
+
+.tile--green .tile-chip {
+  background: var(--ip-tile-green);
+  color: var(--ip-tile-green-ink);
+}
+
+.tile--amber .tile-chip {
+  background: var(--ip-tile-amber);
+  color: var(--ip-tile-amber-ink);
+}
+
+.tile--purple .tile-chip {
+  background: var(--ip-tile-purple);
+  color: var(--ip-tile-purple-ink);
+}
+
+.tile--cyan .tile-chip {
+  background: var(--ip-tile-cyan);
+  color: var(--ip-tile-cyan-ink);
+}
+
+.tile--pink .tile-chip {
+  background: var(--ip-tile-pink);
+  color: var(--ip-tile-pink-ink);
+}
+
+.tile:disabled .tile-chip {
+  background: var(--ip-neutral-50);
+  color: var(--ip-neutral-400);
 }
 
 .tile-name {
   display: block;
-  margin-top: 7px;
+  margin-top: 8px;
   color: var(--ip-neutral-700);
   font-size: var(--ip-font-caption);
   font-weight: 800;
 }
 
+.tile:disabled .tile-name {
+  color: var(--ip-neutral-400);
+}
+
 .tile-soon {
   position: absolute;
-  top: 7px;
+  top: 8px;
   right: 8px;
+  border: 1px solid var(--ip-neutral-100);
   border-radius: var(--ip-radius-full);
   padding: 1px 6px;
-  background: var(--ip-neutral-0);
+  background: var(--ip-neutral-50);
   color: var(--ip-neutral-400);
   font-size: var(--ip-font-caption);
   font-weight: 750;
@@ -918,9 +938,10 @@ watch(
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  border: 2px solid transparent;
+  border: 1px solid var(--ip-neutral-100);
   border-radius: var(--ip-radius-md);
   padding: 8px 2px;
+  background: var(--ip-neutral-0);
   cursor: pointer;
   transition:
     transform var(--ip-motion-fast) var(--ip-motion-ease),
@@ -928,11 +949,20 @@ watch(
 }
 
 .rail-tile:disabled {
-  opacity: 0.55;
   cursor: default;
 }
 
+.rail-tile:disabled .rail-name {
+  color: var(--ip-neutral-400);
+}
+
+.rail-tile:disabled .tile-chip {
+  background: var(--ip-neutral-50);
+  color: var(--ip-neutral-400);
+}
+
 .rail-tile:not(:disabled):hover {
+  border-color: var(--ip-primary-200);
   transform: translateY(-1px);
 }
 
@@ -940,8 +970,9 @@ watch(
   border-color: var(--resource-primary);
 }
 
-.rail-icon {
-  font-size: var(--ip-font-emphasis);
+.rail-tile .tile-chip {
+  width: 28px;
+  height: 28px;
 }
 
 .rail-name {
