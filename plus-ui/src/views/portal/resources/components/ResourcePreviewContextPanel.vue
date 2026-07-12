@@ -1,127 +1,192 @@
 <template>
-  <aside class="context-panel">
-    <header v-click-outside="closeInfoPopover" class="panel-head">
-      <span class="panel-title">功能区</span>
-      <button
-        class="info-button"
-        :class="{ 'is-open': infoPopoverOpen }"
-        type="button"
-        aria-label="资料信息"
-        :aria-expanded="infoPopoverOpen"
-        @click="toggleInfoPopover"
-      >
-        ⓘ
-      </button>
-      <PanelInfoPopover v-if="infoPopoverOpen" :items="infoItems" :records="viewRecords" :loading="listLoading.records" />
-    </header>
+  <aside class="context-panel" :class="{ 'is-collapsed': panel.collapsed }">
+    <template v-if="!panel.collapsed">
+      <header class="doc-head">
+        <span class="doc-mark">{{ docMark }}</span>
+        <strong class="doc-title" :title="docTitle">{{ docTitle }}</strong>
+        <div class="doc-actions">
+          <button class="doc-button" type="button" title="返回资料列表" @click="emit('back')">
+            <el-icon><Back /></el-icon>
+          </button>
+          <button class="doc-button" type="button" title="下载原文件" @click="emit('download')">
+            <el-icon><Download /></el-icon>
+          </button>
+          <button class="doc-button" type="button" title="关闭预览" @click="emit('close')">
+            <el-icon><Close /></el-icon>
+          </button>
+        </div>
+      </header>
 
-    <div class="tile-grid">
-      <button
-        v-for="tile in tiles"
-        :key="tile.key"
-        type="button"
-        class="tile"
-        :class="[`tile--${tile.tone}`, { 'is-on': tile.status === 'active' && tile.key === activeWorkspace }]"
-        :disabled="tile.status !== 'active'"
-        @click="handleTileClick(tile)"
-      >
-        <span class="tile-icon">{{ tile.icon }}</span>
-        <span v-if="tile.status === 'soon'" class="tile-soon">即将上线</span>
-        <span class="tile-name">{{ tile.name }}</span>
+      <div v-click-outside="closeInfoPopover" class="panel-head">
+        <template v-if="activeTile">
+          <button class="crumb-back" type="button" title="关闭，返回功能区" @click="closeWorkspace">
+            <el-icon><ArrowLeft /></el-icon>
+            功能区
+          </button>
+          <span class="crumb-current">{{ activeTile.icon }} {{ activeTile.name }}</span>
+        </template>
+        <span v-else class="panel-title">功能区</span>
+        <span class="head-spacer"></span>
+        <button
+          class="info-button"
+          :class="{ 'is-open': infoPopoverOpen }"
+          type="button"
+          aria-label="资料信息"
+          :aria-expanded="infoPopoverOpen"
+          @click="toggleInfoPopover"
+        >
+          ⓘ
+        </button>
+        <button class="collapse-button" type="button" title="收起功能区" @click="toggleCollapse">
+          <el-icon><DArrowRight /></el-icon>
+        </button>
+        <PanelInfoPopover v-if="infoPopoverOpen" :items="infoItems" :records="viewRecords" :loading="listLoading.records" />
+      </div>
+
+      <template v-if="!activeTile">
+        <div class="tile-grid">
+          <button
+            v-for="tile in tiles"
+            :key="tile.key"
+            type="button"
+            class="tile"
+            :class="`tile--${tile.tone}`"
+            :disabled="tile.status !== 'active'"
+            @click="handleTileClick(tile)"
+          >
+            <span class="tile-icon">{{ tile.icon }}</span>
+            <span v-if="tile.status === 'soon'" class="tile-soon">即将上线</span>
+            <span class="tile-name">{{ tile.name }}</span>
+          </button>
+        </div>
+        <p class="overview-hint">点击磁贴进入对应功能 · 更多能力即将上线</p>
+      </template>
+
+      <section v-if="panel.view === 'chat'" class="workspace">
+        <p class="workspace-title">交流互动 · 大家的公开讨论</p>
+        <div class="editor-box">
+          <el-input v-model="chatForm.content" type="textarea" :rows="3" maxlength="2000" show-word-limit placeholder="发表你的看法，所有人可见…" />
+          <div class="editor-row">
+            <span class="editor-hint">{{ chatEditingNoteId ? '正在编辑我的发言' : '将以公开身份发布' }}</span>
+            <div class="editor-actions">
+              <button v-if="chatEditingNoteId" class="ghost-button" type="button" @click="resetChatForm">取消</button>
+              <button class="primary-button" type="button" :disabled="chatSubmitting || !chatForm.content.trim()" @click="submitChat">
+                {{ chatEditingNoteId ? '保存' : '发布' }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div v-loading="listLoading.public" class="note-list">
+          <article v-for="note in publicNotes" :key="note.noteId" class="note-item">
+            <header>
+              <strong>{{ note.authorName || '平台用户' }}</strong>
+              <el-tag v-if="note.mine" size="small" type="primary">我的</el-tag>
+            </header>
+            <p>{{ note.content }}</p>
+            <footer>
+              <span class="note-time">{{ formatDateTime(note.updateTime || note.createTime) }}</span>
+              <div v-if="note.mine" class="note-ops">
+                <button class="link-button" type="button" @click="editChatNote(note)">编辑</button>
+                <button class="link-button danger" type="button" @click="removeNote(note)">删除</button>
+              </div>
+            </footer>
+          </article>
+          <el-empty v-if="!listLoading.public && publicNotes.length === 0" :image-size="90" description="还没有公开讨论，来发第一条吧" />
+        </div>
+      </section>
+
+      <section v-else-if="panel.view === 'note'" class="workspace">
+        <p class="workspace-title">我的笔记 · 私有可切公开</p>
+        <div class="editor-box">
+          <el-input v-model="noteForm.content" type="textarea" :rows="3" maxlength="2000" show-word-limit placeholder="记录你的想法、要点或摘录…" />
+          <div class="editor-row">
+            <el-switch v-model="notePublic" active-text="公开" inactive-text="私有" />
+            <div class="editor-actions">
+              <button v-if="editingNoteId" class="ghost-button" type="button" @click="resetNoteForm">取消</button>
+              <button class="primary-button" type="button" :disabled="noteSubmitting || !noteForm.content.trim()" @click="submitNote">
+                {{ editingNoteId ? '保存' : '新增' }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div v-loading="listLoading.my" class="note-list">
+          <article v-for="note in myNotes" :key="note.noteId" class="note-item">
+            <header>
+              <strong>{{ note.authorName || '我' }}</strong>
+              <el-tag size="small" :type="note.visibility === 'public' ? 'success' : 'info'">
+                {{ note.visibility === 'public' ? '公开' : '私有' }}
+              </el-tag>
+            </header>
+            <p>{{ note.content }}</p>
+            <footer>
+              <span class="note-time">{{ formatDateTime(note.updateTime || note.createTime) }}</span>
+              <div class="note-ops">
+                <button class="link-button" type="button" @click="editNote(note)">编辑</button>
+                <button
+                  v-if="note.visibility === 'private'"
+                  class="link-button"
+                  type="button"
+                  :disabled="visibilityUpdatingId === note.noteId"
+                  @click="changeNoteVisibility(note, 'public')"
+                >
+                  分享到交流互动
+                </button>
+                <button
+                  v-else
+                  class="link-button"
+                  type="button"
+                  :disabled="visibilityUpdatingId === note.noteId"
+                  @click="changeNoteVisibility(note, 'private')"
+                >
+                  取消分享
+                </button>
+                <button class="link-button danger" type="button" @click="removeNote(note)">删除</button>
+              </div>
+            </footer>
+          </article>
+          <el-empty v-if="!listLoading.my && myNotes.length === 0" :image-size="90" description="还没有笔记" />
+        </div>
+      </section>
+    </template>
+
+    <div v-else class="rail">
+      <button class="rail-toggle" type="button" title="展开功能区" @click="toggleCollapse">
+        <el-icon><DArrowLeft /></el-icon>
       </button>
+      <div class="rail-tiles">
+        <button
+          v-for="tile in tiles"
+          :key="tile.key"
+          type="button"
+          class="rail-tile"
+          :class="[`tile--${tile.tone}`, { 'is-on': panel.view === tile.key }]"
+          :disabled="tile.status !== 'active'"
+          :title="tile.status === 'soon' ? `${tile.name}（即将上线）` : tile.name"
+          @click="handleTileClick(tile)"
+        >
+          <span class="rail-icon">{{ tile.icon }}</span>
+          <span class="rail-name">{{ tile.name }}</span>
+        </button>
+      </div>
+      <div class="rail-foot">
+        <button class="doc-button" type="button" title="返回资料列表" @click="emit('back')">
+          <el-icon><Back /></el-icon>
+        </button>
+        <button class="doc-button" type="button" title="下载原文件" @click="emit('download')">
+          <el-icon><Download /></el-icon>
+        </button>
+        <button class="doc-button" type="button" title="关闭预览" @click="emit('close')">
+          <el-icon><Close /></el-icon>
+        </button>
+      </div>
     </div>
-
-    <section v-if="activeWorkspace === 'chat'" class="workspace">
-      <p class="workspace-title">交流互动 · 大家的公开讨论</p>
-      <div class="editor-box">
-        <el-input v-model="chatForm.content" type="textarea" :rows="3" maxlength="2000" show-word-limit placeholder="发表你的看法，所有人可见…" />
-        <div class="editor-row">
-          <span class="editor-hint">{{ chatEditingNoteId ? '正在编辑我的发言' : '将以公开身份发布' }}</span>
-          <div class="editor-actions">
-            <button v-if="chatEditingNoteId" class="ghost-button" type="button" @click="resetChatForm">取消</button>
-            <button class="primary-button" type="button" :disabled="chatSubmitting || !chatForm.content.trim()" @click="submitChat">
-              {{ chatEditingNoteId ? '保存' : '发布' }}
-            </button>
-          </div>
-        </div>
-      </div>
-      <div v-loading="listLoading.public" class="note-list">
-        <article v-for="note in publicNotes" :key="note.noteId" class="note-item">
-          <header>
-            <strong>{{ note.authorName || '平台用户' }}</strong>
-            <el-tag v-if="note.mine" size="small" type="primary">我的</el-tag>
-          </header>
-          <p>{{ note.content }}</p>
-          <footer>
-            <span class="note-time">{{ formatDateTime(note.updateTime || note.createTime) }}</span>
-            <div v-if="note.mine" class="note-ops">
-              <button class="link-button" type="button" @click="editChatNote(note)">编辑</button>
-              <button class="link-button danger" type="button" @click="removeNote(note)">删除</button>
-            </div>
-          </footer>
-        </article>
-        <el-empty v-if="!listLoading.public && publicNotes.length === 0" :image-size="90" description="还没有公开讨论，来发第一条吧" />
-      </div>
-    </section>
-
-    <section v-else class="workspace">
-      <p class="workspace-title">我的笔记 · 私有可切公开</p>
-      <div class="editor-box">
-        <el-input v-model="noteForm.content" type="textarea" :rows="3" maxlength="2000" show-word-limit placeholder="记录你的想法、要点或摘录…" />
-        <div class="editor-row">
-          <el-switch v-model="notePublic" active-text="公开" inactive-text="私有" />
-          <div class="editor-actions">
-            <button v-if="editingNoteId" class="ghost-button" type="button" @click="resetNoteForm">取消</button>
-            <button class="primary-button" type="button" :disabled="noteSubmitting || !noteForm.content.trim()" @click="submitNote">
-              {{ editingNoteId ? '保存' : '新增' }}
-            </button>
-          </div>
-        </div>
-      </div>
-      <div v-loading="listLoading.my" class="note-list">
-        <article v-for="note in myNotes" :key="note.noteId" class="note-item">
-          <header>
-            <strong>{{ note.authorName || '我' }}</strong>
-            <el-tag size="small" :type="note.visibility === 'public' ? 'success' : 'info'">
-              {{ note.visibility === 'public' ? '公开' : '私有' }}
-            </el-tag>
-          </header>
-          <p>{{ note.content }}</p>
-          <footer>
-            <span class="note-time">{{ formatDateTime(note.updateTime || note.createTime) }}</span>
-            <div class="note-ops">
-              <button class="link-button" type="button" @click="editNote(note)">编辑</button>
-              <button
-                v-if="note.visibility === 'private'"
-                class="link-button"
-                type="button"
-                :disabled="visibilityUpdatingId === note.noteId"
-                @click="changeNoteVisibility(note, 'public')"
-              >
-                分享到交流互动
-              </button>
-              <button
-                v-else
-                class="link-button"
-                type="button"
-                :disabled="visibilityUpdatingId === note.noteId"
-                @click="changeNoteVisibility(note, 'private')"
-              >
-                取消分享
-              </button>
-              <button class="link-button danger" type="button" @click="removeNote(note)">删除</button>
-            </div>
-          </footer>
-        </article>
-        <el-empty v-if="!listLoading.my && myNotes.length === 0" :image-size="90" description="还没有笔记" />
-      </div>
-    </section>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { ClickOutside as vClickOutside, ElMessage, ElMessageBox } from 'element-plus';
+import { ArrowLeft, Back, Close, DArrowLeft, DArrowRight, Download } from '@element-plus/icons-vue';
 import {
   createResourceNote,
   deleteResourceNote,
@@ -131,21 +196,30 @@ import {
   updateResourceNote
 } from '@/api/portal/resources';
 import type { InfoResource, ResourceNote, ResourceNotePayload, ResourceViewRecord } from '@/api/infoservice/types';
-import type { StudioTile, WorkspaceKey } from './panelStudio';
-import { buildResourceInfoItems, DEFAULT_WORKSPACE, formatDateTime, reduceWorkspace, STUDIO_TILES } from './panelStudio';
+import type { PanelState, StudioTile } from './panelStudio';
+import { buildResourceInfoItems, DEFAULT_PANEL_STATE, formatDateTime, reducePanelState, STUDIO_TILES } from './panelStudio';
 import PanelInfoPopover from './PanelInfoPopover.vue';
 
 const props = defineProps<{
   resource?: InfoResource;
   resourceId: string;
-  /** 预览页历史接口保留（现由 ⓘ 弹层直接读 resource 字段，不再单独展示类型徽标） */
+  /** 文件类型徽标（如 PDF/DOCX），由预览页按后缀推导 */
   typeLabel?: string;
 }>();
 
+const emit = defineEmits<{
+  back: [];
+  download: [];
+  close: [];
+}>();
+
 const tiles = STUDIO_TILES;
-const activeWorkspace = ref<WorkspaceKey>(DEFAULT_WORKSPACE);
+const panel = ref<PanelState>(DEFAULT_PANEL_STATE);
 const infoPopoverOpen = ref(false);
 const infoItems = computed(() => buildResourceInfoItems(props.resource));
+const activeTile = computed(() => tiles.find((tile) => tile.key === panel.value.view));
+const docTitle = computed(() => props.resource?.title || props.resource?.originalName || '资料预览');
+const docMark = computed(() => `.${(props.typeLabel || 'FILE').replace(/^\./, '')}`);
 
 const myNotes = ref<ResourceNote[]>([]);
 const publicNotes = ref<ResourceNote[]>([]);
@@ -229,11 +303,20 @@ const closeInfoPopover = () => {
 };
 
 const handleTileClick = (tile: StudioTile) => {
-  const next = reduceWorkspace(activeWorkspace.value, tile);
-  if (next === activeWorkspace.value) return;
-  activeWorkspace.value = next;
-  if (next === 'note' && !listLoaded.my) loadMyNotes();
-  if (next === 'chat' && !listLoaded.public) loadPublicNotes();
+  const next = reducePanelState(panel.value, { type: 'clickTile', tile });
+  if (next === panel.value) return;
+  panel.value = next;
+  if (next.view === 'note' && !listLoaded.my) loadMyNotes();
+  if (next.view === 'chat' && !listLoaded.public) loadPublicNotes();
+};
+
+const closeWorkspace = () => {
+  panel.value = reducePanelState(panel.value, { type: 'closeWorkspace' });
+};
+
+const toggleCollapse = () => {
+  panel.value = reducePanelState(panel.value, { type: 'toggleCollapse' });
+  closeInfoPopover();
 };
 
 const saveNote = async (payload: ResourceNotePayload, noteId?: number | string) => {
@@ -334,7 +417,7 @@ watch(
   () => props.resourceId,
   () => {
     infoPopoverOpen.value = false;
-    activeWorkspace.value = DEFAULT_WORKSPACE;
+    panel.value = DEFAULT_PANEL_STATE;
     myNotes.value = [];
     publicNotes.value = [];
     viewRecords.value = [];
@@ -343,7 +426,6 @@ watch(
     listLoaded.records = false;
     resetNoteForm();
     resetChatForm();
-    if (props.resourceId) loadPublicNotes();
   },
   { immediate: true }
 );
@@ -352,15 +434,83 @@ watch(
 <style scoped>
 .context-panel {
   position: relative;
+  width: 392px;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* 全局 aside 样式会注入 padding，收起态 96px 容不下，间距改由内部元素自控 */
+  padding: 0;
   border: 1px solid var(--resource-border);
   border-radius: var(--ip-radius-md);
   background: var(--ip-neutral-0);
   box-shadow: var(--ip-shadow-md);
+  transition: width var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.context-panel.is-collapsed {
+  width: 96px;
+}
+
+.doc-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--ip-neutral-100);
+  padding: 10px 12px;
+}
+
+.doc-mark {
+  flex: 0 0 auto;
+  border-radius: var(--ip-radius-sm);
+  padding: 4px 7px;
+  background: var(--ip-primary-50);
+  color: var(--resource-primary);
+  font-size: var(--ip-font-caption);
+  font-weight: 900;
+}
+
+.doc-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--resource-title);
+  font-size: var(--ip-font-body);
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.doc-button {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--resource-border);
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-neutral-0);
+  color: var(--resource-muted);
+  cursor: pointer;
+  transition:
+    color var(--ip-motion-fast) var(--ip-motion-ease),
+    border-color var(--ip-motion-fast) var(--ip-motion-ease),
+    background var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.doc-button:hover {
+  border-color: var(--ip-primary-200);
+  background: var(--ip-primary-50);
+  color: var(--resource-primary);
 }
 
 .panel-head {
@@ -368,10 +518,9 @@ watch(
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   border-bottom: 1px solid var(--ip-neutral-100);
-  padding: 12px 14px;
+  padding: 10px 12px;
 }
 
 .panel-title {
@@ -380,12 +529,50 @@ watch(
   font-weight: 900;
 }
 
+.head-spacer {
+  flex: 1 1 auto;
+}
+
+.crumb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--resource-primary);
+  font-size: var(--ip-font-hint);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.crumb-back:hover {
+  text-decoration: underline;
+}
+
+.crumb-current {
+  overflow: hidden;
+  color: var(--resource-title);
+  font-size: var(--ip-font-hint);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crumb-current::before {
+  content: '/';
+  margin-right: 8px;
+  color: var(--ip-neutral-200);
+  font-weight: 750;
+}
+
 .info-button {
   width: 26px;
   height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   border: 1px solid var(--resource-border);
   border-radius: var(--ip-radius-full);
   background: var(--ip-neutral-0);
@@ -399,6 +586,28 @@ watch(
 
 .info-button:hover,
 .info-button.is-open {
+  border-color: var(--ip-primary-200);
+  color: var(--resource-primary);
+}
+
+.collapse-button {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--resource-border);
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-neutral-0);
+  color: var(--resource-muted);
+  cursor: pointer;
+  transition:
+    color var(--ip-motion-fast) var(--ip-motion-ease),
+    border-color var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.collapse-button:hover {
   border-color: var(--ip-primary-200);
   color: var(--resource-primary);
 }
@@ -431,10 +640,6 @@ watch(
 .tile:not(:disabled):hover {
   transform: translateY(-1px);
   box-shadow: var(--ip-shadow-md);
-}
-
-.tile.is-on {
-  border-color: var(--resource-primary);
 }
 
 .tile--blue {
@@ -485,11 +690,19 @@ watch(
   font-weight: 750;
 }
 
+.overview-hint {
+  margin: auto 14px 14px;
+  padding-top: 10px;
+  color: var(--ip-neutral-400);
+  font-size: var(--ip-font-caption);
+  font-weight: 750;
+  text-align: center;
+}
+
 .workspace {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  border-top: 1px solid var(--ip-neutral-100);
   padding-bottom: 10px;
 }
 
@@ -655,6 +868,131 @@ watch(
 
 .link-button.danger {
   color: var(--ip-danger);
+}
+
+.rail {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+}
+
+.rail-toggle {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--resource-border);
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-neutral-0);
+  color: var(--resource-muted);
+  cursor: pointer;
+  transition:
+    color var(--ip-motion-fast) var(--ip-motion-ease),
+    border-color var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.rail-toggle:hover {
+  border-color: var(--ip-primary-200);
+  color: var(--resource-primary);
+}
+
+.rail-tiles {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  overflow-y: auto;
+}
+
+.rail-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 2px solid transparent;
+  border-radius: var(--ip-radius-md);
+  padding: 8px 2px;
+  cursor: pointer;
+  transition:
+    transform var(--ip-motion-fast) var(--ip-motion-ease),
+    border-color var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.rail-tile:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.rail-tile:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.rail-tile.is-on {
+  border-color: var(--resource-primary);
+}
+
+.rail-icon {
+  font-size: var(--ip-font-emphasis);
+}
+
+.rail-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ip-neutral-700);
+  font-size: var(--ip-font-caption);
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.rail-foot {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px solid var(--ip-neutral-100);
+  padding-top: 10px;
+}
+
+@media (max-width: 1180px) {
+  .context-panel,
+  .context-panel.is-collapsed {
+    width: 100%;
+  }
+
+  .rail {
+    flex-direction: row;
+    padding: 8px 10px;
+  }
+
+  .rail-tiles {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .rail-tile {
+    flex: 0 0 auto;
+    min-width: 64px;
+  }
+
+  .rail-foot {
+    flex-direction: row;
+    border-top: 0;
+    border-left: 1px solid var(--ip-neutral-100);
+    padding-top: 0;
+    padding-left: 10px;
+  }
 }
 
 @media (max-width: 760px) {

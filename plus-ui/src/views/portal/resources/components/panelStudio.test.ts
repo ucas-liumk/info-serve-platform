@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { InfoResource } from '@/api/infoservice/types';
+import type { PanelState } from './panelStudio';
 import {
   buildResourceInfoItems,
-  DEFAULT_WORKSPACE,
+  DEFAULT_PANEL_STATE,
   formatDateTime,
   formatFileSize,
   isWorkspaceTile,
-  reduceWorkspace,
+  reducePanelState,
   STUDIO_TILES
 } from './panelStudio';
 
@@ -37,26 +38,63 @@ describe('STUDIO_TILES 配置', () => {
   });
 });
 
-describe('isWorkspaceTile / reduceWorkspace', () => {
-  it('默认工作区是交流互动', () => {
-    expect(DEFAULT_WORKSPACE).toBe('chat');
-  });
-
+describe('isWorkspaceTile', () => {
   it('active 磁贴是工作区磁贴，soon 磁贴不是', () => {
     expect(isWorkspaceTile(tileByKey('note'))).toBe(true);
     expect(isWorkspaceTile(tileByKey('chat'))).toBe(true);
     expect(isWorkspaceTile(tileByKey('ocr'))).toBe(false);
     expect(isWorkspaceTile(tileByKey('mindmap'))).toBe(false);
   });
+});
 
-  it('点 active 磁贴切换工作区', () => {
-    expect(reduceWorkspace('chat', tileByKey('note'))).toBe('note');
-    expect(reduceWorkspace('note', tileByKey('chat'))).toBe('chat');
+describe('reducePanelState 面板状态机', () => {
+  it('默认态为功能区总览、未收起，且冻结不可变', () => {
+    expect(DEFAULT_PANEL_STATE).toEqual({ view: 'overview', collapsed: false });
+    expect(Object.isFrozen(DEFAULT_PANEL_STATE)).toBe(true);
   });
 
-  it('点 soon 磁贴保持当前工作区不变', () => {
-    expect(reduceWorkspace('chat', tileByKey('ocr'))).toBe('chat');
-    expect(reduceWorkspace('note', tileByKey('summary'))).toBe('note');
+  it('点 active 磁贴展开对应工作区（独占显示）', () => {
+    expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('note') })).toEqual({ view: 'note', collapsed: false });
+    expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('chat') })).toEqual({ view: 'chat', collapsed: false });
+  });
+
+  it('收起态点 active 磁贴：展开面板并打开该工作区', () => {
+    const collapsed: PanelState = Object.freeze({ view: 'overview', collapsed: true });
+    expect(reducePanelState(collapsed, { type: 'clickTile', tile: tileByKey('note') })).toEqual({ view: 'note', collapsed: false });
+  });
+
+  it('点 soon 磁贴维持现状（返回原状态对象）', () => {
+    const state: PanelState = Object.freeze({ view: 'chat', collapsed: false });
+    expect(reducePanelState(state, { type: 'clickTile', tile: tileByKey('ocr') })).toBe(state);
+    expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('summary') })).toBe(DEFAULT_PANEL_STATE);
+  });
+
+  it('重复点当前已展开的磁贴不产生新状态', () => {
+    const state: PanelState = Object.freeze({ view: 'note', collapsed: false });
+    expect(reducePanelState(state, { type: 'clickTile', tile: tileByKey('note') })).toBe(state);
+  });
+
+  it('关闭工作区回到功能区总览', () => {
+    const state: PanelState = Object.freeze({ view: 'note', collapsed: false });
+    expect(reducePanelState(state, { type: 'closeWorkspace' })).toEqual({ view: 'overview', collapsed: false });
+  });
+
+  it('总览态下关闭工作区为空操作（返回原状态对象）', () => {
+    expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'closeWorkspace' })).toBe(DEFAULT_PANEL_STATE);
+  });
+
+  it('收起/展开互为反操作且保留当前工作区', () => {
+    const open: PanelState = Object.freeze({ view: 'chat', collapsed: false });
+    const collapsed = reducePanelState(open, { type: 'toggleCollapse' });
+    expect(collapsed).toEqual({ view: 'chat', collapsed: true });
+    expect(reducePanelState(collapsed, { type: 'toggleCollapse' })).toEqual({ view: 'chat', collapsed: false });
+  });
+
+  it('归约不修改入参状态（不可变）', () => {
+    const state: PanelState = Object.freeze({ view: 'overview', collapsed: false });
+    const next = reducePanelState(state, { type: 'clickTile', tile: tileByKey('note') });
+    expect(state).toEqual({ view: 'overview', collapsed: false });
+    expect(Object.isFrozen(next)).toBe(true);
   });
 });
 

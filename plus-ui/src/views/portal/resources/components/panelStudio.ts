@@ -26,17 +26,50 @@ export const STUDIO_TILES: readonly StudioTile[] = Object.freeze([
   Object.freeze({ key: 'mindmap', name: '思维导图', icon: '🧠', tone: 'pink', status: 'soon' } as StudioTile)
 ]);
 
-/** 默认工作区=交流互动（用户定稿） */
-export const DEFAULT_WORKSPACE: WorkspaceKey = 'chat';
-
 const WORKSPACE_KEYS: readonly WorkspaceKey[] = Object.freeze(['note', 'chat']);
 
 /** 磁贴是否为可切换的工作区磁贴（active 且落在已实现工作区集合内） */
 export const isWorkspaceTile = (tile: StudioTile): boolean => tile.status === 'active' && (WORKSPACE_KEYS as readonly string[]).includes(tile.key);
 
-/** 工作区状态归约：点 active 磁贴切换，点 soon 磁贴维持现状（返回新值，不改入参） */
-export const reduceWorkspace = (current: WorkspaceKey, tile: StudioTile): WorkspaceKey =>
-  isWorkspaceTile(tile) ? (tile.key as WorkspaceKey) : current;
+/** 面板视图：功能区总览（只有磁贴）或某个独占展开的工作区 */
+export type PanelView = 'overview' | WorkspaceKey;
+
+export interface PanelState {
+  readonly view: PanelView;
+  readonly collapsed: boolean;
+}
+
+/** 默认态=功能区总览、展开（点磁贴才进工作区，关闭工作区回总览） */
+export const DEFAULT_PANEL_STATE: PanelState = Object.freeze({ view: 'overview', collapsed: false });
+
+export type PanelAction =
+  | { readonly type: 'clickTile'; readonly tile: StudioTile }
+  | { readonly type: 'closeWorkspace' }
+  | { readonly type: 'toggleCollapse' };
+
+/**
+ * 面板状态归约（纯函数，返回新对象不改入参；空操作返回原对象便于响应式短路）：
+ * - clickTile：active 磁贴 → 独占展开该工作区并顺带展开面板（收起轨点击即恢复）；soon 磁贴 → 维持现状
+ * - closeWorkspace：回到功能区总览
+ * - toggleCollapse：整栏收起/展开，保留当前工作区
+ */
+export const reducePanelState = (state: PanelState, action: PanelAction): PanelState => {
+  switch (action.type) {
+    case 'clickTile': {
+      if (!isWorkspaceTile(action.tile)) return state;
+      const view = action.tile.key as WorkspaceKey;
+      if (state.view === view && !state.collapsed) return state;
+      return Object.freeze({ view, collapsed: false });
+    }
+    case 'closeWorkspace':
+      if (state.view === 'overview') return state;
+      return Object.freeze({ view: 'overview', collapsed: state.collapsed });
+    case 'toggleCollapse':
+      return Object.freeze({ view: state.view, collapsed: !state.collapsed });
+    default:
+      return state;
+  }
+};
 
 /** 文件大小分档展示；空值/0 显示占位符 */
 export const formatFileSize = (size?: number): string => {

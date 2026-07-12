@@ -1,36 +1,5 @@
 <template>
   <div class="pdf-viewer">
-    <header class="pdf-toolbar">
-      <div class="pdf-file-summary">
-        <span class="pdf-file-mark">{{ fileTypeLabel }}</span>
-        <div class="pdf-file-copy">
-          <strong>{{ title || fileName || '资料预览' }}</strong>
-          <div class="pdf-file-meta">
-            <span>{{ categoryName || '未分类' }}</span>
-            <span v-if="fileSizeText">{{ fileSizeText }}</span>
-            <span v-if="ownerName">{{ ownerName }}</span>
-            <span v-if="createTime">{{ createTime }}</span>
-            <span>浏览 {{ viewCount || 0 }}</span>
-            <span>下载 {{ downloadCount || 0 }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="pdf-actions">
-        <button type="button" class="ghost-button" title="返回资源" @click="emit('back')">
-          <el-icon><Back /></el-icon>
-          返回
-        </button>
-        <button type="button" class="primary-button" title="下载原文件" @click="emit('download')">
-          <el-icon><Download /></el-icon>
-          下载
-        </button>
-        <button type="button" class="icon-button" title="关闭" @click="emit('close')">
-          <el-icon><Close /></el-icon>
-        </button>
-      </div>
-    </header>
-
     <PdfWpsToolbar
       v-if="src"
       :pan-active="panActive"
@@ -84,7 +53,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { ArrowLeft, ArrowRight, Back, Close, DArrowLeft, DArrowRight, Download } from '@element-plus/icons-vue';
+import { ArrowLeft, ArrowRight, DArrowLeft, DArrowRight } from '@element-plus/icons-vue';
 import { PDFViewer } from '@embedpdf/vue-pdf-viewer';
 import pdfiumWasmAssetUrl from '@embedpdf/pdfium/pdfium.wasm?url';
 import type { PDFViewerConfig, PDFViewerExpose } from '@embedpdf/vue-pdf-viewer';
@@ -93,22 +62,10 @@ import { usePdfWpsViewer } from './usePdfWpsViewer';
 
 const props = defineProps<{
   src: string;
-  title?: string;
-  fileName?: string;
-  fileSuffix?: string;
-  categoryName?: string;
-  fileSizeText?: string;
-  ownerName?: string;
-  createTime?: string;
-  viewCount?: number;
-  downloadCount?: number;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   error: [message: string];
-  back: [];
-  download: [];
-  close: [];
 }>();
 
 const viewerReady = ref(false);
@@ -270,11 +227,6 @@ const EMBEDPDF_CHINESE_LABELS: Record<string, string> = {
   'No results': '未找到结果',
   'comments.emptyState': '暂无批注'
 };
-
-const fileTypeLabel = computed(() => {
-  const label = props.fileSuffix || 'PDF';
-  return label.startsWith('.') ? label.toUpperCase() : `.${label}`.toUpperCase();
-});
 
 const wasmUrl = computed(() => {
   if (typeof window === 'undefined') return pdfiumWasmAssetUrl;
@@ -448,136 +400,6 @@ onBeforeUnmount(() => {
   color: #1f2a3d;
 }
 
-.pdf-toolbar {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 72px;
-  padding: 12px 18px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-
-.pdf-file-summary {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 12px;
-}
-
-.pdf-file-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 54px;
-  height: 34px;
-  padding: 0 10px;
-  border-radius: 7px;
-  background: #e9f2fb;
-  color: #245f8f;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.pdf-file-copy {
-  display: grid;
-  min-width: 0;
-  gap: 5px;
-}
-
-.pdf-file-copy strong {
-  overflow: hidden;
-  color: #142133;
-  font-size: 16px;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pdf-file-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px 12px;
-  color: #667085;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.pdf-file-meta span {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pdf-actions {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 8px;
-}
-
-.pdf-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  border: 0;
-  border-radius: 7px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease,
-    background 0.16s ease;
-}
-
-.pdf-actions button:active {
-  transform: translateY(1px);
-}
-
-.ghost-button {
-  gap: 6px;
-  padding: 0 13px;
-  background: #edf3f8;
-  color: #245f8f;
-}
-
-.ghost-button:hover {
-  background: #dbe9f5;
-}
-
-.primary-button {
-  gap: 6px;
-  padding: 0 14px;
-  background: #245f8f;
-  color: #ffffff;
-  box-shadow: 0 10px 24px rgba(36, 95, 143, 0.22);
-}
-
-.primary-button:hover {
-  background: #1e527d;
-}
-
-.icon-button {
-  width: 36px;
-  padding: 0;
-  background: #f0f3f7;
-  color: #475467;
-}
-
-.icon-button:hover {
-  background: #e3e8ef;
-  color: #1f2a3d;
-}
-
 .pdf-stage {
   position: relative;
   flex: 1;
@@ -682,18 +504,6 @@ onBeforeUnmount(() => {
 @keyframes pdf-spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 900px) {
-  .pdf-toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .pdf-actions {
-    width: 100%;
-    justify-content: flex-end;
   }
 }
 </style>
