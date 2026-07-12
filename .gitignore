@@ -1,6 +1,6 @@
 # build outputs
 **/target/
-plus-ui/node_modules/
+node_modules/
 plus-ui/dist/
 plus-ui/.eslintcache
 plus-ui/public/readme.md
