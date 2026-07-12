@@ -3,7 +3,7 @@
 - 产品代号：**wito**（wit + office，智慧办公），中文名 **「拓」**
 - 日期：2026-07-11
 - 状态：定位定稿（用户逐项确认）；商业形态**暂不定义**（闭源孵化期）
-- 归属：独立产品、独立仓库（未建）；本文档暂存 info-serve docs 分支，**建仓后随迁**
+- 归属：独立产品，仓库 `github.com/ucas-liumk/wito`（私有，2026-07-11 已建）；**正本已随迁至 wito 仓库 `docs/2026-07-11-wito-positioning.md`，本文件为 info-serve 侧存档快照，后续更新只改正本**
 - 关联:info-serve spec `2026-07-11-resources-reader-notes-redesign-design.md` §2.3（决策同步维护）
 
 ---
