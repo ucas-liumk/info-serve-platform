@@ -1,69 +1,48 @@
 <template>
   <div class="p-2">
-    <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
-      <div v-show="showSearch" class="mb-[10px]">
-        <el-card shadow="hover">
-          <el-form ref="queryFormRef" :model="queryParams" :inline="true">
-            <el-form-item label="关键字" prop="keyword">
-              <el-input v-model="queryParams.keyword" placeholder="名称/编码" clearable style="width: 180px" @keyup.enter="handleQuery" />
-            </el-form-item>
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px">
-                <el-option label="启用" value="0" />
-                <el-option label="禁用" value="1" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
-      </div>
-    </transition>
-
     <el-card shadow="hover">
       <template #header>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button v-hasPermi="['infoservice:resourceCategory:add']" type="primary" plain icon="Plus" @click="handleAdd">新增</el-button>
+            <el-button v-hasPermi="['infoservice:resourceCategory:add']" type="primary" plain icon="Plus" @click="handleAdd()">新增栏目</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button v-hasPermi="['infoservice:resourceCategory:edit']" type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()"
-              >修改</el-button
-            >
+            <el-button type="info" plain icon="Sort" @click="handleToggleExpandAll">展开/折叠</el-button>
           </el-col>
-          <el-col :span="1.5">
-            <el-button
-              v-hasPermi="['infoservice:resourceCategory:remove']"
-              type="danger"
-              plain
-              icon="Delete"
-              :disabled="multiple"
-              @click="handleDelete()"
-              >删除</el-button
-            >
-          </el-col>
-          <right-toolbar v-model:show-search="showSearch" @query-table="getList" />
+          <right-toolbar :search="false" @query-table="getList" />
         </el-row>
       </template>
 
-      <el-table v-loading="loading" border :data="categoryList" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="分类名称" align="center" prop="categoryName" min-width="130" show-overflow-tooltip />
-        <el-table-column label="分类编码" align="center" prop="categoryCode" min-width="120" show-overflow-tooltip />
+      <el-table
+        ref="categoryTableRef"
+        v-loading="loading"
+        :data="categoryList"
+        row-key="categoryId"
+        border
+        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+        :default-expand-all="isExpandAll"
+      >
+        <el-table-column label="名称" prop="categoryName" min-width="200" show-overflow-tooltip />
+        <el-table-column label="编码" align="center" prop="categoryCode" min-width="120" show-overflow-tooltip />
         <el-table-column label="图标" align="center" prop="icon" width="90" />
-        <el-table-column label="资料数" align="center" prop="resourceCount" width="90" />
+        <el-table-column label="资料数" align="center" width="90">
+          <template #default="scope">
+            <span>{{ isSectionRow(scope.row) ? '—' : (scope.row.resourceCount ?? 0) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="排序" align="center" prop="orderNum" width="80" />
         <el-table-column label="状态" align="center" prop="status" width="100">
           <template #default="scope">
             <el-switch v-model="scope.row.status" active-value="0" inactive-value="1" @change="handleStatusChange(scope.row)" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" align="center" width="130" class-name="small-padding fixed-width">
+        <el-table-column label="操作" fixed="right" align="center" width="160" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-tooltip content="修改" placement="top">
               <el-button v-hasPermi="['infoservice:resourceCategory:edit']" link type="primary" icon="Edit" @click="handleUpdate(scope.row)" />
+            </el-tooltip>
+            <el-tooltip v-if="isSectionRow(scope.row)" content="新增分类" placement="top">
+              <el-button v-hasPermi="['infoservice:resourceCategory:add']" link type="primary" icon="Plus" @click="handleAdd(scope.row)" />
             </el-tooltip>
             <el-tooltip content="删除" placement="top">
               <el-button v-hasPermi="['infoservice:resourceCategory:remove']" link type="primary" icon="Delete" @click="handleDelete(scope.row)" />
@@ -71,23 +50,31 @@
           </template>
         </el-table-column>
       </el-table>
-
-      <pagination v-show="total > 0" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" :total="total" @pagination="getList" />
     </el-card>
 
     <el-dialog v-model="dialog.visible" :title="dialog.title" width="520px" append-to-body>
       <el-form ref="categoryFormRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="分类名称" prop="categoryName">
-          <el-input v-model="form.categoryName" placeholder="请输入分类名称" />
+        <el-form-item v-if="isCategoryForm" label="上级栏目" prop="parentId">
+          <el-select v-model="form.parentId" placeholder="请选择上级栏目" style="width: 100%">
+            <el-option
+              v-for="item in sectionOptions"
+              :key="item.categoryId"
+              :label="item.status === '1' ? `${item.categoryName}（已停用）` : item.categoryName"
+              :value="item.categoryId"
+            />
+          </el-select>
         </el-form-item>
-        <el-form-item label="分类编码" prop="categoryCode">
-          <el-input v-model="form.categoryCode" placeholder="请输入分类编码" />
+        <el-form-item :label="isCategoryForm ? '分类名称' : '栏目名称'" prop="categoryName">
+          <el-input v-model="form.categoryName" :placeholder="isCategoryForm ? '请输入分类名称' : '请输入栏目名称'" />
+        </el-form-item>
+        <el-form-item :label="isCategoryForm ? '分类编码' : '栏目编码'" prop="categoryCode">
+          <el-input v-model="form.categoryCode" :placeholder="isCategoryForm ? '请输入分类编码' : '请输入栏目编码'" />
         </el-form-item>
         <el-form-item label="图标" prop="icon">
           <el-input v-model="form.icon" placeholder="请输入图标名称" />
         </el-form-item>
         <el-form-item label="说明" prop="description">
-          <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入分类说明" />
+          <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入说明" />
         </el-form-item>
         <el-form-item label="排序" prop="orderNum">
           <el-input-number v-model="form.orderNum" controls-position="right" :min="0" />
@@ -118,23 +105,24 @@ import {
   changeResourceCategoryStatus,
   delResourceCategory,
   getResourceCategory,
-  listResourceCategory,
+  listResourceCategoryTree,
   updateResourceCategory
 } from '@/api/infoservice/admin';
-import { ResourceCategory, ResourceCategoryForm, ResourceCategoryQuery } from '@/api/infoservice/types';
+import { ResourceCategory, ResourceCategoryForm } from '@/api/infoservice/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
+/** 树形表格数据（handleTree 组装：一级=栏目，二级=分类） */
 const categoryList = ref<ResourceCategory[]>([]);
+/** 弹窗「上级栏目」候选（仅一级栏目行，含停用） */
+const sectionOptions = ref<ResourceCategory[]>([]);
 const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
+const isExpandAll = ref(true);
+/** 弹窗当前是否在编辑二级分类（true=须选上级栏目；false=栏目） */
+const isCategoryForm = ref(false);
 
+const categoryTableRef = ref<ElTableInstance>();
 const categoryFormRef = ref<ElFormInstance>();
-const queryFormRef = ref<ElFormInstance>();
 
 const dialog = reactive<DialogOption>({
   visible: false,
@@ -147,80 +135,108 @@ const initFormData: ResourceCategoryForm = {
   categoryCode: '',
   description: '',
   icon: '',
+  parentId: undefined,
   orderNum: 0,
   status: '0',
   remark: ''
 };
 
-const data = reactive<PageData<ResourceCategoryForm, ResourceCategoryQuery>>({
-  form: { ...initFormData },
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    keyword: '',
-    status: ''
-  },
-  rules: {
-    categoryName: [{ required: true, message: '分类名称不能为空', trigger: 'blur' }],
-    categoryCode: [{ required: true, message: '分类编码不能为空', trigger: 'blur' }]
-  }
+const form = ref<ResourceCategoryForm>({ ...initFormData });
+
+const rules = reactive<ElFormRules>({
+  parentId: [{ required: true, message: '上级栏目不能为空', trigger: 'change' }],
+  categoryName: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
+  categoryCode: [
+    { required: true, message: '编码不能为空', trigger: 'blur' },
+    { pattern: /^[A-Za-z0-9_-]{1,80}$/, message: '仅支持字母、数字、中划线、下划线，不超过 80 字符', trigger: 'blur' },
+    {
+      validator: (_rule: unknown, value: string, callback: (error?: Error) => void) =>
+        value && value.toLowerCase() === 'all' ? callback(new Error('all 为系统保留编码，请更换')) : callback(),
+      trigger: 'blur'
+    }
+  ]
 });
 
-const { queryParams, form, rules } = toRefs<PageData<ResourceCategoryForm, ResourceCategoryQuery>>(data);
+/** 是否栏目行（parentId 为空=一级栏目） */
+const isSectionRow = (row: ResourceCategory): boolean => row.parentId == null;
 
+/** 查询栏目/分类树 */
 const getList = async () => {
   loading.value = true;
-  const res = await listResourceCategory(queryParams.value);
-  categoryList.value = (res as any).rows ?? [];
-  total.value = (res as any).total ?? 0;
-  loading.value = false;
+  try {
+    const res = await listResourceCategoryTree();
+    const rows = res.data ?? [];
+    sectionOptions.value = rows.filter((row) => row.parentId == null);
+    categoryList.value = proxy?.handleTree<ResourceCategory>(rows, 'categoryId') ?? [];
+  } finally {
+    loading.value = false;
+  }
 };
 
+/** 表单重置 */
 const reset = () => {
   form.value = { ...initFormData };
   categoryFormRef.value?.resetFields();
 };
 
+/** 取消按钮 */
 const cancel = () => {
   reset();
   dialog.visible = false;
 };
 
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
+/** 展开/折叠操作 */
+const handleToggleExpandAll = () => {
+  isExpandAll.value = !isExpandAll.value;
+  toggleExpandAll(categoryList.value, isExpandAll.value);
+};
+/** 展开/折叠所有 */
+const toggleExpandAll = (data: ResourceCategory[], status: boolean) => {
+  data.forEach((item) => {
+    categoryTableRef.value?.toggleRowExpansion(item, status);
+    if (item.children && item.children.length > 0) toggleExpandAll(item.children, status);
+  });
 };
 
-const resetQuery = () => {
-  queryFormRef.value?.resetFields();
-  handleQuery();
-};
-
-const handleSelectionChange = (selection: ResourceCategory[]) => {
-  ids.value = selection.map((item) => item.categoryId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-};
-
-const handleAdd = () => {
+/** 新增按钮操作：不传 row=新增栏目；传栏目行=在该栏目下新增分类 */
+const handleAdd = (row?: ResourceCategory) => {
   reset();
+  isCategoryForm.value = !!row;
+  if (row) {
+    form.value = { ...form.value, parentId: row.categoryId };
+  }
   dialog.visible = true;
-  dialog.title = '添加资料分类';
+  dialog.title = row ? '添加分类' : '添加栏目';
 };
 
-const handleUpdate = async (row?: ResourceCategory) => {
+/** 修改按钮操作 */
+const handleUpdate = async (row: ResourceCategory) => {
   reset();
-  const categoryId = row?.categoryId || ids.value[0];
-  const res = await getResourceCategory(categoryId);
-  Object.assign(form.value, (res as any).data);
+  const res = await getResourceCategory(row.categoryId);
+  const data = res.data;
+  form.value = {
+    ...initFormData,
+    categoryId: data.categoryId,
+    categoryName: data.categoryName ?? '',
+    categoryCode: data.categoryCode ?? '',
+    description: data.description ?? '',
+    icon: data.icon ?? '',
+    parentId: data.parentId ?? undefined,
+    orderNum: data.orderNum ?? 0,
+    status: data.status ?? '0',
+    remark: data.remark ?? ''
+  };
+  isCategoryForm.value = form.value.parentId != null;
   dialog.visible = true;
-  dialog.title = '修改资料分类';
+  dialog.title = isCategoryForm.value ? '修改分类' : '修改栏目';
 };
 
+/** 状态切换（停用不级联删除，门户侧自行过滤） */
 const handleStatusChange = async (row: ResourceCategory) => {
+  const label = isSectionRow(row) ? '栏目' : '分类';
   const text = row.status === '0' ? '启用' : '禁用';
   try {
-    await proxy?.$modal.confirm(`确认要${text}分类"${row.categoryName}"吗？`);
+    await proxy?.$modal.confirm(`确认要${text}${label}"${row.categoryName}"吗？`);
     await changeResourceCategoryStatus(row.categoryId, row.status || '0');
     proxy?.$modal.msgSuccess(`${text}成功`);
   } catch {
@@ -228,10 +244,15 @@ const handleStatusChange = async (row: ResourceCategory) => {
   }
 };
 
+/** 提交按钮 */
 const submitForm = () => {
   categoryFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
-      form.value.categoryId ? await updateResourceCategory(form.value) : await addResourceCategory(form.value);
+      const payload: ResourceCategoryForm = {
+        ...form.value,
+        parentId: isCategoryForm.value ? form.value.parentId : null
+      };
+      payload.categoryId ? await updateResourceCategory(payload) : await addResourceCategory(payload);
       proxy?.$modal.msgSuccess('操作成功');
       dialog.visible = false;
       await getList();
@@ -239,10 +260,11 @@ const submitForm = () => {
   });
 };
 
-const handleDelete = async (row?: ResourceCategory) => {
-  const categoryIds = row?.categoryId || ids.value;
-  await proxy?.$modal.confirm(`是否确认删除资料分类编号为"${categoryIds}"的数据项？`);
-  await delResourceCategory(categoryIds);
+/** 删除按钮操作（行内删除；栏目须无子分类、分类须无挂接资料，由服务端校验并报中文错误） */
+const handleDelete = async (row: ResourceCategory) => {
+  const label = isSectionRow(row) ? '栏目' : '分类';
+  await proxy?.$modal.confirm(`是否确认删除${label}"${row.categoryName}"？`);
+  await delResourceCategory(row.categoryId);
   await getList();
   proxy?.$modal.msgSuccess('删除成功');
 };

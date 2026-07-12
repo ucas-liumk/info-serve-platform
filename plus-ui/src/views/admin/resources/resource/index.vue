@@ -96,8 +96,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="资料分类" prop="categoryId">
-              <el-select v-model="form.categoryId" placeholder="请选择资料分类" style="width: 100%">
+            <el-form-item label="资料分类" prop="categoryIds">
+              <el-select v-model="form.categoryIds" multiple placeholder="请选择资料分类（可多选）" style="width: 100%">
                 <el-option v-for="item in categoryOptions" :key="item.categoryId" :label="item.categoryName" :value="item.categoryId" />
               </el-select>
             </el-form-item>
@@ -184,6 +184,7 @@ const initFormData: InfoResourceForm = {
   title: '',
   description: '',
   categoryId: undefined,
+  categoryIds: [],
   ossId: undefined,
   originalName: '',
   fileSuffix: '',
@@ -205,7 +206,14 @@ const data = reactive<PageData<InfoResourceForm, InfoResourceQuery>>({
   },
   rules: {
     title: [{ required: true, message: '资料标题不能为空', trigger: 'blur' }],
-    categoryId: [{ required: true, message: '请选择资料分类', trigger: 'change' }],
+    categoryIds: [
+      {
+        required: true,
+        validator: (_rule: unknown, value: Array<number | string>, callback: (error?: Error) => void) =>
+          value && value.length > 0 ? callback() : callback(new Error('请至少选择一个资料分类')),
+        trigger: 'change'
+      }
+    ],
     ossId: [{ required: true, message: '请先上传资料文件', trigger: 'change' }]
   }
 });
@@ -289,6 +297,8 @@ const handleStatusChange = async (row: InfoResource) => {
 const submitForm = () => {
   resourceFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
+      // categoryId=主分类（首个），满足后端 Bo 校验与旧展示路径；categoryIds 为全量
+      form.value.categoryId = form.value.categoryIds?.[0];
       form.value.resourceId ? await updateResource(form.value) : await addResource(form.value);
       proxy?.$modal.msgSuccess('操作成功');
       dialog.visible = false;

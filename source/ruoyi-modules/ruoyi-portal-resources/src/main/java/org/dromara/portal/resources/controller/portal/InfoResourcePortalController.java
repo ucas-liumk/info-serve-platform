@@ -10,6 +10,7 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.portal.resources.domain.bo.InfoResourceBo;
 import org.dromara.portal.resources.domain.bo.InfoResourceNoteBo;
+import org.dromara.portal.resources.domain.vo.InfoResourceCategoryTreeVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceCategoryVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceNoteVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceVo;
@@ -38,6 +39,12 @@ public class InfoResourcePortalController {
     @GetMapping("/categories")
     public R<List<InfoResourceCategoryVo>> categories() {
         return R.ok(categoryService.portalCategories());
+    }
+
+    /** 栏目/分类两级树（C1）：分类节点带分面计数（响应关键词+工具条筛选，不含分类维度自身） */
+    @GetMapping("/category-tree")
+    public R<List<InfoResourceCategoryTreeVo>> categoryTree(InfoResourceBo bo) {
+        return R.ok(categoryService.portalCategoryTree(bo));
     }
 
     @GetMapping

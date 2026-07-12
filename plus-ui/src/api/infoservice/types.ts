@@ -12,11 +12,34 @@ export interface ResourceCategory {
   categoryCode: string;
   description: string;
   icon: string;
+  /** 上级栏目 id；空=本行是栏目（一级），非空=分类（二级） */
+  parentId?: number | null;
   orderNum?: number;
   status?: string;
   remark?: string;
   createTime?: string;
   resourceCount: number;
+  children?: ResourceCategory[];
+}
+
+/** 门户分类树节点（GET /portal/resources/category-tree）：一级=栏目（含 children），二级=分类（含 resourceCount） */
+export interface CategoryTreeNode {
+  categoryId: number;
+  categoryCode: string;
+  categoryName: string;
+  orderNum?: number;
+  /** 分面计数：仅二级分类返回（响应关键词+工具条筛选，不含分类维度自身） */
+  resourceCount?: number;
+  children?: CategoryTreeNode[];
+}
+
+/** 门户分类树查询参数：与列表接口共用筛选语义，但不含 categoryCode（分面计数不受分类勾选影响） */
+export interface ResourceCategoryTreeQuery {
+  keyword?: string;
+  previewType?: string;
+  fileType?: string;
+  uploadedWithin?: string;
+  sizeRange?: string;
 }
 
 export interface InfoResource {
@@ -25,6 +48,8 @@ export interface InfoResource {
   description: string;
   categoryId: number;
   categoryName: string;
+  /** 多分类全量（categoryId/categoryName 为主分类） */
+  categoryIds?: Array<number | string>;
   ossId: number | string;
   originalName: string;
   fileSuffix: string;
@@ -108,6 +133,7 @@ export interface InfoResourceForm {
   title: string;
   description: string;
   categoryId: number | string | undefined;
+  categoryIds?: Array<number | string>;
   ossId: number | string | undefined;
   originalName: string;
   fileSuffix: string;
@@ -129,6 +155,7 @@ export interface ResourcePortalQuery extends PageQuery {
   scope?: 'public' | 'mine' | 'favorites';
   keyword?: string;
   categoryId?: number | string;
+  /** 分类编码：支持逗号分隔多值（如 "policy,tech"）；'all' 或缺省=不按分类过滤 */
   categoryCode?: string;
   previewType?: string;
   fileType?: string;
@@ -138,10 +165,18 @@ export interface ResourcePortalQuery extends PageQuery {
   status?: string;
 }
 
+/** 上传进度条目（uploading=传输中百分比；processing=服务端落库/OSS 写入；done=完成） */
+export interface ResourceUploadProgress {
+  name: string;
+  percent: number;
+  status: 'pending' | 'uploading' | 'processing' | 'done';
+}
+
 export interface ResourcePortalPayload {
   title: string;
   description?: string;
   categoryId: number | string | undefined;
+  categoryIds?: Array<number | string>;
   ossId?: number | string | undefined;
   originalName?: string;
   fileSuffix?: string;
@@ -184,6 +219,8 @@ export interface ResourceCategoryForm {
   categoryCode: string;
   description: string;
   icon: string;
+  /** 上级栏目 id；空=建栏目，非空=建分类（两级封顶） */
+  parentId?: number | string | null;
   orderNum: number;
   status: string;
   remark: string;

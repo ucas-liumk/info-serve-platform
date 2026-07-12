@@ -2,8 +2,10 @@ import request from '@/utils/request';
 import axios, { AxiosPromise, AxiosResponse } from 'axios';
 import { globalHeaders } from '@/utils/request';
 import {
+  CategoryTreeNode,
   InfoResource,
   ResourceCategory,
+  ResourceCategoryTreeQuery,
   ResourceNote,
   ResourceNotePayload,
   ResourcePortalPayload,
@@ -18,6 +20,11 @@ export function listResourceCategories(): AxiosPromise<ResourceCategory[]> {
   return request({ url: '/infoservice/portal/resources/categories', method: 'get' });
 }
 
+/** 栏目→分类两级树（含分面计数）：入参为当前关键词/工具条筛选，不含 categoryCode */
+export function getResourceCategoryTree(params?: ResourceCategoryTreeQuery): AxiosPromise<CategoryTreeNode[]> {
+  return request({ url: '/infoservice/portal/resources/category-tree', method: 'get', params });
+}
+
 export function listResources(query: ResourcePortalQuery): AxiosPromise<InfoResource[]> {
   return request({ url: '/infoservice/portal/resources', method: 'get', params: query });
 }
@@ -26,13 +33,18 @@ export function getResource(resourceId: ResourceId): AxiosPromise<InfoResource> 
   return request({ url: `/infoservice/portal/resources/${resourceId}`, method: 'get' });
 }
 
-export function uploadPortalResourceFile(data: FormData): AxiosPromise<ResourceUploadResult> {
+export function uploadPortalResourceFile(data: FormData, onUploadProgress?: (percent: number) => void): AxiosPromise<ResourceUploadResult> {
   return request({
     url: '/infoservice/portal/resources/upload',
     method: 'post',
     data,
     timeout: 5 * 60 * 1000,
-    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false },
+    onUploadProgress: (event: { loaded: number; total?: number }) => {
+      if (onUploadProgress && event.total) {
+        onUploadProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    }
   });
 }
 

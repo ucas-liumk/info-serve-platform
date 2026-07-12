@@ -9,6 +9,8 @@ import lombok.EqualsAndHashCode;
 import org.dromara.common.mybatis.core.domain.BaseEntity;
 import org.dromara.portal.resources.domain.InfoResource;
 
+import java.util.List;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @AutoMapper(target = InfoResource.class)
@@ -21,6 +23,8 @@ public class InfoResourceBo extends BaseEntity {
     private String description;
     @NotNull(message = "资料分类不能为空")
     private Long categoryId;
+    /** 多分类全量（categoryId 为其中的主分类=首个；缺省时回退单值 categoryId） */
+    private List<Long> categoryIds;
     @NotNull(message = "文件不能为空")
     private Long ossId;
     private String originalName;

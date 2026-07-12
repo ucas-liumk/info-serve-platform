@@ -15,6 +15,7 @@
     "lint:eslint": "eslint",
     "lint:eslint:fix": "eslint --fix",
     "prettier": "prettier --write .",
+    "test": "vitest run",
     "design:audit": "node ../deploy/scripts/design-audit.mjs"
   },
   "repository": {

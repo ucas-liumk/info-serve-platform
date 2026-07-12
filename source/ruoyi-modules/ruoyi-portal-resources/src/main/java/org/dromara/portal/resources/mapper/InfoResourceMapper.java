@@ -1,11 +1,39 @@
 package org.dromara.portal.resources.mapper;
 
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.dromara.common.mybatis.core.mapper.BaseMapperPlus;
 import org.dromara.portal.resources.domain.InfoResource;
+import org.dromara.portal.resources.domain.vo.InfoResourceCategoryCountVo;
 import org.dromara.portal.resources.domain.vo.InfoResourceVo;
 
+import java.util.Date;
+import java.util.List;
+
 public interface InfoResourceMapper extends BaseMapperPlus<InfoResource, InfoResourceVo> {
+
+    /**
+     * 上架资料按分类聚合计数（单条 GROUP BY，禁 N+1；SQL 见 mapper/resources/InfoResourceMapper.xml）。
+     * 入参为分面筛选（关键词+工具条，不含分类维度自身），空参表示不筛选；租户条件由拦截器自动追加。
+     */
+    List<InfoResourceCategoryCountVo> countActiveByCategory(@Param("keyword") String keyword,
+                                                            @Param("previewType") String previewType,
+                                                            @Param("uploadedSince") Date uploadedSince,
+                                                            @Param("minFileSize") Long minFileSize,
+                                                            @Param("maxFileSize") Long maxFileSize);
+
+    /**
+     * 未删资料按分类聚合计数（含已下架，口径与删除校验一致，供管理树表）。
+     * 走关联表（多分类事实源）：一份资料在其每个分类下都计数；租户条件由拦截器自动追加。
+     */
+    @Select("""
+        select l.category_id, count(*) as resource_count
+        from info_resource_category_link l
+        join info_resource r on r.resource_id = l.resource_id
+        where r.del_flag = '0'
+        group by l.category_id
+        """)
+    List<InfoResourceCategoryCountVo> countUndeletedByCategory();
 
     /** 资料浏览+下载总量（资料 BC 自有口径，供内核统计聚合） */
     @Select("""

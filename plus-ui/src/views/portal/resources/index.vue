@@ -1,11 +1,6 @@
 <template>
   <div class="resources-app">
-    <ResourceSidebar
-      :categories="categories"
-      :category-total="categoryTotal"
-      :category-code="categoryCode"
-      @change-category="changeCategory"
-    />
+    <ResourceSidebar :category-tree="categoryTree" :selected-categories="selectedCategories" @update:selected-categories="changeSelectedCategories" />
 
     <main class="resource-main">
       <header class="resource-topbar">
@@ -22,14 +17,14 @@
               clearable
               placeholder="搜索资源标题、关键词、作者、标签等"
               size="large"
-              @keyup.enter="reloadFirst"
-              @clear="reloadFirst"
+              @keyup.enter="reloadWithFacets"
+              @clear="reloadWithFacets"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
               </template>
             </el-input>
-            <button class="search-button" type="button" @click="reloadFirst">搜索</button>
+            <button class="search-button" type="button" @click="reloadWithFacets">搜索</button>
           </div>
 
           <PortalNotificationBell />
@@ -58,6 +53,8 @@
           @update:size-range="changeSizeRange"
           @update:display-mode="displayMode = $event"
         />
+
+        <ResourceCategoryChips :chips="selectedChips" @remove="removeChip" />
 
         <div class="resource-results">
           <div v-if="displayMode === 'grid'" class="resource-grid">
@@ -107,10 +104,11 @@
 
     <ResourceUploadDialog
       v-model="uploadVisible"
-      :categories="categories"
+      :category-tree="categoryTree"
       :resource="editingResource"
       :mode="uploadMode"
       :submitting="uploading"
+      :progress="uploadProgress"
       @submit="submitResource"
     />
   </div>
@@ -129,16 +127,18 @@ import {
   createPortalResource,
   deletePortalResource,
   favoritePortalResource,
-  listResourceCategories,
+  getResourceCategoryTree,
   listResources,
   unfavoritePortalResource,
   updatePortalResource,
   uploadPortalResourceFile
 } from '@/api/portal/resources';
-import type { InfoResource, ResourceCategory, ResourcePortalPayload, ResourceUploadResult } from '@/api/infoservice/types';
+import type { CategoryTreeNode, InfoResource, ResourcePortalPayload, ResourceUploadProgress, ResourceUploadResult } from '@/api/infoservice/types';
 import { downloadPortalResource } from './download';
+import { buildSelectedChips, encodeCategoryCodes, removeCategory, resolveSelectionTitle } from './categoryFacets';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
 import ResourceCard from './components/ResourceCard.vue';
+import ResourceCategoryChips from './components/ResourceCategoryChips.vue';
 import ResourceList from './components/ResourceList.vue';
 import ResourceSidebar from './components/ResourceSidebar.vue';
 import ResourceToolbar from './components/ResourceToolbar.vue';
@@ -149,14 +149,14 @@ type UploadMode = 'create' | 'edit';
 type MyResourceTab = 'uploads' | 'favorites' | 'downloads' | 'history';
 type ResourceSubmitPayload = {
   title: string;
-  categoryId: number | string | undefined;
+  categoryIds: Array<number | string>;
   description: string;
   files?: File[];
 };
 
 const router = useRouter();
 const userStore = useUserStore();
-const categories = ref<ResourceCategory[]>([]);
+const categoryTree = ref<CategoryTreeNode[]>([]);
 const resources = ref<InfoResource[]>([]);
 const myResources = ref<InfoResource[]>([]);
 const editingResource = ref<InfoResource>();
@@ -164,7 +164,7 @@ const keyword = ref('');
 const displayMode = ref<DisplayMode>('grid');
 const uploadMode = ref<UploadMode>('create');
 const myResourceTab = ref<MyResourceTab>('uploads');
-const categoryCode = ref('all');
+const selectedCategories = ref<string[]>([]);
 const previewType = ref('all');
 const uploadedWithin = ref('all');
 const sizeRange = ref('all');
@@ -178,12 +178,12 @@ const myResourcesLoading = ref(false);
 const myResourcesVisible = ref(false);
 const uploadVisible = ref(false);
 const uploading = ref(false);
+const uploadProgress = ref<ResourceUploadProgress[]>([]);
 
 const isLoggedIn = computed(() => Boolean(userStore.token || getToken()));
-const categoryTotal = computed(() => categories.value.reduce((sum, item) => sum + (item.resourceCount || 0), 0));
-const activeCategory = computed(() => categories.value.find((item) => item.categoryCode === categoryCode.value));
-const resourcePageTitle = computed(() => (categoryCode.value === 'all' ? '全部资源' : activeCategory.value?.categoryName || '当前分类'));
+const resourcePageTitle = computed(() => resolveSelectionTitle(categoryTree.value, selectedCategories.value));
 const resourcePageSubtitle = computed(() => `当前筛选共 ${total.value} 条资料`);
+const selectedChips = computed(() => buildSelectedChips(categoryTree.value, selectedCategories.value));
 
 const ensureLogin = () => {
   if (isLoggedIn.value) {
@@ -193,18 +193,39 @@ const ensureLogin = () => {
   return false;
 };
 
-const loadCategories = async () => {
-  const res: any = await listResourceCategories();
-  categories.value = res.data || [];
+/** 已提交的搜索关键词：勾选/排序/翻页只读它，避免输入半截的词被隐式带入列表而计数还是旧口径 */
+const committedKeyword = ref('');
+
+/** 请求序号：丢弃过期响应，防止快速连点勾选时旧结果覆盖新结果 */
+let reloadSeq = 0;
+let treeSeq = 0;
+
+/** 分面计数树：同步已提交关键词+工具条筛选，但不含分类勾选自身（标准分面语义） */
+const loadCategoryTree = async () => {
+  const seq = ++treeSeq;
+  try {
+    const res: any = await getResourceCategoryTree({
+      keyword: committedKeyword.value,
+      previewType: previewType.value,
+      uploadedWithin: uploadedWithin.value,
+      sizeRange: sizeRange.value
+    });
+    if (seq === treeSeq) {
+      categoryTree.value = res.data || [];
+    }
+  } catch {
+    // 计数树刷新失败保留旧数据，避免左栏闪空；错误提示由全局请求拦截器兜底
+  }
 };
 
 const reload = async () => {
+  const seq = ++reloadSeq;
   loading.value = true;
   try {
     const res: any = await listResources({
       scope: 'public',
-      categoryCode: categoryCode.value,
-      keyword: keyword.value,
+      categoryCode: encodeCategoryCodes(selectedCategories.value),
+      keyword: committedKeyword.value,
       previewType: previewType.value,
       uploadedWithin: uploadedWithin.value,
       sizeRange: sizeRange.value,
@@ -212,16 +233,36 @@ const reload = async () => {
       pageNum: pageNum.value,
       pageSize: pageSize.value
     });
+    if (seq !== reloadSeq) {
+      return;
+    }
     resources.value = res.rows || [];
     total.value = res.total || 0;
+    // 筛少后停留在越界深页码时钳回最后一页重取，防止“有总数却整页为空且分页器隐藏”
+    const lastPage = Math.max(1, Math.ceil(total.value / pageSize.value));
+    if (resources.value.length === 0 && total.value > 0 && pageNum.value > lastPage) {
+      pageNum.value = lastPage;
+      await reload();
+    }
   } finally {
-    loading.value = false;
+    if (seq === reloadSeq) {
+      loading.value = false;
+    }
   }
 };
 
 const reloadFirst = () => {
   pageNum.value = 1;
   reload();
+};
+
+/** 关键词/工具条筛选变化：提交关键词，列表与分面计数并行刷新 */
+const reloadWithFacets = async () => {
+  committedKeyword.value = keyword.value;
+  pageNum.value = 1;
+  await Promise.all([reload(), loadCategoryTree()]).catch(() => {
+    // 列表失败由全局拦截器提示；此处仅防未处理的 Promise 拒绝
+  });
 };
 
 const loadMyResources = async () => {
@@ -263,24 +304,29 @@ const changeMyResourceTab = async (tab: MyResourceTab) => {
   await loadMyResources();
 };
 
-const changeCategory = (code: string) => {
-  categoryCode.value = code;
+/** 勾选分类只刷列表不刷计数（分面语义） */
+const changeSelectedCategories = (next: string[]) => {
+  selectedCategories.value = next;
   reloadFirst();
+};
+
+const removeChip = (code: string) => {
+  changeSelectedCategories(removeCategory(selectedCategories.value, code));
 };
 
 const changePreviewType = (value: string) => {
   previewType.value = value;
-  reloadFirst();
+  reloadWithFacets();
 };
 
 const changeUploadedWithin = (value: string) => {
   uploadedWithin.value = value;
-  reloadFirst();
+  reloadWithFacets();
 };
 
 const changeSizeRange = (value: string) => {
   sizeRange.value = value;
-  reloadFirst();
+  reloadWithFacets();
 };
 
 const changeSort = (value: string) => {
@@ -352,18 +398,30 @@ const openReplaceDialog = (resource: InfoResource) => {
   openEditDialog(resource);
 };
 
-const uploadFile = async (file: File) => {
+/** 不可变更新进度列表中的一项 */
+const patchProgress = (index: number, patch: Partial<ResourceUploadProgress>) => {
+  uploadProgress.value = uploadProgress.value.map((item, i) => (i === index ? { ...item, ...patch } : item));
+};
+
+const uploadFile = async (file: File, progressIndex?: number) => {
   const formData = new FormData();
   formData.append('file', file);
-  const upRes: any = await uploadPortalResourceFile(formData);
+  const upRes: any = await uploadPortalResourceFile(formData, (percent) => {
+    if (progressIndex != null) {
+      // 100% 表示传输完成，进入服务端处理段（OSS 写入/落库），由调用方置 processing
+      patchProgress(progressIndex, { percent, status: percent >= 100 ? 'processing' : 'uploading' });
+    }
+  });
   return upRes.data as ResourceUploadResult;
 };
 
-const buildPayload = (base: { title: string; categoryId: number | string | undefined; description: string }, file?: ResourceUploadResult) => {
+const buildPayload = (base: { title: string; categoryIds: Array<number | string>; description: string }, file?: ResourceUploadResult) => {
   const currentResource = editingResource.value;
   return {
     title: base.title,
-    categoryId: base.categoryId,
+    // categoryId=主分类（首个），与后端 Bo 校验及旧展示路径兼容；categoryIds 为全量
+    categoryId: base.categoryIds[0],
+    categoryIds: [...base.categoryIds],
     description: base.description,
     ossId: file?.ossId ?? currentResource?.ossId,
     originalName: file?.originalName ?? currentResource?.originalName,
@@ -384,8 +442,7 @@ const fileTitle = (payload: ResourceSubmitPayload, file: File, total: number) =>
 };
 
 const refreshOwnedViews = async () => {
-  await loadCategories();
-  await reload();
+  await Promise.all([loadCategoryTree(), reload()]);
   if (myResourcesVisible.value) {
     await loadMyResources();
   }
@@ -393,29 +450,34 @@ const refreshOwnedViews = async () => {
 
 const submitResource = async (payload: ResourceSubmitPayload) => {
   uploading.value = true;
+  const files = payload.files || [];
+  uploadProgress.value = files.map((file) => ({ name: file.name, percent: 0, status: 'pending' as const }));
   try {
-    const files = payload.files || [];
     if (uploadMode.value === 'edit' && editingResource.value) {
-      const uploaded = files[0] ? await uploadFile(files[0]) : undefined;
+      const uploaded = files[0] ? await uploadFile(files[0], 0) : undefined;
       await updatePortalResource(editingResource.value.resourceId, buildPayload(payload, uploaded));
+      if (files[0]) {
+        patchProgress(0, { percent: 100, status: 'done' });
+      }
       ElMessage.success('资料已保存');
     } else {
       if (files.length === 0) {
         ElMessage.warning('请选择文件');
         return;
       }
-      for (const file of files) {
-        const uploaded = await uploadFile(file);
+      for (const [index, file] of files.entries()) {
+        const uploaded = await uploadFile(file, index);
         await createPortalResource(
           buildPayload(
             {
               title: fileTitle(payload, file, files.length),
-              categoryId: payload.categoryId,
+              categoryIds: payload.categoryIds,
               description: payload.description
             },
             uploaded
           )
         );
+        patchProgress(index, { percent: 100, status: 'done' });
       }
       ElMessage.success(files.length === 1 ? '资料已发布，可在我的资源中管理' : `已发布 ${files.length} 份资料，可在我的资源中管理`);
     }
@@ -448,8 +510,7 @@ const deleteOwnResource = async (resource: InfoResource) => {
 };
 
 onMounted(async () => {
-  await loadCategories();
-  await reload();
+  await Promise.all([loadCategoryTree(), reload()]);
 });
 </script>
 

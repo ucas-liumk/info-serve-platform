@@ -13,12 +13,7 @@
       <span>返回首页</span>
     </button>
 
-    <ResourceFilterPanel
-      :categories="categories"
-      :total="categoryTotal"
-      :category-code="categoryCode"
-      @change-category="onChangeCategory"
-    />
+    <ResourceFilterPanel :tree="categoryTree" :selected="selectedCategories" @update:selected="onUpdateSelected" />
   </aside>
 </template>
 
@@ -26,11 +21,11 @@
 import { useRouter } from 'vue-router';
 import { House } from '@element-plus/icons-vue';
 import { PORTAL_HOME_PATH } from '@/constants/router';
-import { ResourceCategory } from '@/api/infoservice/types';
+import type { CategoryTreeNode } from '@/api/infoservice/types';
 import ResourceFilterPanel from './ResourceFilterPanel.vue';
 
-defineProps<{ categories: ResourceCategory[]; categoryTotal: number; categoryCode: string }>();
-const emit = defineEmits<{ (e: 'change-category', code: string): void }>();
+defineProps<{ categoryTree: CategoryTreeNode[]; selectedCategories: string[] }>();
+const emit = defineEmits<{ (e: 'update:selected-categories', value: string[]): void }>();
 
 const router = useRouter();
 
@@ -38,7 +33,7 @@ const goPortalHome = () => {
   router.push(PORTAL_HOME_PATH);
 };
 
-const onChangeCategory = (code: string) => emit('change-category', code);
+const onUpdateSelected = (value: string[]) => emit('update:selected-categories', value);
 </script>
 
 <style scoped>
