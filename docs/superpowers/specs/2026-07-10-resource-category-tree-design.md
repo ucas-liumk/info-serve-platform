@@ -85,6 +85,13 @@
 3. **文件信息工作区**：左侧文件头删除后元信息无处安放——新增第七块 active 磁贴「文件信息」（key `info`），独占展开显示资料元数据 dl（六项）+ 阅看记录列表（进入时懒加载）；原题头 ⓘ 弹层撤销，PanelInfoPopover.vue 改造为内嵌块 PanelFileInfo.vue（git mv 保history）。
 4. **政务风磁贴**：emoji 图标弃用，改 @element-plus/icons-vue 线性图标（Notebook/ChatDotRound/Document/Aim/Headset/MagicStick/Share，配置存组件名、组件侧 TILE_GLYPHS 映射）；磁贴整卡糖果色改为白底描边卡片 + 粉彩衬底图标芯片（tone 只作用于芯片），新增 `--ip-tile-*-ink` 六个深色令牌（tokens.scss，不入审计扫描面）；soon 磁贴灰化芯片+描边角标。
 
+### 5.6.3 增补：右栏拖拽调宽（2026-07-12 用户定稿）
+
+- 面板左缘 6px 拖拽手柄（pointer capture，拖过 PDF 区域不丢事件）；宽度钳制走纯函数 `clampPanelWidth`（min 320 / max 820 / 视口须给阅读区保留 650，非法输入回退默认 392）。
+- 宽度记忆 localStorage（`ip-preview-panel-width`，存取异常静默回退）；双击手柄复位 392。
+- 收起态固定 96px 不受行内宽度影响（`:style` 仅展开时绑定）；≤1180px 堆叠布局下 `width:100%!important` 压过行内宽度并隐藏手柄。
+- 拖拽期间 `transition:none + user-select:none` 保证跟手。
+
 ## 6. 决策记录
 
 - [x] 左栏=栏目→分类两级树；类型/时间/大小留工具条（2026-07-10 用户修正确认）

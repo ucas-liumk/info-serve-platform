@@ -3,10 +3,13 @@ import type { InfoResource } from '@/api/infoservice/types';
 import type { PanelState } from './panelStudio';
 import {
   buildResourceInfoItems,
+  clampPanelWidth,
   DEFAULT_PANEL_STATE,
+  DEFAULT_PANEL_WIDTH,
   formatDateTime,
   formatFileSize,
   isWorkspaceTile,
+  PANEL_MIN_WIDTH,
   reducePanelState,
   STUDIO_TILES
 } from './panelStudio';
@@ -97,6 +100,39 @@ describe('reducePanelState 面板状态机', () => {
     const next = reducePanelState(state, { type: 'clickTile', tile: tileByKey('note') });
     expect(state).toEqual({ view: 'overview', collapsed: false });
     expect(Object.isFrozen(next)).toBe(true);
+  });
+});
+
+describe('clampPanelWidth 拖拽宽度钳制', () => {
+  it('默认宽度 392、最小 320', () => {
+    expect(DEFAULT_PANEL_WIDTH).toBe(392);
+    expect(PANEL_MIN_WIDTH).toBe(320);
+  });
+
+  it('低于最小值钳到最小值', () => {
+    expect(clampPanelWidth(100, 1600)).toBe(PANEL_MIN_WIDTH);
+    expect(clampPanelWidth(-50, 1600)).toBe(PANEL_MIN_WIDTH);
+  });
+
+  it('常规区间原样通过（取整）', () => {
+    expect(clampPanelWidth(500, 1600)).toBe(500);
+    expect(clampPanelWidth(500.6, 1600)).toBe(501);
+  });
+
+  it('上限=视口减去阅读区保留宽，且不超过绝对上限 820', () => {
+    // 1600 视口:1600-650=950 > 820 → 绝对上限 820
+    expect(clampPanelWidth(1200, 1600)).toBe(820);
+    // 1200 视口:1200-650=550 为上限
+    expect(clampPanelWidth(900, 1200)).toBe(550);
+  });
+
+  it('极窄视口时上限退化但不低于最小值', () => {
+    expect(clampPanelWidth(800, 900)).toBe(PANEL_MIN_WIDTH);
+  });
+
+  it('非法输入回退默认宽度', () => {
+    expect(clampPanelWidth(Number.NaN, 1600)).toBe(DEFAULT_PANEL_WIDTH);
+    expect(clampPanelWidth(Infinity, 1600)).toBe(820);
   });
 });
 

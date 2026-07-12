@@ -75,6 +75,20 @@ export const reducePanelState = (state: PanelState, action: PanelAction): PanelS
   }
 };
 
+/** 右栏拖拽调宽约束（px）：阅读区至少保留 650（620 栅格下限+页边距），面板绝对上限 820 */
+export const DEFAULT_PANEL_WIDTH = 392;
+export const PANEL_MIN_WIDTH = 320;
+export const PANEL_MAX_WIDTH = 820;
+const RESERVED_READER_WIDTH = 650;
+
+/** 拖拽宽度钳制（纯函数）：非法输入回退默认宽；上限取「绝对上限」与「视口-阅读区保留宽」的较小者，且不低于最小宽 */
+export const clampPanelWidth = (width: number, viewportWidth: number): number => {
+  if (Number.isNaN(width)) return DEFAULT_PANEL_WIDTH;
+  const viewportCap = Math.max(PANEL_MIN_WIDTH, viewportWidth - RESERVED_READER_WIDTH);
+  const upper = Math.min(PANEL_MAX_WIDTH, viewportCap);
+  return Math.round(Math.min(upper, Math.max(PANEL_MIN_WIDTH, width)));
+};
+
 /** 文件大小分档展示；空值/0 显示占位符 */
 export const formatFileSize = (size?: number): string => {
   if (!size) return '-';

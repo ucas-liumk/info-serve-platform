@@ -1,6 +1,19 @@
 <template>
-  <aside class="context-panel" :class="{ 'is-collapsed': panel.collapsed }">
+  <aside
+    class="context-panel"
+    :class="{ 'is-collapsed': panel.collapsed, 'is-resizing': resizing }"
+    :style="panel.collapsed ? undefined : { width: `${panelWidth}px` }"
+  >
     <template v-if="!panel.collapsed">
+      <div
+        class="resize-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="拖拽调节功能区宽度"
+        title="拖拽调宽 · 双击复位"
+        @pointerdown="startResize"
+        @dblclick="resetPanelWidth"
+      ></div>
       <header class="doc-head">
         <span class="doc-mark">{{ docMark }}</span>
         <strong class="doc-title" :title="docTitle">{{ docTitle }}</strong>
@@ -206,7 +219,15 @@ import {
 } from '@/api/portal/resources';
 import type { InfoResource, ResourceNote, ResourceNotePayload, ResourceViewRecord } from '@/api/infoservice/types';
 import type { PanelState, StudioTile } from './panelStudio';
-import { buildResourceInfoItems, DEFAULT_PANEL_STATE, formatDateTime, reducePanelState, STUDIO_TILES } from './panelStudio';
+import {
+  buildResourceInfoItems,
+  clampPanelWidth,
+  DEFAULT_PANEL_STATE,
+  DEFAULT_PANEL_WIDTH,
+  formatDateTime,
+  reducePanelState,
+  STUDIO_TILES
+} from './panelStudio';
 import PanelFileInfo from './PanelFileInfo.vue';
 
 const props = defineProps<{
@@ -237,6 +258,57 @@ const tileGlyph = (tile: StudioTile): Component => TILE_GLYPHS[tile.icon] ?? Doc
 const tiles = STUDIO_TILES;
 const panel = ref<PanelState>(DEFAULT_PANEL_STATE);
 const infoItems = computed(() => buildResourceInfoItems(props.resource));
+
+/** 拖拽调宽：宽度记忆到 localStorage，双击手柄复位；私密模式等存取异常静默回退默认宽 */
+const PANEL_WIDTH_STORAGE_KEY = 'ip-preview-panel-width';
+
+const readStoredPanelWidth = (): number => {
+  try {
+    const raw = window.localStorage.getItem(PANEL_WIDTH_STORAGE_KEY);
+    return clampPanelWidth(raw === null ? DEFAULT_PANEL_WIDTH : Number(raw), window.innerWidth);
+  } catch {
+    return DEFAULT_PANEL_WIDTH;
+  }
+};
+
+const persistPanelWidth = (width: number) => {
+  try {
+    window.localStorage.setItem(PANEL_WIDTH_STORAGE_KEY, String(width));
+  } catch {
+    /* 私密模式下不持久化 */
+  }
+};
+
+const panelWidth = ref(readStoredPanelWidth());
+const resizing = ref(false);
+
+const startResize = (event: PointerEvent) => {
+  const handle = event.currentTarget as HTMLElement;
+  const startX = event.clientX;
+  const startWidth = panelWidth.value;
+  resizing.value = true;
+  handle.setPointerCapture(event.pointerId);
+
+  const onMove = (moveEvent: PointerEvent) => {
+    panelWidth.value = clampPanelWidth(startWidth + (startX - moveEvent.clientX), window.innerWidth);
+  };
+  const stop = () => {
+    resizing.value = false;
+    persistPanelWidth(panelWidth.value);
+    handle.removeEventListener('pointermove', onMove);
+    handle.removeEventListener('pointerup', stop);
+    handle.removeEventListener('pointercancel', stop);
+  };
+  handle.addEventListener('pointermove', onMove);
+  handle.addEventListener('pointerup', stop);
+  handle.addEventListener('pointercancel', stop);
+  event.preventDefault();
+};
+
+const resetPanelWidth = () => {
+  panelWidth.value = DEFAULT_PANEL_WIDTH;
+  persistPanelWidth(DEFAULT_PANEL_WIDTH);
+};
 const activeTile = computed(() => tiles.find((tile) => tile.key === panel.value.view));
 const docTitle = computed(() => props.resource?.title || props.resource?.originalName || '资料预览');
 const docMark = computed(() => `.${(props.typeLabel || 'FILE').replace(/^\./, '')}`);
@@ -457,8 +529,34 @@ watch(
   transition: width var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
+/* 收起态行内宽度不生效（:style 仅在展开时绑定），固定 96px */
 .context-panel.is-collapsed {
   width: 96px;
+}
+
+/* 拖拽期间关闭宽度过渡并禁选文字，跟手不拖影 */
+.context-panel.is-resizing {
+  transition: none;
+  user-select: none;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 6;
+  width: 6px;
+  cursor: col-resize;
+  transition: background var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.resize-handle:hover {
+  background: var(--ip-primary-50);
+}
+
+.context-panel.is-resizing .resize-handle {
+  background: var(--ip-primary-200);
 }
 
 .doc-head {
@@ -996,9 +1094,14 @@ watch(
 }
 
 @media (max-width: 1180px) {
+  /* 堆叠布局下宽度铺满，压过拖拽产生的行内宽度 */
   .context-panel,
   .context-panel.is-collapsed {
-    width: 100%;
+    width: 100% !important;
+  }
+
+  .resize-handle {
+    display: none;
   }
 
   .rail {
