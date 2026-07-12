@@ -3,7 +3,15 @@
     <main v-loading="loading" class="preview-shell">
       <section class="preview-stage">
         <div class="stage-body">
-          <PdfPreviewer v-if="previewMode === 'pdf' && previewSrc" class="pdf-preview-surface" :src="previewSrc" @error="handlePreviewFrameError" />
+          <PdfPreviewer
+            v-if="previewMode === 'pdf' && previewSrc"
+            class="pdf-preview-surface"
+            :src="previewSrc"
+            :resource-id="resourceId"
+            :doc-title="resource?.title || resource?.originalName || ''"
+            @error="handlePreviewFrameError"
+            @quote="handleQuote"
+          />
           <div v-else-if="previewMode !== 'none' && previewSrc" class="native-preview">
             <div class="native-preview-body">
               <iframe v-if="previewMode === 'iframe'" :src="previewSrc" title="资料预览" @error="handlePreviewFrameError"></iframe>
@@ -44,6 +52,7 @@
       </section>
       <ResourcePreviewContextPanel
         v-if="resource"
+        ref="contextPanelRef"
         :resource="resource"
         :resource-id="resourceId"
         :type-label="typeLabel"
@@ -323,6 +332,13 @@ const closePreview = () => {
     return;
   }
   goResourceList();
+};
+
+const contextPanelRef = ref<InstanceType<typeof ResourcePreviewContextPanel>>();
+
+/** 阅读器划词引用 → 右栏「我的笔记」编辑器 */
+const handleQuote = (text: string) => {
+  contextPanelRef.value?.quoteSelection(text);
 };
 
 const downloadResource = () => {

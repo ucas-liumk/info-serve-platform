@@ -92,6 +92,16 @@
 - 收起态固定 96px 不受行内宽度影响（`:style` 仅展开时绑定）；≤1180px 堆叠布局下 `width:100%!important` 压过行内宽度并隐藏手柄。
 - 拖拽期间 `transition:none + user-select:none` 保证跟手。
 
+### 5.6.4 增补：阅读器功能盘点落地——摘除 8 项 + 集成 4 项（2026-07-12 用户批准）
+
+**摘除**（`disabledCategories` 官方口子，零 hack）：插入/表单模式 tab（mode-insert/mode-form/form/insert）、打开文档（document-open）、关闭文档（document-close）、保护文档（document-protect）、导出另存（document-export，与右栏下载重复且绕过计数）、批注面板空壳（panel-comment）、撤销重做（history）；浮动页码气泡经 `UICapability.disableOverlay('page-controls')` 关停（该 overlay 无分类标签）。打印与截图按裁决保留在文档菜单。
+
+**集成**（EmbedPDF 正门 API + WPS 工具条右组三按钮）：
+1. **划词引用到笔记**：SelectionCapability.getSelectedText().toPromise() → `buildQuoteText`（逐行 `>` 引用符+「——摘自「标题」第 N 页」来源行）→ emit quote → 面板 `quoteSelection` 展开我的笔记并追加进编辑器。⚠️ 扫描件 PDF 无文字层（如 GB 标准扫描版，全页 0-1 个 text run）——正确提示「请先选中」，正是 OCR 磁贴的目标场景。
+2. **阅读进度记忆**：`ip-reader-progress:<resourceId>` 存页码；恢复走 `resolveRestorePage`（仅 [2,total] 恢复），恢复完成前不落盘（防布局就绪的第 1 页事件冲掉存量）。
+3. **全屏**：EmbedPDF fullscreen 插件 targetElement 只能选其包装器内部元素（进不去工具条）→ 改标准 Fullscreen API 全屏整个 .pdf-viewer（工具条/画布/翻页条同入全屏）。
+4. **夜间模式**：`ip-reader-theme` 记忆 + `container.setTheme()` 运行时换肤（Vue 包装器只在 mount 消费一次 config，无重挂）；重挂路径（src 切换）经 config 读当前主题。
+
 ## 6. 决策记录
 
 - [x] 左栏=栏目→分类两级树；类型/时间/大小留工具条（2026-07-10 用户修正确认）

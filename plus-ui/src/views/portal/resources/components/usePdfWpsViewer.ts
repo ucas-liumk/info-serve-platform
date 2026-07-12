@@ -18,7 +18,9 @@ import type {
   PluginRegistry,
   RotateCapability,
   ScrollCapability,
+  SelectionCapability,
   SpreadCapability,
+  UICapability,
   ZoomCapability
 } from '@embedpdf/vue-pdf-viewer';
 import {
@@ -51,6 +53,8 @@ interface WpsCapabilities {
   readonly rotate: Readonly<RotateCapability> | null;
   readonly scroll: Readonly<ScrollCapability> | null;
   readonly zoom: Readonly<ZoomCapability> | null;
+  readonly selection: Readonly<SelectionCapability> | null;
+  readonly ui: Readonly<UICapability> | null;
 }
 
 const getCapability = <T>(registry: PluginRegistry, pluginId: string): Readonly<T> | null => {
@@ -73,7 +77,9 @@ const resolveCapabilities = (registry: PluginRegistry): WpsCapabilities =>
     spread: getCapability<SpreadCapability>(registry, 'spread'),
     rotate: getCapability<RotateCapability>(registry, 'rotate'),
     scroll: getCapability<ScrollCapability>(registry, 'scroll'),
-    zoom: getCapability<ZoomCapability>(registry, 'zoom')
+    zoom: getCapability<ZoomCapability>(registry, 'zoom'),
+    selection: getCapability<SelectionCapability>(registry, 'selection'),
+    ui: getCapability<UICapability>(registry, 'ui')
   });
 
 export const usePdfWpsViewer = () => {
@@ -168,6 +174,8 @@ export const usePdfWpsViewer = () => {
     capabilities = resolveCapabilities(registry);
     teardown = subscribe(capabilities);
     syncInitialState(capabilities);
+    // 浮动页码气泡（page-controls overlay）与底部翻页条重复，走官方 UI 能力关停
+    safeInvoke('ui', () => capabilities?.ui?.disableOverlay('page-controls'));
     controlsReady.value = Boolean(capabilities.pan || capabilities.spread || capabilities.rotate || capabilities.scroll);
   };
 
@@ -205,6 +213,17 @@ export const usePdfWpsViewer = () => {
   const rotateLeft = (): void => withCapability('rotate', (rotate) => rotate.rotateBackward());
   const rotateRight = (): void => withCapability('rotate', (rotate) => rotate.rotateForward());
 
+  /** 读取当前划词选区文本（按行返回；无选区/能力缺失返回空数组） */
+  const getSelectedLines = async (): Promise<string[]> => {
+    const selection = capabilities?.selection;
+    if (!selection) return [];
+    try {
+      return await selection.getSelectedText().toPromise();
+    } catch {
+      return [];
+    }
+  };
+
   const goToPage = (pageNumber: number): void =>
     withCapability('scroll', (scroll) => scroll.scrollToPage({ pageNumber: clampPageNumber(pageNumber, totalPages.value) }));
   const goFirstPage = (): void => goToPage(1);
@@ -220,6 +239,8 @@ export const usePdfWpsViewer = () => {
     panActive: readonly(panActive),
     pageMode: readonly(pageMode),
     controlsReady: readonly(controlsReady),
+    currentPage: readonly(currentPage),
+    totalPages: readonly(totalPages),
     pageIndicator,
     prevEnabled,
     nextEnabled,
@@ -229,6 +250,8 @@ export const usePdfWpsViewer = () => {
     setPageMode,
     rotateLeft,
     rotateRight,
+    getSelectedLines,
+    goToPage,
     goFirstPage,
     goPrevPage,
     goNextPage,

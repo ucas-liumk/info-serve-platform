@@ -479,6 +479,16 @@ const removeNote = async (note: ResourceNote) => {
   }
 };
 
+/** 阅读器划词引用：展开「我的笔记」工作区并把引用文本追加进编辑器（保存动作留给用户补充后自行触发） */
+const quoteSelection = (text: string) => {
+  const noteTile = tiles.find((tile) => tile.key === 'note');
+  if (noteTile) handleTileClick(noteTile);
+  noteForm.content = noteForm.content.trim() ? `${noteForm.content.trimEnd()}\n\n${text}` : text;
+  ElMessage.success('已引用到我的笔记，可补充批注后保存');
+};
+
+defineExpose({ quoteSelection });
+
 /** 分享到交流互动 / 取消分享：只改可见性，内容原样保留 */
 const changeNoteVisibility = async (note: ResourceNote, visibility: 'public' | 'private') => {
   if (visibilityUpdatingId.value !== undefined) return;
