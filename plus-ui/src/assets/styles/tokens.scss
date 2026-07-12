@@ -65,6 +65,14 @@
   --ip-tile-cyan: #e8f6f8;
   --ip-tile-pink: #fdeef0;
 
+  /* 磁贴图标深色（政务风线性图标着色，与同名粉彩底衬配对；spec §5.6.2） */
+  --ip-tile-blue-ink: #2f5f96;
+  --ip-tile-green-ink: #2e7d54;
+  --ip-tile-amber-ink: #a8742b;
+  --ip-tile-purple-ink: #6657a6;
+  --ip-tile-cyan-ink: #1f7a8c;
+  --ip-tile-pink-ink: #ab5570;
+
   /* ===== 字阶（8 档，值/行高见规范 §3） ===== */
   --ip-font-caption: 12px;
   --ip-font-hint: 13px;

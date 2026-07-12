@@ -4,7 +4,7 @@
  */
 import type { InfoResource } from '@/api/infoservice/types';
 
-export type WorkspaceKey = 'note' | 'chat';
+export type WorkspaceKey = 'note' | 'chat' | 'info';
 export type TileStatus = 'active' | 'soon';
 export type TileTone = 'blue' | 'green' | 'amber' | 'purple' | 'cyan' | 'pink';
 
@@ -16,27 +16,78 @@ export interface StudioTile {
   readonly status: TileStatus;
 }
 
-/** 六磁贴定稿：我的笔记/交流互动可用，OCR/朗读/摘要/导图为「即将上线」占位 */
+/**
+ * 七磁贴定稿：我的笔记/交流互动/文件信息可用，OCR/朗读/摘要/导图为「即将上线」占位。
+ * icon 为 @element-plus/icons-vue 组件名（政务风线性图标，组件侧经映射表渲染）。
+ */
 export const STUDIO_TILES: readonly StudioTile[] = Object.freeze([
-  Object.freeze({ key: 'note', name: '我的笔记', icon: '📝', tone: 'blue', status: 'active' } as StudioTile),
-  Object.freeze({ key: 'chat', name: '交流互动', icon: '💬', tone: 'green', status: 'active' } as StudioTile),
-  Object.freeze({ key: 'ocr', name: 'OCR 识别', icon: '🔍', tone: 'amber', status: 'soon' } as StudioTile),
-  Object.freeze({ key: 'tts', name: '语音朗读', icon: '🔊', tone: 'purple', status: 'soon' } as StudioTile),
-  Object.freeze({ key: 'summary', name: '智能摘要', icon: '✨', tone: 'cyan', status: 'soon' } as StudioTile),
-  Object.freeze({ key: 'mindmap', name: '思维导图', icon: '🧠', tone: 'pink', status: 'soon' } as StudioTile)
+  Object.freeze({ key: 'note', name: '我的笔记', icon: 'Notebook', tone: 'blue', status: 'active' } as StudioTile),
+  Object.freeze({ key: 'chat', name: '交流互动', icon: 'ChatDotRound', tone: 'green', status: 'active' } as StudioTile),
+  Object.freeze({ key: 'info', name: '文件信息', icon: 'Document', tone: 'cyan', status: 'active' } as StudioTile),
+  Object.freeze({ key: 'ocr', name: 'OCR 识别', icon: 'Aim', tone: 'amber', status: 'soon' } as StudioTile),
+  Object.freeze({ key: 'tts', name: '语音朗读', icon: 'Headset', tone: 'purple', status: 'soon' } as StudioTile),
+  Object.freeze({ key: 'summary', name: '智能摘要', icon: 'MagicStick', tone: 'pink', status: 'soon' } as StudioTile),
+  Object.freeze({ key: 'mindmap', name: '思维导图', icon: 'Share', tone: 'blue', status: 'soon' } as StudioTile)
 ]);
 
-/** 默认工作区=交流互动（用户定稿） */
-export const DEFAULT_WORKSPACE: WorkspaceKey = 'chat';
-
-const WORKSPACE_KEYS: readonly WorkspaceKey[] = Object.freeze(['note', 'chat']);
+const WORKSPACE_KEYS: readonly WorkspaceKey[] = Object.freeze(['note', 'chat', 'info']);
 
 /** 磁贴是否为可切换的工作区磁贴（active 且落在已实现工作区集合内） */
 export const isWorkspaceTile = (tile: StudioTile): boolean => tile.status === 'active' && (WORKSPACE_KEYS as readonly string[]).includes(tile.key);
 
-/** 工作区状态归约：点 active 磁贴切换，点 soon 磁贴维持现状（返回新值，不改入参） */
-export const reduceWorkspace = (current: WorkspaceKey, tile: StudioTile): WorkspaceKey =>
-  isWorkspaceTile(tile) ? (tile.key as WorkspaceKey) : current;
+/** 面板视图：功能区总览（只有磁贴）或某个独占展开的工作区 */
+export type PanelView = 'overview' | WorkspaceKey;
+
+export interface PanelState {
+  readonly view: PanelView;
+  readonly collapsed: boolean;
+}
+
+/** 默认态=功能区总览、展开（点磁贴才进工作区，关闭工作区回总览） */
+export const DEFAULT_PANEL_STATE: PanelState = Object.freeze({ view: 'overview', collapsed: false });
+
+export type PanelAction =
+  | { readonly type: 'clickTile'; readonly tile: StudioTile }
+  | { readonly type: 'closeWorkspace' }
+  | { readonly type: 'toggleCollapse' };
+
+/**
+ * 面板状态归约（纯函数，返回新对象不改入参；空操作返回原对象便于响应式短路）：
+ * - clickTile：active 磁贴 → 独占展开该工作区并顺带展开面板（收起轨点击即恢复）；soon 磁贴 → 维持现状
+ * - closeWorkspace：回到功能区总览
+ * - toggleCollapse：整栏收起/展开，保留当前工作区
+ */
+export const reducePanelState = (state: PanelState, action: PanelAction): PanelState => {
+  switch (action.type) {
+    case 'clickTile': {
+      if (!isWorkspaceTile(action.tile)) return state;
+      const view = action.tile.key as WorkspaceKey;
+      if (state.view === view && !state.collapsed) return state;
+      return Object.freeze({ view, collapsed: false });
+    }
+    case 'closeWorkspace':
+      if (state.view === 'overview') return state;
+      return Object.freeze({ view: 'overview', collapsed: state.collapsed });
+    case 'toggleCollapse':
+      return Object.freeze({ view: state.view, collapsed: !state.collapsed });
+    default:
+      return state;
+  }
+};
+
+/** 右栏拖拽调宽约束（px）：阅读区至少保留 650（620 栅格下限+页边距），面板绝对上限 820 */
+export const DEFAULT_PANEL_WIDTH = 392;
+export const PANEL_MIN_WIDTH = 320;
+export const PANEL_MAX_WIDTH = 820;
+const RESERVED_READER_WIDTH = 650;
+
+/** 拖拽宽度钳制（纯函数）：非法输入回退默认宽；上限取「绝对上限」与「视口-阅读区保留宽」的较小者，且不低于最小宽 */
+export const clampPanelWidth = (width: number, viewportWidth: number): number => {
+  if (Number.isNaN(width)) return DEFAULT_PANEL_WIDTH;
+  const viewportCap = Math.max(PANEL_MIN_WIDTH, viewportWidth - RESERVED_READER_WIDTH);
+  const upper = Math.min(PANEL_MAX_WIDTH, viewportCap);
+  return Math.round(Math.min(upper, Math.max(PANEL_MIN_WIDTH, width)));
+};
 
 /** 文件大小分档展示；空值/0 显示占位符 */
 export const formatFileSize = (size?: number): string => {

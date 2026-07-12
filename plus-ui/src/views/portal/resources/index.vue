@@ -74,14 +74,16 @@
       </section>
 
       <el-pagination
-        v-if="total > pageSize"
+        v-if="total > PAGE_SIZE_OPTIONS[0]"
         class="pager"
         background
-        layout="prev, pager, next, jumper, total"
+        layout="total, sizes, prev, pager, next, jumper"
         :total="total"
         :page-size="pageSize"
+        :page-sizes="[...PAGE_SIZE_OPTIONS]"
         :current-page="pageNum"
         @current-change="onPage"
+        @size-change="onPageSize"
       />
     </main>
 
@@ -136,6 +138,7 @@ import {
 import type { CategoryTreeNode, InfoResource, ResourcePortalPayload, ResourceUploadProgress, ResourceUploadResult } from '@/api/infoservice/types';
 import { downloadPortalResource } from './download';
 import { buildSelectedChips, encodeCategoryCodes, removeCategory, resolveSelectionTitle } from './categoryFacets';
+import { normalizePageSize, PAGE_SIZE_OPTIONS, persistPageSize, readStoredPageSize } from '../pageSizing';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
 import ResourceCard from './components/ResourceCard.vue';
 import ResourceCategoryChips from './components/ResourceCategoryChips.vue';
@@ -169,8 +172,10 @@ const previewType = ref('all');
 const uploadedWithin = ref('all');
 const sizeRange = ref('all');
 const sort = ref('latest');
+const PAGE_SIZE_STORAGE_KEY = 'ip-resources-page-size';
+
 const pageNum = ref(1);
-const pageSize = ref(15);
+const pageSize = ref(readStoredPageSize(PAGE_SIZE_STORAGE_KEY));
 const total = ref(0);
 const myResourcesTotal = ref(0);
 const loading = ref(false);
@@ -339,6 +344,13 @@ const onPage = (page: number) => {
   reload();
 };
 
+const onPageSize = (size: number) => {
+  pageSize.value = normalizePageSize(size);
+  persistPageSize(PAGE_SIZE_STORAGE_KEY, pageSize.value);
+  pageNum.value = 1;
+  reload();
+};
+
 const openPreview = (resource: InfoResource) => {
   const route = router.resolve({ name: 'InfoResourcePreview', params: { resourceId: resource.resourceId } });
   window.open(route.href, '_blank');
@@ -382,6 +394,7 @@ const openCreateDialog = () => {
   }
   uploadMode.value = 'create';
   editingResource.value = undefined;
+  uploadProgress.value = [];
   uploadVisible.value = true;
 };
 
@@ -391,6 +404,7 @@ const openEditDialog = (resource: InfoResource) => {
   }
   uploadMode.value = 'edit';
   editingResource.value = resource;
+  uploadProgress.value = [];
   uploadVisible.value = true;
 };
 
@@ -448,6 +462,11 @@ const refreshOwnedViews = async () => {
   }
 };
 
+/** 任一环节失败：把仍在途的行标红为 failed，用户可见可重试（弹窗保持打开） */
+const markActiveProgressFailed = () => {
+  uploadProgress.value = uploadProgress.value.map((item) => (item.status === 'done' ? item : { ...item, status: 'failed' as const }));
+};
+
 const submitResource = async (payload: ResourceSubmitPayload) => {
   uploading.value = true;
   const files = payload.files || [];
@@ -483,6 +502,10 @@ const submitResource = async (payload: ResourceSubmitPayload) => {
     }
     uploadVisible.value = false;
     await refreshOwnedViews();
+  } catch (error) {
+    // 请求层错误提示由拦截器统一弹出；这里负责把进度行标红，避免"永远处理中"的假卡死
+    markActiveProgressFailed();
+    console.error('[resources] 上传/保存失败', error);
   } finally {
     uploading.value = false;
   }

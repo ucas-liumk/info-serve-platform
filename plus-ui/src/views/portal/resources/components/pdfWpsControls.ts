@@ -60,3 +60,37 @@ export const canGoPrev = (currentPage: number): boolean => Number.isFinite(curre
 
 export const canGoNext = (currentPage: number, totalPages: number): boolean =>
   Number.isFinite(currentPage) && Number.isFinite(totalPages) && currentPage >= 1 && currentPage < totalPages;
+
+/**
+ * 划词引用文本：逐行加 Markdown 引用符 + 来源行（标题/页码按可用性组装）。
+ * 全空选区返回空串，调用方以此判断"未选中"并提示。
+ */
+export const buildQuoteText = (lines: readonly string[], title: string, page: number): string => {
+  const cleaned = lines.map((line) => line.trim()).filter((line) => line.length > 0);
+  if (cleaned.length === 0) return '';
+  const quoted = cleaned.map((line) => `> ${line}`).join('\n');
+  const titlePart = title.trim() ? `「${title.trim()}」` : '';
+  const pagePart = Number.isFinite(page) && page >= 1 ? `第 ${Math.floor(page)} 页` : '';
+  const source = titlePart || pagePart ? `\n——摘自${titlePart}${pagePart}` : '';
+  return `${quoted}${source}\n\n`;
+};
+
+/**
+ * 阅读进度恢复页：仅当存量页码落在 [2, totalPages] 时返回该页
+ * （第 1 页无需恢复；越界/非法/文档未加载一律 null=不恢复）。
+ */
+export const resolveRestorePage = (stored: unknown, totalPages: number): number | null => {
+  if (!Number.isFinite(totalPages) || totalPages < 2) return null;
+  const page = Number(stored);
+  if (!Number.isFinite(page)) return null;
+  const floored = Math.floor(page);
+  return floored >= 2 && floored <= Math.floor(totalPages) ? floored : null;
+};
+
+/** 阅读进度 localStorage 键（按资源 id 隔离） */
+export const readingProgressKey = (resourceId: string): string => `ip-reader-progress:${resourceId}`;
+
+export type ReaderTheme = 'light' | 'dark';
+
+/** 阅读器主题归一化：仅认 dark，其余（含 system/残值）回 light */
+export const normalizeReaderTheme = (raw: unknown): ReaderTheme => (raw === 'dark' ? 'dark' : 'light');

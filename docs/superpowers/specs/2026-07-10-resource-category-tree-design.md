@@ -71,6 +71,37 @@
 - 磁贴粉彩底色以 **tokens.scss 新增 --ip-tile-* 令牌**实现（该文件不在 design:audit 扫描面，组件内零新硬编码色）。
 - 门禁：vitest + design:audit 棘轮不升 + build + eslint；真机截图对照原型验收。
 
+### 5.6.1 增补：右栏三处交互调整（2026-07-12 用户定稿）
+
+1. **磁贴独占展开**：右栏引入 `PanelState{view:'overview'|'note'|'chat', collapsed}` 纯函数状态机（panelStudio.ts `reducePanelState`）。默认=功能区总览（只有磁贴网格）；点 active 磁贴→该工作区独占展开（磁贴隐藏），题行变面包屑「‹ 功能区 / 📝 我的笔记」，点返回回总览。默认工作区=交流互动的旧裁决由本条取代（进页先见总览）。
+2. **右栏可收起**：题行「»」收起为 96px 纵轨——磁贴图标+文字纵排（soon 磁贴置灰带 tooltip），顶部「«」展开，底部保留返回/下载/关闭图标。收起态点 active 磁贴=展开面板并直达该工作区。窄屏(≤1180px)纵轨转横排。
+3. **标题移右栏**：左侧删除整条文件头（PdfPreviewer 只剩 WPS 工具条+画布+翻页条，原生预览同步去头），右栏顶部新增文档头：类型徽标+标题(ellipsis+tooltip)+返回/下载/关闭图标按钮（preview.vue 事件下沉至面板 emits）。
+   - 修复副产物：全局 aside 样式注入 `padding:8px 24px` 曾把收起轨内容压到 30px——面板显式 `padding:0`，间距由内部元素自控；design:audit 基线随硬编码色减少下调至 hex 113/rgba 68。
+
+### 5.6.2 增补：右栏四处再调整（2026-07-12 用户定稿）
+
+1. **标题两行**：doc-head 标题由单行 ellipsis 改 `-webkit-line-clamp:2` 两行钳制（word-break:break-all，完整名保留在 title tooltip）。
+2. **隐藏返回**：返回与关闭功能重复，按用户裁决隐藏返回按钮（doc-head 与收起轨均只剩 下载/关闭）；面板 `back` emit 一并移除，恢复只需重挂按钮+emit。
+3. **文件信息工作区**：左侧文件头删除后元信息无处安放——新增第七块 active 磁贴「文件信息」（key `info`），独占展开显示资料元数据 dl（六项）+ 阅看记录列表（进入时懒加载）；原题头 ⓘ 弹层撤销，PanelInfoPopover.vue 改造为内嵌块 PanelFileInfo.vue（git mv 保history）。
+4. **政务风磁贴**：emoji 图标弃用，改 @element-plus/icons-vue 线性图标（Notebook/ChatDotRound/Document/Aim/Headset/MagicStick/Share，配置存组件名、组件侧 TILE_GLYPHS 映射）；磁贴整卡糖果色改为白底描边卡片 + 粉彩衬底图标芯片（tone 只作用于芯片），新增 `--ip-tile-*-ink` 六个深色令牌（tokens.scss，不入审计扫描面）；soon 磁贴灰化芯片+描边角标。
+
+### 5.6.3 增补：右栏拖拽调宽（2026-07-12 用户定稿）
+
+- 面板左缘 6px 拖拽手柄（pointer capture，拖过 PDF 区域不丢事件）；宽度钳制走纯函数 `clampPanelWidth`（min 320 / max 820 / 视口须给阅读区保留 650，非法输入回退默认 392）。
+- 宽度记忆 localStorage（`ip-preview-panel-width`，存取异常静默回退）；双击手柄复位 392。
+- 收起态固定 96px 不受行内宽度影响（`:style` 仅展开时绑定）；≤1180px 堆叠布局下 `width:100%!important` 压过行内宽度并隐藏手柄。
+- 拖拽期间 `transition:none + user-select:none` 保证跟手。
+
+### 5.6.4 增补：阅读器功能盘点落地——摘除 8 项 + 集成 4 项（2026-07-12 用户批准）
+
+**摘除**（`disabledCategories` 官方口子，零 hack）：插入/表单模式 tab（mode-insert/mode-form/form/insert）、打开文档（document-open）、关闭文档（document-close）、保护文档（document-protect）、导出另存（document-export，与右栏下载重复且绕过计数）、批注面板空壳（panel-comment）、撤销重做（history）；浮动页码气泡经 `UICapability.disableOverlay('page-controls')` 关停（该 overlay 无分类标签）。打印与截图按裁决保留在文档菜单。
+
+**集成**（EmbedPDF 正门 API + WPS 工具条右组三按钮）：
+1. **划词引用到笔记**：SelectionCapability.getSelectedText().toPromise() → `buildQuoteText`（逐行 `>` 引用符+「——摘自「标题」第 N 页」来源行）→ emit quote → 面板 `quoteSelection` 展开我的笔记并追加进编辑器。⚠️ 扫描件 PDF 无文字层（如 GB 标准扫描版，全页 0-1 个 text run）——正确提示「请先选中」，正是 OCR 磁贴的目标场景。
+2. **阅读进度记忆**：`ip-reader-progress:<resourceId>` 存页码；恢复走 `resolveRestorePage`（仅 [2,total] 恢复），恢复完成前不落盘（防布局就绪的第 1 页事件冲掉存量）。
+3. **全屏**：EmbedPDF fullscreen 插件 targetElement 只能选其包装器内部元素（进不去工具条）→ 改标准 Fullscreen API 全屏整个 .pdf-viewer（工具条/画布/翻页条同入全屏）。
+4. **夜间模式**：`ip-reader-theme` 记忆 + `container.setTheme()` 运行时换肤（Vue 包装器只在 mount 消费一次 config，无重挂）；重挂路径（src 切换）经 config 读当前主题。
+
 ## 6. 决策记录
 
 - [x] 左栏=栏目→分类两级树；类型/时间/大小留工具条（2026-07-10 用户修正确认）

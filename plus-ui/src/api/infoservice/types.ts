@@ -169,7 +169,7 @@ export interface ResourcePortalQuery extends PageQuery {
 export interface ResourceUploadProgress {
   name: string;
   percent: number;
-  status: 'pending' | 'uploading' | 'processing' | 'done';
+  status: 'pending' | 'uploading' | 'processing' | 'done' | 'failed';
 }
 
 export interface ResourcePortalPayload {

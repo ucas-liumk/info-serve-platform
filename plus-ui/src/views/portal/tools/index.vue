@@ -54,13 +54,16 @@
       <el-empty v-if="!loading && apps.length === 0" class="empty" :description="emptyText" />
 
       <el-pagination
+        v-if="currentToolTotal > PAGE_SIZE_OPTIONS[0]"
         class="pager"
         background
-        layout="prev, pager, next"
-        :total="viewMode === 'market' ? total : favoriteTotal"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="currentToolTotal"
         :page-size="pageSize"
+        :page-sizes="[...PAGE_SIZE_OPTIONS]"
         :current-page="pageNum"
         @current-change="onPage"
+        @size-change="onPageSize"
       />
     </main>
 
@@ -77,8 +80,11 @@ import DemandDialog from './components/DemandDialog.vue';
 import { listApps, listCategories, listFavorites } from '@/api/portal/appcenter';
 import type { PortalApp, PortalCategory } from '@/api/appcenter/types';
 import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
+import { normalizePageSize, PAGE_SIZE_OPTIONS, persistPageSize, readStoredPageSize } from '../pageSizing';
 
 type ViewMode = 'market' | 'favorites';
+
+const PAGE_SIZE_STORAGE_KEY = 'ip-apps-page-size';
 
 const apps = ref<PortalApp[]>([]);
 const categories = ref<PortalCategory[]>([]);
@@ -88,7 +94,7 @@ const sort = ref('latest');
 const keyword = ref('');
 const searchDraft = ref('');
 const pageNum = ref(1);
-const pageSize = ref(15);
+const pageSize = ref(readStoredPageSize(PAGE_SIZE_STORAGE_KEY));
 const total = ref(0);
 const favoriteTotal = ref(0);
 const loading = ref(false);
@@ -144,6 +150,13 @@ const onSearch = () => {
 
 const onPage = (page: number) => {
   pageNum.value = page;
+  reload();
+};
+
+const onPageSize = (size: number) => {
+  pageSize.value = normalizePageSize(size);
+  persistPageSize(PAGE_SIZE_STORAGE_KEY, pageSize.value);
+  pageNum.value = 1;
   reload();
 };
 

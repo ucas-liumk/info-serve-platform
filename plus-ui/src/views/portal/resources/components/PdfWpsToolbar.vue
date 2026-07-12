@@ -36,18 +36,49 @@
       <el-icon><RefreshRight /></el-icon>
       右旋转
     </button>
+    <span class="wps-sep" aria-hidden="true"></span>
+    <button type="button" class="wps-tool" :disabled="disabled" title="选中正文文字后，一键引用到我的笔记" @click="emit('quote-selection')">
+      <el-icon><CollectionTag /></el-icon>
+      引用到笔记
+    </button>
+    <button
+      type="button"
+      class="wps-tool"
+      :class="{ 'is-on': darkActive }"
+      :disabled="disabled"
+      :aria-pressed="darkActive"
+      :title="darkActive ? '切回浅色阅读' : '深色阅读（夜间护眼）'"
+      @click="emit('toggle-theme')"
+    >
+      <el-icon><component :is="darkActive ? Sunny : Moon" /></el-icon>
+      {{ darkActive ? '日间' : '夜间' }}
+    </button>
+    <button
+      type="button"
+      class="wps-tool"
+      :class="{ 'is-on': fullscreenActive }"
+      :disabled="disabled"
+      :aria-pressed="fullscreenActive"
+      :title="fullscreenActive ? '退出全屏' : '全屏阅读'"
+      @click="emit('toggle-fullscreen')"
+    >
+      <el-icon><FullScreen /></el-icon>
+      {{ fullscreenActive ? '退出全屏' : '全屏' }}
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { Document, Rank, Reading, RefreshLeft, RefreshRight, Tickets } from '@element-plus/icons-vue';
+import { CollectionTag, Document, FullScreen, Moon, Rank, Reading, RefreshLeft, RefreshRight, Sunny, Tickets } from '@element-plus/icons-vue';
 import type { PageViewMode } from './pdfWpsControls';
 
 defineProps<{
   panActive: boolean;
   pageMode: PageViewMode;
   disabled: boolean;
+  darkActive: boolean;
+  fullscreenActive: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -55,6 +86,9 @@ const emit = defineEmits<{
   'set-page-mode': [mode: PageViewMode];
   'rotate-left': [];
   'rotate-right': [];
+  'quote-selection': [];
+  'toggle-theme': [];
+  'toggle-fullscreen': [];
 }>();
 
 interface PageModeOption {

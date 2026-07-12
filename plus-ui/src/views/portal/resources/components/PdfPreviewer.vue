@@ -1,45 +1,19 @@
 <template>
-  <div class="pdf-viewer">
-    <header class="pdf-toolbar">
-      <div class="pdf-file-summary">
-        <span class="pdf-file-mark">{{ fileTypeLabel }}</span>
-        <div class="pdf-file-copy">
-          <strong>{{ title || fileName || '资料预览' }}</strong>
-          <div class="pdf-file-meta">
-            <span>{{ categoryName || '未分类' }}</span>
-            <span v-if="fileSizeText">{{ fileSizeText }}</span>
-            <span v-if="ownerName">{{ ownerName }}</span>
-            <span v-if="createTime">{{ createTime }}</span>
-            <span>浏览 {{ viewCount || 0 }}</span>
-            <span>下载 {{ downloadCount || 0 }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="pdf-actions">
-        <button type="button" class="ghost-button" title="返回资源" @click="emit('back')">
-          <el-icon><Back /></el-icon>
-          返回
-        </button>
-        <button type="button" class="primary-button" title="下载原文件" @click="emit('download')">
-          <el-icon><Download /></el-icon>
-          下载
-        </button>
-        <button type="button" class="icon-button" title="关闭" @click="emit('close')">
-          <el-icon><Close /></el-icon>
-        </button>
-      </div>
-    </header>
-
+  <div ref="viewerRootRef" class="pdf-viewer">
     <PdfWpsToolbar
       v-if="src"
       :pan-active="panActive"
       :page-mode="pageMode"
       :disabled="!controlsReady"
+      :dark-active="readerTheme === 'dark'"
+      :fullscreen-active="fullscreenOn"
       @toggle-pan="togglePan"
       @set-page-mode="setPageMode"
       @rotate-left="rotateLeft"
       @rotate-right="rotateRight"
+      @quote-selection="quoteSelection"
+      @toggle-theme="toggleReaderTheme"
+      @toggle-fullscreen="toggleViewerFullscreen"
     />
 
     <section class="pdf-stage">
@@ -83,32 +57,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { ArrowLeft, ArrowRight, Back, Close, DArrowLeft, DArrowRight, Download } from '@element-plus/icons-vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import { ArrowLeft, ArrowRight, DArrowLeft, DArrowRight } from '@element-plus/icons-vue';
 import { PDFViewer } from '@embedpdf/vue-pdf-viewer';
 import pdfiumWasmAssetUrl from '@embedpdf/pdfium/pdfium.wasm?url';
 import type { PDFViewerConfig, PDFViewerExpose } from '@embedpdf/vue-pdf-viewer';
 import PdfWpsToolbar from './PdfWpsToolbar.vue';
+import { buildQuoteText, normalizeReaderTheme, readingProgressKey, resolveRestorePage } from './pdfWpsControls';
+import type { ReaderTheme } from './pdfWpsControls';
 import { usePdfWpsViewer } from './usePdfWpsViewer';
 
 const props = defineProps<{
   src: string;
-  title?: string;
-  fileName?: string;
-  fileSuffix?: string;
-  categoryName?: string;
-  fileSizeText?: string;
-  ownerName?: string;
-  createTime?: string;
-  viewCount?: number;
-  downloadCount?: number;
+  /** 资源 id（阅读进度按资源隔离记忆）与标题（划词引用的来源行） */
+  resourceId?: string;
+  docTitle?: string;
 }>();
 
 const emit = defineEmits<{
   error: [message: string];
-  back: [];
-  download: [];
-  close: [];
+  /** 划词引用：已格式化的引用文本（含来源行），由预览页转交右栏「我的笔记」 */
+  quote: [text: string];
 }>();
 
 const viewerReady = ref(false);
@@ -121,6 +91,8 @@ const {
   panActive,
   pageMode,
   controlsReady,
+  currentPage,
+  totalPages,
   pageIndicator,
   prevEnabled,
   nextEnabled,
@@ -130,11 +102,110 @@ const {
   setPageMode,
   rotateLeft,
   rotateRight,
+  getSelectedLines,
+  goToPage,
   goFirstPage,
   goPrevPage,
   goNextPage,
   goLastPage
 } = usePdfWpsViewer();
+
+/* ===== 全屏：标准 Fullscreen API 作用于整个阅读器区域（工具条/画布/翻页条同入全屏，Esc 可退出） ===== */
+const viewerRootRef = ref<HTMLElement | null>(null);
+const fullscreenOn = ref(false);
+
+const syncFullscreenState = (): void => {
+  fullscreenOn.value = Boolean(document.fullscreenElement);
+};
+
+const toggleViewerFullscreen = async (): Promise<void> => {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await viewerRootRef.value?.requestFullscreen();
+    }
+  } catch (error) {
+    console.error('[PdfPreviewer] 全屏切换失败', error);
+    ElMessage.warning('当前浏览器不允许全屏');
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('fullscreenchange', syncFullscreenState);
+});
+
+/* ===== 夜间模式：初始从 localStorage 归一化，切换走 container.setTheme 运行时换肤（不重挂） ===== */
+const READER_THEME_STORAGE_KEY = 'ip-reader-theme';
+
+const readStoredReaderTheme = (): ReaderTheme => {
+  try {
+    return normalizeReaderTheme(window.localStorage.getItem(READER_THEME_STORAGE_KEY));
+  } catch {
+    return 'light';
+  }
+};
+
+const readerTheme = ref<ReaderTheme>(readStoredReaderTheme());
+
+const toggleReaderTheme = (): void => {
+  readerTheme.value = readerTheme.value === 'dark' ? 'light' : 'dark';
+  try {
+    window.localStorage.setItem(READER_THEME_STORAGE_KEY, readerTheme.value);
+  } catch {
+    /* 私密模式下不持久化 */
+  }
+  try {
+    embedViewerRef.value?.container?.setTheme(readerTheme.value);
+  } catch (error) {
+    console.error('[PdfPreviewer] 切换阅读器主题失败', error);
+  }
+};
+
+/* ===== 阅读进度记忆：进入时恢复上次页码（第 1 页不扰动），翻页即记 ===== */
+let pendingRestoreRaw: string | null = null;
+let progressRestored = false;
+
+const loadPendingProgress = (): void => {
+  progressRestored = false;
+  pendingRestoreRaw = null;
+  if (!props.resourceId) return;
+  try {
+    pendingRestoreRaw = window.localStorage.getItem(readingProgressKey(props.resourceId));
+  } catch {
+    pendingRestoreRaw = null;
+  }
+};
+
+loadPendingProgress();
+
+watch(totalPages, (total) => {
+  if (progressRestored || total < 1) return;
+  progressRestored = true;
+  const restorePage = resolveRestorePage(pendingRestoreRaw, total);
+  if (restorePage !== null) goToPage(restorePage);
+});
+
+watch(currentPage, (page) => {
+  // 恢复完成前不落盘，避免布局就绪时的第 1 页事件冲掉存量进度
+  if (!progressRestored || page < 1 || !props.resourceId) return;
+  try {
+    window.localStorage.setItem(readingProgressKey(props.resourceId), String(page));
+  } catch {
+    /* 私密模式下不持久化 */
+  }
+});
+
+/* ===== 划词引用：读选区 → 组引用文本 → 交预览页转右栏笔记 ===== */
+const quoteSelection = async (): Promise<void> => {
+  const lines = await getSelectedLines();
+  const text = buildQuoteText(lines, props.docTitle || '', currentPage.value);
+  if (!text) {
+    ElMessage.info('请先在正文中选中要引用的文字');
+    return;
+  }
+  emit('quote', text);
+};
 
 const EMBEDPDF_LOCALE = 'zh-CN';
 
@@ -271,11 +342,6 @@ const EMBEDPDF_CHINESE_LABELS: Record<string, string> = {
   'comments.emptyState': '暂无批注'
 };
 
-const fileTypeLabel = computed(() => {
-  const label = props.fileSuffix || 'PDF';
-  return label.startsWith('.') ? label.toUpperCase() : `.${label}`.toUpperCase();
-});
-
 const wasmUrl = computed(() => {
   if (typeof window === 'undefined') return pdfiumWasmAssetUrl;
   return new URL(pdfiumWasmAssetUrl, window.location.origin).toString();
@@ -297,13 +363,33 @@ const embedConfig = computed<PDFViewerConfig>(() => ({
     ui: null,
     signature: null
   },
-  disabledCategories: ['annotation', 'redaction', 'signature'],
+  /**
+   * 只读政务门户裁决（2026-07-12）：编辑/发行类能力全部摘除——
+   * 插入与表单模式、本地打开/关闭文档、加密保护、导出另存（与右栏下载重复且绕过计数）、
+   * 批注面板空壳、撤销重做。打印与截图保留在文档菜单。
+   */
+  disabledCategories: [
+    'annotation',
+    'redaction',
+    'signature',
+    'mode-insert',
+    'mode-form',
+    'form',
+    'insert',
+    'document-open',
+    'document-close',
+    'document-protect',
+    'document-export',
+    'panel-comment',
+    'history'
+  ],
   stamp: {
     defaultLibrary: false,
     manifests: []
   },
   theme: {
-    preference: 'light',
+    // 初始主题跟随用户记忆（config 仅在挂载时消费一次，运行时切换走 container.setTheme）
+    preference: readerTheme.value,
     light: {
       accent: {
         primary: '#245f8f'
@@ -318,6 +404,7 @@ watch(
     viewerReady.value = false;
     stopEmbedPdfLocalization();
     disconnectWpsControls();
+    loadPendingProgress();
   }
 );
 
@@ -434,6 +521,7 @@ const stopEmbedPdfLocalization = () => {
 onBeforeUnmount(() => {
   stopEmbedPdfLocalization();
   disconnectWpsControls();
+  document.removeEventListener('fullscreenchange', syncFullscreenState);
 });
 </script>
 
@@ -445,136 +533,6 @@ onBeforeUnmount(() => {
   height: 100%;
   overflow: hidden;
   background: #f5f7fb;
-  color: #1f2a3d;
-}
-
-.pdf-toolbar {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 72px;
-  padding: 12px 18px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-
-.pdf-file-summary {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 12px;
-}
-
-.pdf-file-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 54px;
-  height: 34px;
-  padding: 0 10px;
-  border-radius: 7px;
-  background: #e9f2fb;
-  color: #245f8f;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.pdf-file-copy {
-  display: grid;
-  min-width: 0;
-  gap: 5px;
-}
-
-.pdf-file-copy strong {
-  overflow: hidden;
-  color: #142133;
-  font-size: 16px;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pdf-file-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px 12px;
-  color: #667085;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.pdf-file-meta span {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pdf-actions {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 8px;
-}
-
-.pdf-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  border: 0;
-  border-radius: 7px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease,
-    background 0.16s ease;
-}
-
-.pdf-actions button:active {
-  transform: translateY(1px);
-}
-
-.ghost-button {
-  gap: 6px;
-  padding: 0 13px;
-  background: #edf3f8;
-  color: #245f8f;
-}
-
-.ghost-button:hover {
-  background: #dbe9f5;
-}
-
-.primary-button {
-  gap: 6px;
-  padding: 0 14px;
-  background: #245f8f;
-  color: #ffffff;
-  box-shadow: 0 10px 24px rgba(36, 95, 143, 0.22);
-}
-
-.primary-button:hover {
-  background: #1e527d;
-}
-
-.icon-button {
-  width: 36px;
-  padding: 0;
-  background: #f0f3f7;
-  color: #475467;
-}
-
-.icon-button:hover {
-  background: #e3e8ef;
   color: #1f2a3d;
 }
 
@@ -682,18 +640,6 @@ onBeforeUnmount(() => {
 @keyframes pdf-spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 900px) {
-  .pdf-toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .pdf-actions {
-    width: 100%;
-    justify-content: flex-end;
   }
 }
 </style>

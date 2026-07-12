@@ -7,48 +7,12 @@
             v-if="previewMode === 'pdf' && previewSrc"
             class="pdf-preview-surface"
             :src="previewSrc"
-            :title="resource?.title || resource?.originalName || '资料预览'"
-            :file-name="resource?.originalName || resource?.title || '资料预览'"
-            :file-suffix="resource?.fileSuffix || resource?.previewType || 'PDF'"
-            :category-name="resource?.categoryName || '未分类'"
-            :file-size-text="formatSize(resource?.fileSize)"
-            :owner-name="resource?.ownerName || resource?.createByName || '-'"
-            :create-time="resource?.createTime || '-'"
-            :view-count="resource?.viewCount || 0"
-            :download-count="resource?.downloadCount || 0"
+            :resource-id="resourceId"
+            :doc-title="resource?.title || resource?.originalName || ''"
             @error="handlePreviewFrameError"
-            @back="goResourceList"
-            @download="downloadResource"
-            @close="closePreview"
+            @quote="handleQuote"
           />
           <div v-else-if="previewMode !== 'none' && previewSrc" class="native-preview">
-            <header class="native-preview-toolbar">
-              <div class="native-file-summary">
-                <span>{{ typeLabel }}</span>
-                <div>
-                  <strong>{{ resource?.title || resource?.originalName || '资料预览' }}</strong>
-                  <p>
-                    {{ resource?.categoryName || '未分类' }}
-                    <em>{{ formatSize(resource?.fileSize) }}</em>
-                    <em>{{ resource?.ownerName || resource?.createByName || '-' }}</em>
-                    <em>{{ resource?.createTime || '-' }}</em>
-                  </p>
-                </div>
-              </div>
-              <div class="native-actions">
-                <button class="ghost-button" type="button" @click="goResourceList">
-                  <el-icon><Back /></el-icon>
-                  返回
-                </button>
-                <button class="primary-button" type="button" :disabled="!resource" @click="downloadResource">
-                  <el-icon><Download /></el-icon>
-                  下载
-                </button>
-                <button class="icon-button" type="button" title="关闭" @click="closePreview">
-                  <el-icon><Close /></el-icon>
-                </button>
-              </div>
-            </header>
             <div class="native-preview-body">
               <iframe v-if="previewMode === 'iframe'" :src="previewSrc" title="资料预览" @error="handlePreviewFrameError"></iframe>
               <img
@@ -86,7 +50,15 @@
           </div>
         </div>
       </section>
-      <ResourcePreviewContextPanel v-if="resource" :resource="resource" :resource-id="resourceId" :type-label="typeLabel" />
+      <ResourcePreviewContextPanel
+        v-if="resource"
+        ref="contextPanelRef"
+        :resource="resource"
+        :resource-id="resourceId"
+        :type-label="typeLabel"
+        @download="downloadResource"
+        @close="closePreview"
+      />
     </main>
   </div>
 </template>
@@ -95,7 +67,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { Back, Close, Download } from '@element-plus/icons-vue';
+import { Back } from '@element-plus/icons-vue';
 import { getResource, resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/portal/resources';
 import type { InfoResource } from '@/api/infoservice/types';
 import { getToken } from '@/utils/auth';
@@ -362,16 +334,16 @@ const closePreview = () => {
   goResourceList();
 };
 
+const contextPanelRef = ref<InstanceType<typeof ResourcePreviewContextPanel>>();
+
+/** 阅读器划词引用 → 右栏「我的笔记」编辑器 */
+const handleQuote = (text: string) => {
+  contextPanelRef.value?.quoteSelection(text);
+};
+
 const downloadResource = () => {
   if (!resource.value) return;
   downloadPortalResource(resource.value);
-};
-
-const formatSize = (size?: number) => {
-  if (!size) return '-';
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / 1024 / 1024).toFixed(1)} MB`;
 };
 
 onMounted(loadResource);
@@ -403,59 +375,32 @@ onBeforeUnmount(releasePreviewObjectUrl);
   box-shadow: 0 14px 34px rgba(31, 54, 76, 0.07);
 }
 
-.ghost-button,
-.primary-button,
-.icon-button {
+.ghost-button {
   height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
+  border: 1px solid #d3dee8;
   border-radius: 8px;
   padding: 0 13px;
+  background: #fff;
+  color: var(--resource-text);
   font-weight: 850;
   cursor: pointer;
 }
 
-.ghost-button,
-.icon-button {
-  border: 1px solid #d3dee8;
-  background: #fff;
-  color: var(--resource-text);
-}
-
-.primary-button {
-  border: 1px solid var(--resource-primary);
-  background: var(--resource-primary);
-  color: #fff;
-}
-
-.primary-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.icon-button {
-  width: 38px;
-  padding: 0;
-}
-
-.ghost-button:hover,
-.icon-button:hover {
+.ghost-button:hover {
   border-color: var(--resource-primary);
   background: var(--resource-primary-soft);
   color: var(--resource-primary);
-}
-
-.primary-button:hover:not(:disabled) {
-  background: #183f63;
 }
 
 .preview-shell {
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(620px, 1fr) 392px;
+  grid-template-columns: minmax(620px, 1fr) auto;
   gap: 10px;
 }
 
@@ -492,74 +437,8 @@ onBeforeUnmount(releasePreviewObjectUrl);
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   background: #f4f7fc;
-}
-
-.native-preview-toolbar {
-  min-height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  border-bottom: 1px solid var(--resource-border);
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.98);
-}
-
-.native-file-summary {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.native-file-summary > span {
-  flex: 0 0 auto;
-  border-radius: 8px;
-  padding: 8px 10px;
-  background: var(--resource-primary-soft);
-  color: var(--resource-primary);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.native-file-summary div {
-  min-width: 0;
-}
-
-.native-file-summary strong {
-  display: block;
-  overflow: hidden;
-  color: var(--resource-title);
-  font-size: 16px;
-  line-height: 1.25;
-  font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.native-file-summary p {
-  margin: 6px 0 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow: hidden;
-  color: var(--resource-muted);
-  font-size: 12px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.native-file-summary em {
-  font-style: normal;
-}
-
-.native-actions {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .native-preview-body {
@@ -613,11 +492,6 @@ onBeforeUnmount(releasePreviewObjectUrl);
 @media (max-width: 760px) {
   .resource-preview-page {
     padding: 8px;
-  }
-
-  .native-preview-toolbar {
-    align-items: stretch;
-    flex-direction: column;
   }
 }
 </style>
