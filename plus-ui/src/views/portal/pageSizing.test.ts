@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PAGE_SIZE, normalizePageSize, PAGE_SIZE_OPTIONS } from './pageSizing';
+import { DEFAULT_PAGE_SIZE, normalizePageSize, PAGE_SIZE_OPTIONS, persistPageSize, readStoredPageSize } from './pageSizing';
 
 describe('pageSizing 分页档位', () => {
   it('档位为 16/40/80，默认 16，冻结只读', () => {
@@ -20,5 +20,12 @@ describe('pageSizing 分页档位', () => {
     expect(normalizePageSize(null)).toBe(DEFAULT_PAGE_SIZE);
     expect(normalizePageSize(undefined)).toBe(DEFAULT_PAGE_SIZE);
     expect(normalizePageSize('abc')).toBe(DEFAULT_PAGE_SIZE);
+  });
+});
+
+describe('readStoredPageSize / persistPageSize', () => {
+  it('无 window 环境下读取优雅回退默认档、写入不抛错', () => {
+    expect(readStoredPageSize('ip-any-key')).toBe(DEFAULT_PAGE_SIZE);
+    expect(() => persistPageSize('ip-any-key', 40)).not.toThrow();
   });
 });

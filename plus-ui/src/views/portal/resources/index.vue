@@ -138,7 +138,7 @@ import {
 import type { CategoryTreeNode, InfoResource, ResourcePortalPayload, ResourceUploadProgress, ResourceUploadResult } from '@/api/infoservice/types';
 import { downloadPortalResource } from './download';
 import { buildSelectedChips, encodeCategoryCodes, removeCategory, resolveSelectionTitle } from './categoryFacets';
-import { DEFAULT_PAGE_SIZE, normalizePageSize, PAGE_SIZE_OPTIONS } from './pageSizing';
+import { normalizePageSize, PAGE_SIZE_OPTIONS, persistPageSize, readStoredPageSize } from '../pageSizing';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
 import ResourceCard from './components/ResourceCard.vue';
 import ResourceCategoryChips from './components/ResourceCategoryChips.vue';
@@ -174,25 +174,8 @@ const sizeRange = ref('all');
 const sort = ref('latest');
 const PAGE_SIZE_STORAGE_KEY = 'ip-resources-page-size';
 
-/** 页大小记忆：仅接受既定档位，读写异常（私密模式等）静默回退默认档 */
-const readStoredPageSize = (): number => {
-  try {
-    return normalizePageSize(window.localStorage.getItem(PAGE_SIZE_STORAGE_KEY));
-  } catch {
-    return DEFAULT_PAGE_SIZE;
-  }
-};
-
-const persistPageSize = (size: number) => {
-  try {
-    window.localStorage.setItem(PAGE_SIZE_STORAGE_KEY, String(size));
-  } catch {
-    /* 私密模式下不持久化 */
-  }
-};
-
 const pageNum = ref(1);
-const pageSize = ref(readStoredPageSize());
+const pageSize = ref(readStoredPageSize(PAGE_SIZE_STORAGE_KEY));
 const total = ref(0);
 const myResourcesTotal = ref(0);
 const loading = ref(false);
@@ -363,7 +346,7 @@ const onPage = (page: number) => {
 
 const onPageSize = (size: number) => {
   pageSize.value = normalizePageSize(size);
-  persistPageSize(pageSize.value);
+  persistPageSize(PAGE_SIZE_STORAGE_KEY, pageSize.value);
   pageNum.value = 1;
   reload();
 };
