@@ -411,6 +411,7 @@ const openCreateDialog = () => {
   }
   uploadMode.value = 'create';
   editingResource.value = undefined;
+  uploadProgress.value = [];
   uploadVisible.value = true;
 };
 
@@ -420,6 +421,7 @@ const openEditDialog = (resource: InfoResource) => {
   }
   uploadMode.value = 'edit';
   editingResource.value = resource;
+  uploadProgress.value = [];
   uploadVisible.value = true;
 };
 
@@ -477,6 +479,11 @@ const refreshOwnedViews = async () => {
   }
 };
 
+/** 任一环节失败：把仍在途的行标红为 failed，用户可见可重试（弹窗保持打开） */
+const markActiveProgressFailed = () => {
+  uploadProgress.value = uploadProgress.value.map((item) => (item.status === 'done' ? item : { ...item, status: 'failed' as const }));
+};
+
 const submitResource = async (payload: ResourceSubmitPayload) => {
   uploading.value = true;
   const files = payload.files || [];
@@ -512,6 +519,10 @@ const submitResource = async (payload: ResourceSubmitPayload) => {
     }
     uploadVisible.value = false;
     await refreshOwnedViews();
+  } catch (error) {
+    // 请求层错误提示由拦截器统一弹出；这里负责把进度行标红，避免"永远处理中"的假卡死
+    markActiveProgressFailed();
+    console.error('[resources] 上传/保存失败', error);
   } finally {
     uploading.value = false;
   }

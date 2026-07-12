@@ -34,6 +34,7 @@
                     <strong>{{ file.name }}</strong>
                     <em>{{ formatSize(file.size) }}</em>
                   </span>
+                  <span v-if="progressFor(index)?.status === 'failed'" class="file-state is-failed">{{ progressLabel(index) }}</span>
                   <button v-if="!submitting" class="file-remove" type="button" @click="removeSelectedFile(index)">移除</button>
                   <span v-else class="file-state">{{ progressLabel(index) }}</span>
                 </div>
@@ -42,7 +43,7 @@
                   :percentage="progressFor(index)?.percent ?? 0"
                   :stroke-width="4"
                   :show-text="false"
-                  :status="progressFor(index)?.status === 'done' ? 'success' : undefined"
+                  :status="progressFor(index)?.status === 'done' ? 'success' : progressFor(index)?.status === 'failed' ? 'exception' : undefined"
                 />
               </li>
             </ul>
@@ -187,7 +188,12 @@ const submittingLabel = computed(() => {
   return props.progress.length > 1 ? `保存中 ${done}/${props.progress.length}` : '保存中';
 });
 
-const progressFor = (index: number): ResourceUploadProgress | undefined => (props.submitting ? props.progress[index] : undefined);
+/** 提交中显示实时进度；提交结束后仅保留失败行（可见可重试），成功即关弹窗无残留 */
+const progressFor = (index: number): ResourceUploadProgress | undefined => {
+  const item = props.progress[index];
+  if (props.submitting) return item;
+  return item?.status === 'failed' ? item : undefined;
+};
 
 const progressLabel = (index: number) => {
   const item = progressFor(index);
@@ -199,6 +205,8 @@ const progressLabel = (index: number) => {
       return '服务器处理中…';
     case 'done':
       return '已完成';
+    case 'failed':
+      return '上传失败，可重试';
     default:
       return '等待中';
   }
@@ -419,6 +427,10 @@ watch(
   color: var(--resource-primary, #245f8f);
   font-size: 12px;
   font-weight: 700;
+}
+
+.file-state.is-failed {
+  color: var(--ip-danger);
 }
 
 .dialog-submit,
