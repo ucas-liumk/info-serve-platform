@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "info-serve 当前运行时架构",
+    "subtitle": "Docker Compose · 门户五服务 · 同步边界与 portal.topic 异步协作",
+    "output": "runtime-architecture.html",
+    "viewBox": [1680, 940]
+  },
+  "components": [
+    { "id": "users", "type": "external", "label": "用户", "sublabel": "浏览器 / 局域网", "pos": [40, 235], "size": [120, 64] },
+    { "id": "nginx", "type": "frontend", "label": "nginx-web", "sublabel": ":7010 · SPA / prod-api", "pos": [210, 235], "size": [150, 64] },
+    { "id": "gateway", "type": "backend", "label": "ruoyi-gateway", "sublabel": ":8180 · 路由 / 鉴权", "pos": [410, 235], "size": [160, 64] },
+
+    { "id": "kernel", "type": "backend", "label": "portal-kernel", "sublabel": ":8107 · 消息 / 收藏 / 注册表", "pos": [875, 70], "size": [190, 70], "tag": "通用服务" },
+    { "id": "appcenter", "type": "backend", "label": "AppCenter", "sublabel": "portal-appcenter :8106", "pos": [625, 235], "size": [170, 66], "tag": "app_*" },
+    { "id": "forum", "type": "backend", "label": "Forum", "sublabel": "portal-forum :8108", "pos": [825, 235], "size": [170, 66], "tag": "forum_*" },
+    { "id": "requiredknowledge", "type": "backend", "label": "RequiredKnowledge", "sublabel": "portal-requiredknowledge :8109", "pos": [1025, 235], "size": [190, 66], "tag": "rk_*" },
+    { "id": "resources", "type": "backend", "label": "Resources", "sublabel": "portal-resources :8111", "pos": [1245, 235], "size": [180, 66], "tag": "res_* / info_*" },
+
+    { "id": "commonservices", "type": "backend", "label": "平台通用服务", "sublabel": "Auth :8110 · System :8101 · File :8114", "pos": [625, 500], "size": [250, 72] },
+    { "id": "rabbitmq", "type": "messagebus", "label": "RabbitMQ", "sublabel": ":8172 · portal.topic / DLQ", "pos": [925, 500], "size": [190, 72], "tag": "跨 BC 异步" },
+    { "id": "nacos", "type": "cloud", "label": "Nacos", "sublabel": ":8148 · 配置 / 注册 / 发现", "pos": [1165, 500], "size": [190, 72] },
+    { "id": "monitor", "type": "cloud", "label": "ruoyi-monitor", "sublabel": ":8190 · Spring Boot Admin", "pos": [1405, 500], "size": [190, 72] },
+
+    { "id": "postgres", "type": "database", "label": "PostgreSQL", "sublabel": ":8132 · 业务共享实例", "pos": [625, 735], "size": [190, 68], "tag": "按表前缀隔离" },
+    { "id": "redis", "type": "database", "label": "Redis", "sublabel": ":8179 · 缓存 / 令牌 / 幂等", "pos": [865, 735], "size": [190, 68] },
+    { "id": "minio", "type": "cloud", "label": "MinIO", "sublabel": ":8160 · 对象数据面", "pos": [1105, 735], "size": [190, 68] },
+    { "id": "nacosmysql", "type": "database", "label": "MySQL", "sublabel": ":8136 · 仅 Nacos ry-config", "pos": [1345, 735], "size": [190, 68] },
+
+    { "id": "boundaryguard", "type": "security", "label": "BC 边界红线", "sublabel": "禁止同步互调 / 跨域 SQL", "pos": [80, 520], "size": [230, 72], "tag": "NO BC ↔ BC" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "当前 Docker Compose 运行态", "wraps": ["nginx", "gateway", "kernel", "appcenter", "forum", "requiredknowledge", "resources", "commonservices", "rabbitmq", "nacos", "monitor", "postgres", "redis", "minio", "nacosmysql", "boundaryguard"], "pad": 28 },
+    { "kind": "region", "label": "门户五个独立服务进程：Kernel + 4 个业务 BC", "wraps": ["kernel", "appcenter", "forum", "requiredknowledge", "resources"], "pad": 24 },
+    { "kind": "security-group", "label": "业务 BC 物理隔离 · 禁止 BC ↔ BC 同步互调", "wraps": ["appcenter", "forum", "requiredknowledge", "resources"], "pad": 16 },
+    { "kind": "region", "label": "共享基础设施与数据面", "wraps": ["postgres", "redis", "minio", "nacosmysql"], "pad": 22 }
+  ],
+  "connections": [
+    { "from": "users", "to": "nginx", "label": "HTTP", "variant": "emphasis" },
+    { "from": "nginx", "to": "gateway", "label": "/prod-api", "variant": "emphasis" },
+
+    { "from": "gateway", "to": "kernel", "label": "lb://portal-kernel", "variant": "emphasis", "fromSide": "right", "toSide": "left", "route": "orthogonal-h", "via": [[590, 180], [850, 180]], "labelAt": [690, 168] },
+    { "from": "gateway", "to": "appcenter", "variant": "emphasis", "fromSide": "right", "toSide": "left", "route": "orthogonal-h", "via": [[598, 267], [598, 268]] },
+    { "from": "gateway", "to": "forum", "fromSide": "right", "toSide": "top", "route": "orthogonal-h", "via": [[590, 210], [910, 210]] },
+    { "from": "gateway", "to": "requiredknowledge", "fromSide": "right", "toSide": "top", "route": "orthogonal-h", "via": [[590, 190], [1120, 190]] },
+    { "from": "gateway", "to": "resources", "label": "Nacos lb:// routes", "fromSide": "right", "toSide": "top", "route": "orthogonal-h", "via": [[590, 165], [1335, 165]], "labelAt": [1170, 153] },
+
+    { "from": "kernel", "to": "appcenter", "label": "stats · 2s / fallback 0", "variant": "security", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v", "via": [[970, 185], [710, 185]], "labelAt": [760, 174] },
+    { "from": "kernel", "to": "forum", "variant": "security", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v", "via": [[950, 200], [910, 200]] },
+    { "from": "kernel", "to": "resources", "variant": "security", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v", "via": [[990, 215], [1335, 215]] },
+
+    { "from": "appcenter", "to": "rabbitmq", "label": "发布应用 / 需求事件", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v", "via": [[710, 420], [980, 420]], "labelAt": [730, 408] },
+    { "from": "forum", "to": "rabbitmq", "label": "回复事件", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v", "via": [[910, 445], [995, 445]], "labelAt": [920, 433] },
+    { "from": "resources", "to": "rabbitmq", "label": "上新 / 转换任务", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v", "via": [[1335, 400], [1060, 400]], "labelAt": [1180, 388] },
+    { "from": "rabbitmq", "to": "kernel", "label": "通知消费", "variant": "dashed", "fromSide": "top", "toSide": "right", "route": "orthogonal-v", "via": [[1020, 365], [1085, 365], [1085, 105]], "labelAt": [1095, 340] },
+    { "from": "rabbitmq", "to": "resources", "label": "转换队列消费", "variant": "dashed", "fromSide": "top", "toSide": "bottom", "route": "orthogonal-v", "via": [[1040, 465], [1390, 465]], "labelAt": [1240, 453] },
+
+    { "from": "appcenter", "to": "commonservices", "label": "RemoteFileService", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v" },
+    { "from": "resources", "to": "commonservices", "label": "RemoteFileService", "fromSide": "bottom", "toSide": "right", "route": "orthogonal-v", "via": [[1335, 620], [900, 620]], "labelAt": [1110, 608] },
+    { "from": "commonservices", "to": "minio", "label": "对象存储适配", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v", "via": [[750, 665], [1200, 665]], "labelAt": [990, 653] },
+
+    { "from": "gateway", "to": "nacos", "label": "配置 / 服务发现", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v", "via": [[490, 460], [1260, 460]], "labelAt": [520, 448] },
+    { "from": "monitor", "to": "nacos", "label": "注册 / 发现", "fromSide": "left", "toSide": "right", "labelAt": [1380, 586] },
+    { "from": "nacos", "to": "nacosmysql", "label": "ry-config", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v" },
+
+    { "from": "kernel", "to": "postgres", "label": "portal_*", "fromSide": "left", "toSide": "top", "route": "orthogonal-v", "via": [[600, 105], [600, 690], [720, 690]], "labelAt": [610, 675] },
+    { "from": "kernel", "to": "redis", "label": "事件幂等", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v", "via": [[940, 680]], "labelAt": [950, 665] },
+    { "from": "resources", "to": "redis", "label": "转换 pending", "fromSide": "right", "toSide": "top", "route": "orthogonal-v", "via": [[1570, 330], [1570, 690], [960, 690]], "labelAt": [1450, 678] },
+    { "from": "appcenter", "to": "minio", "label": "OssFactory 数据面", "variant": "dashed", "fromSide": "left", "toSide": "left", "route": "orthogonal-v", "via": [[590, 330], [590, 850], [1070, 850], [1070, 770]], "labelAt": [800, 838] },
+    { "from": "resources", "to": "minio", "label": "预览 / 转换数据面", "variant": "dashed", "fromSide": "right", "toSide": "right", "route": "orthogonal-v", "via": [[1600, 330], [1600, 850], [1320, 850], [1320, 770]], "labelAt": [1420, 838] }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "当前入口与服务", "items": ["用户只经 nginx-web :7010 与 Gateway :8180 进入门户", "Gateway 依据 Nacos 路由到 Kernel、AppCenter、Forum、RequiredKnowledge、Resources"] },
+    { "dot": "emerald", "title": "同步调用边界", "items": ["普通实线只表示代码或配置已确认的当前同步依赖", "Kernel → AppCenter / Forum / Resources 仅用于统计，2 秒超时，异常或空结果降级为 0", "业务服务允许调用通用服务；未确认的允许方向不画成实际连线"] },
+    { "dot": "violet", "title": "异步协作", "items": ["跨 BC 业务协作统一经 RabbitMQ portal.topic", "AppCenter、Forum、Resources 发布通知事件；Kernel 消费通知", "Resources 还使用 portal-resources.convert 与 DLQ 处理文档转换"] },
+    { "dot": "rose", "title": "禁止方向", "items": ["禁止业务 BC ↔ BC 直接同步互调", "禁止跨域 SQL；禁止复制 Kernel 的消息、收藏、统计与注册表", "禁止绕过 Gateway 暴露门户业务入口"] },
+    { "dot": "amber", "title": "数据与配置", "items": ["所有 Java 服务使用 Nacos；Nacos 的 MySQL 仅保存 ry-config", "业务共享 PostgreSQL 实例，但按 app_ / forum_ / rk_ / res_ / portal_ 表前缀逻辑隔离", "Redis 承担缓存、令牌、转换去重与通知事件幂等"] },
+    { "dot": "orange", "title": "文件数据面", "items": ["AppCenter、Resources 经 RemoteFileService 获取文件契约或元数据", "File、AppCenter、Resources 均可经 OssFactory 访问 MinIO 对象数据面"] }
+  ]
+}

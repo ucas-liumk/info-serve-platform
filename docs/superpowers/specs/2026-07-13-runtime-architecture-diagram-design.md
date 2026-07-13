@@ -87,7 +87,7 @@ Gateway 路由、事件常量和统计聚合实现校验运行事实。2026-07-0
 
 - `AGENTS.md`：当前强制通信红线和门户服务清单；
 - `docs/architecture/bounded-contexts.md`：统一语言、表前缀与 BC 归属；
-- `docs/superpowers/specs/2026-07-07-service-split-cloud-native-design.md`：当前独立服务部署形态；
+- `docs/superpowers/specs/2026-07-07-service-split-cloud-native-design.md`：服务拆分法源与目标 k3s 生产形态；
 - `source/script/config/nacos/ruoyi-gateway.yml`：Gateway 到 5 个门户服务的真实路由；
 - `source/ruoyi-api/ruoyi-api-portal-kernel/.../PortalEventConstants.java`：`portal.topic`、队列和 routing key；
 - `source/ruoyi-modules/ruoyi-portal-kernel/.../InfoPortalServiceImpl.java`：统计聚合方向、2 秒超时和降级行为；
