@@ -76,7 +76,7 @@ Gateway 路由、事件常量和统计聚合实现校验运行事实。2026-07-0
 ## 5. 图例
 
 - 青色强调实线：用户请求主路径；
-- 普通实线：允许的同步依赖；
+- 普通实线：经代码或配置确认的当前同步依赖；
 - 紫色/虚线：RabbitMQ 异步事件；
 - 玫红安全元素：禁止方向和边界红线；
 - 琥珀边界：运行区域或服务分组；
@@ -100,10 +100,12 @@ Gateway 路由、事件常量和统计聚合实现校验运行事实。2026-07-0
 交付前执行：
 
 1. 建立事实矩阵，逐项核对组件、端口、Gateway 路由、同步/异步方向和存储依赖；
-2. `node /Users/macmini/.codex/skills/archify/bin/archify.mjs validate architecture docs/architecture/runtime-architecture.architecture.json --json`；
-3. `node /Users/macmini/.codex/skills/archify/bin/archify.mjs render architecture docs/architecture/runtime-architecture.architecture.json docs/architecture/runtime-architecture.html`；
-4. `node /Users/macmini/.codex/skills/archify/bin/archify.mjs check docs/architecture/runtime-architecture.html`；
-5. 浏览器打开 HTML，检查深浅主题、文字可读性、连线与边界，并对 PNG、SVG 各做一次导出冒烟；
-6. `git diff --check`，并确认只新增设计与图稿文件。
+2. 设置本机 Archify CLI 路径，例如 Mac Codex 全局 Skill：
+   `ARCHIFY_CLI="$HOME/.codex/skills/archify/bin/archify.mjs"`；Windows 或其他 Agent 使用其实际安装路径；
+3. `node "$ARCHIFY_CLI" validate architecture docs/architecture/runtime-architecture.architecture.json --json`；
+4. `node "$ARCHIFY_CLI" render architecture docs/architecture/runtime-architecture.architecture.json docs/architecture/runtime-architecture.html`；
+5. `node "$ARCHIFY_CLI" check docs/architecture/runtime-architecture.html`；
+6. 浏览器打开 HTML，检查深浅主题、文字可读性、连线与边界，并对 PNG、SVG 各做一次导出冒烟；
+7. `git diff --check`，并确认只新增设计与图稿文件。
 
 本任务不改后端、前端、部署或行为面，因此不触发 Maven、前端构建、Compose 或 E2E 门禁。
