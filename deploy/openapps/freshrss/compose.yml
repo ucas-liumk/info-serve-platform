@@ -1,0 +1,22 @@
+services:
+  freshrss:
+    image: ${IMAGE}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "${OPENAPPS_BIND_ADDR}:${PORT}:80"
+    environment:
+      TZ: ${TZ}
+      CRON_MIN: ""
+    volumes:
+      - freshrss_data:/var/www/FreshRSS/data
+      - freshrss_extensions:/var/www/FreshRSS/extensions
+    mem_limit: 320m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  freshrss_data:
+  freshrss_extensions:

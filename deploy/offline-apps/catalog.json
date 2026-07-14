@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "os": "Kylin Desktop V10 SP1",
+    "architecture": "arm64",
+    "glibc": "2.31"
+  },
+  "packages": [
+    {"code":"wps-office-arm64","name":"WPS 365 Linux ARM64","source":"licensed","roots":[]},
+    {"code":"wps-addins","name":"WPS 加载项离线发布包","source":"audited-source","roots":[]},
+    {"code":"xournalpp-arm64","name":"Xournal++","source":"kylin-apt","roots":["xournalpp"]},
+    {"code":"ocr-toolkit-zh-arm64","name":"简体中文 OCR 工具包","source":"kylin-apt","roots":["ocrmypdf","gimagereader","tesseract-ocr-chi-sim"]},
+    {"code":"vlc-arm64","name":"VLC 媒体播放器","source":"kylin-apt","roots":["vlc"]},
+    {"code":"gimp-arm64","name":"GIMP 图像处理","source":"kylin-apt","roots":["gimp"]},
+    {"code":"inkscape-arm64","name":"Inkscape 矢量绘图","source":"kylin-apt","roots":["inkscape"]},
+    {"code":"keepassxc-arm64","name":"KeePassXC 密码库","source":"kylin-apt","roots":["keepassxc"]},
+    {"code":"flameshot-arm64","name":"Flameshot 截图标注","source":"kylin-apt","roots":["flameshot"]},
+    {"code":"remmina-arm64","name":"Remmina 远程桌面","source":"kylin-apt","roots":["remmina"]}
+  ],
+  "reserve": [
+    {"code":"filezilla-arm64","name":"FileZilla","source":"kylin-apt","roots":["filezilla"]}
+  ]
+}

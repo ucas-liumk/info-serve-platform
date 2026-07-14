@@ -1,0 +1,19 @@
+services:
+  memos:
+    image: ${IMAGE}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "${OPENAPPS_BIND_ADDR}:${PORT}:5230"
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - memos_data:/var/opt/memos
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  memos_data:

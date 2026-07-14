@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+usage() {
+  echo "用法: $0 <app-code|list> <start|stop|status|logs|verify|config|remove>"
+}
+
+if [[ ${1:-} == "list" ]]; then
+  find "$ROOT_DIR" -mindepth 2 -maxdepth 2 -name compose.yml -print \
+    | sed "s#^$ROOT_DIR/##; s#/compose.yml##" \
+    | sort
+  exit 0
+fi
+
+APP_CODE=${1:-}
+ACTION=${2:-status}
+APP_DIR="$ROOT_DIR/$APP_CODE"
+
+if [[ -z "$APP_CODE" || ! -f "$APP_DIR/compose.yml" ]]; then
+  usage
+  exit 2
+fi
+
+if docker info >/dev/null 2>&1; then
+  DOCKER=(docker)
+else
+  DOCKER=(sudo docker)
+fi
+
+if [[ ! -f "$APP_DIR/.env" ]]; then
+  cp "$APP_DIR/.env.example" "$APP_DIR/.env"
+  echo "已从 .env.example 创建 $APP_DIR/.env"
+fi
+
+set -a
+# shellcheck disable=SC1090
+source "$APP_DIR/.env"
+set +a
+
+COMPOSE=("${DOCKER[@]}" compose --project-name "info-serve-openapp-$APP_CODE" --env-file "$APP_DIR/.env" -f "$APP_DIR/compose.yml")
+
+check_start_preconditions() {
+  local arch available_mb min_free_mb image_arch
+  arch=$(uname -m)
+  if [[ "$arch" != "aarch64" && "${OPENAPPS_ALLOW_NON_ARM64:-0}" != "1" ]]; then
+    echo "拒绝启动：当前架构为 $arch，目标架构必须为 aarch64" >&2
+    exit 1
+  fi
+  available_mb=$(awk '/MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)
+  min_free_mb=${MIN_FREE_MB:-256}
+  if (( available_mb < min_free_mb )) && [[ "${OPENAPPS_FORCE:-0}" != "1" ]]; then
+    echo "拒绝启动：可用内存 ${available_mb}MB，$APP_CODE 至少需要 ${min_free_mb}MB；确认风险后可设置 OPENAPPS_FORCE=1" >&2
+    exit 1
+  fi
+  if ! "${DOCKER[@]}" image inspect "$IMAGE" >/dev/null 2>&1; then
+    echo "镜像未导入：$IMAGE。离线环境请先运行 load-images.sh" >&2
+    exit 1
+  fi
+  image_arch=$("${DOCKER[@]}" image inspect "$IMAGE" --format '{{.Architecture}}')
+  if [[ "$image_arch" != "arm64" ]]; then
+    echo "镜像架构错误：$IMAGE -> $image_arch" >&2
+    exit 1
+  fi
+  "${COMPOSE[@]}" config --quiet
+}
+
+case "$ACTION" in
+  start)
+    check_start_preconditions
+    "${COMPOSE[@]}" up -d
+    ;;
+  stop)
+    "${COMPOSE[@]}" stop
+    ;;
+  status)
+    "${COMPOSE[@]}" ps
+    ;;
+  logs)
+    "${COMPOSE[@]}" logs --tail=200
+    ;;
+  verify)
+    curl --fail --location --silent --show-error --max-time 15 "$HEALTH_URL" >/dev/null
+    echo "$APP_CODE 健康检查通过：$HEALTH_URL"
+    ;;
+  config)
+    "${COMPOSE[@]}" config --quiet
+    echo "$APP_CODE Compose 配置有效"
+    ;;
+  remove)
+    "${COMPOSE[@]}" down --remove-orphans
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac

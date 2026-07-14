@@ -75,6 +75,25 @@
 | Apache Hop Web | `18091` | Hop Web 部署配置 | 态势数据治理入口，本地验证将容器 `8080` 映射到宿主机 `18091` |
 | Budibase Web | `18100` | Budibase proxy `10000` | 低代码应用工厂入口，独立部署 |
 
+## ARM64 开源应用端口
+
+这些应用位于 `deploy/openapps/`，均为独立 Compose 项目，默认不随主栈启动。
+
+| 应用 | 宿主机端口 | 容器端口 |
+| --- | ---: | ---: |
+| Stirling PDF | `18080` | `8080` |
+| draw.io | `18082` | `8080` |
+| Excalidraw | `18090` | `80` |
+| Memos | `18110` | `5230` |
+| File Browser | `18111` | `80` |
+| PairDrop | `18112` | `3000` |
+| IT-Tools | `18113` | `80` |
+| Uptime Kuma | `18114` | `3001` |
+| FreshRSS | `18115` | `80` |
+| Gitea | `18116` | `3000` |
+| Jellyfin | `18118` | `8096` |
+| SearXNG | `18119` | `8080` |
+
 ## Nacos 配置规则
 
 `deploy/scripts/generate-initdb.py` 现在按环境生成不同 Nacos 配置：

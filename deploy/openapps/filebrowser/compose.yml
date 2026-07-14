@@ -1,0 +1,23 @@
+services:
+  filebrowser:
+    image: ${IMAGE}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "${OPENAPPS_BIND_ADDR}:${PORT}:80"
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - filebrowser_data:/srv
+      - filebrowser_database:/database
+      - filebrowser_config:/config
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  filebrowser_data:
+  filebrowser_database:
+  filebrowser_config:

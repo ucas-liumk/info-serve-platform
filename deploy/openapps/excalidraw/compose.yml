@@ -1,0 +1,14 @@
+services:
+  excalidraw:
+    image: ${IMAGE}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "${OPENAPPS_BIND_ADDR}:${PORT}:80"
+    environment:
+      TZ: ${TZ}
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}

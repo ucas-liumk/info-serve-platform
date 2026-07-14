@@ -15,6 +15,7 @@ const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const REPORT_DIR = path.join(ROOT_DIR, 'output', 'appcenter-tests');
 const RUN_ID = new Date().toISOString().replace(/[:.]/g, '-');
 const REPORT_FILE = path.join(REPORT_DIR, `v1-e2e-${RUN_ID}.json`);
+const ALLOW_FIXTURE_MUTATION = process.env.APP_CENTER_ALLOW_FIXTURE_MUTATION === '1';
 
 const reqPubB64 = 'MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWmOzbfj64K8ZIgOdHnzkXSOVOZbFu/TJhZ7rFAN+eaGkl3C4buccQd/EjEsj9ir7ijT7h96MCAwEAAQ==';
 const aesKey = 'RuoYiCloudPlusPGMigrate012345678';
@@ -285,6 +286,9 @@ function dbScalar(sql) {
 }
 
 async function main() {
+  if (!ALLOW_FIXTURE_MUTATION) {
+    throw new Error('该脚本会创建和更新测试数据。仅可在隔离测试库设置 APP_CENTER_ALLOW_FIXTURE_MUTATION=1 后运行，禁止直接指向验收或生产库。');
+  }
   fs.mkdirSync(REPORT_DIR, { recursive: true });
   log('=== App Center V1 E2E ===');
   log(`baseUrl=${BASE_URL}`);

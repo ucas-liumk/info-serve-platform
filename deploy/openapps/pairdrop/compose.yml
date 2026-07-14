@@ -1,0 +1,23 @@
+services:
+  pairdrop:
+    image: ${IMAGE}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "${OPENAPPS_BIND_ADDR}:${PORT}:3000"
+    environment:
+      TZ: ${TZ}
+      PUID: ${PUID}
+      PGID: ${PGID}
+      RATE_LIMIT: "false"
+      WS_FALLBACK: "false"
+    volumes:
+      - pairdrop_config:/config
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  pairdrop_config:

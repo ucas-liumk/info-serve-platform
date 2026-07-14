@@ -119,7 +119,7 @@ deploy/openapps/bin/appctl stirling-pdf logs
 
 ```text
 releases/offline-apps/<package-code>/<version>/
-├── <package-code>-<version>-kylin-v10sp1-arm64.tar.zst
+├── <package-code>-<version>-kylin-v10sp1-arm64.tar.gz
 ├── manifest.json
 └── SHA256SUMS
 ```
@@ -186,7 +186,7 @@ releases/offline-apps/<package-code>/<version>/
 
 ```text
 releases/openapps/<release>/
-├── images/*.tar.zst
+├── images/*.tar.gz
 ├── load-images.sh
 ├── catalog.lock.yaml
 ├── SHA256SUMS

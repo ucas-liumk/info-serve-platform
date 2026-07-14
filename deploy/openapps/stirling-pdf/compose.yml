@@ -1,0 +1,29 @@
+services:
+  stirling-pdf:
+    image: ${IMAGE}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "${OPENAPPS_BIND_ADDR}:${PORT}:8080"
+    environment:
+      TZ: ${TZ}
+      SYSTEM_DEFAULTLOCALE: zh-CN
+      LANGS: zh_CN
+      DOCKER_ENABLE_SECURITY: "false"
+      INSTALL_BOOK_AND_ADVANCED_HTML_OPS: "false"
+    volumes:
+      - stirling_configs:/configs
+      - stirling_custom_files:/customFiles
+      - stirling_logs:/logs
+      - stirling_ocr_data:/usr/share/tessdata
+    mem_limit: 1536m
+    cpus: 1.5
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  stirling_configs:
+  stirling_custom_files:
+  stirling_logs:
+  stirling_ocr_data:

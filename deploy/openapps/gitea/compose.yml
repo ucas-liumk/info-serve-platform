@@ -1,0 +1,25 @@
+services:
+  gitea:
+    image: ${IMAGE}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "${OPENAPPS_BIND_ADDR}:${PORT}:3000"
+    environment:
+      USER_UID: "1000"
+      USER_GID: "1000"
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__server__DISABLE_SSH: "true"
+      GITEA__server__ROOT_URL: ${PUBLIC_BASE_URL}
+      GITEA__i18n__LANGS: zh-CN
+      TZ: ${TZ}
+    volumes:
+      - gitea_data:/data
+    mem_limit: 768m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  gitea_data:

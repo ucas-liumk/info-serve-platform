@@ -1,0 +1,23 @@
+services:
+  jellyfin:
+    image: ${IMAGE}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "${OPENAPPS_BIND_ADDR}:${PORT}:8096"
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - jellyfin_config:/config
+      - jellyfin_cache:/cache
+      - jellyfin_media:/media
+    mem_limit: 1536m
+    cpus: 1.5
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  jellyfin_config:
+  jellyfin_cache:
+  jellyfin_media:

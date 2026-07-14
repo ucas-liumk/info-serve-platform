@@ -1,0 +1,19 @@
+services:
+  uptime-kuma:
+    image: ${IMAGE}
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - "${OPENAPPS_BIND_ADDR}:${PORT}:3001"
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - uptime_kuma_data:/app/data
+    mem_limit: 512m
+    cpus: 0.75
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+volumes:
+  uptime_kuma_data:
