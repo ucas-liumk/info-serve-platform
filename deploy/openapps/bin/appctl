@@ -34,6 +34,12 @@ if [[ ! -f "$APP_DIR/.env" ]]; then
   echo "已从 .env.example 创建 $APP_DIR/.env"
 fi
 
+# 银河麒麟 V10 的 KYSEC 会阻止 Bash source 未标记的文件。首次复制配置后，
+# 将它登记为已验证；非 KYSEC 系统没有 kysec_set，保持原有行为。
+if command -v kysec_set >/dev/null 2>&1; then
+  kysec_set -n exectl -v verified "$APP_DIR/.env"
+fi
+
 set -a
 # shellcheck disable=SC1090
 source "$APP_DIR/.env"

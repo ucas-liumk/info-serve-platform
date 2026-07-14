@@ -1,4 +1,4 @@
 use_default_settings: true
 
 ui:
-  default_locale: zh-CN
+  default_locale: zh-Hans-CN

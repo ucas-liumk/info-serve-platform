@@ -12,6 +12,7 @@ services:
       GITEA__server__DISABLE_SSH: "true"
       GITEA__server__ROOT_URL: ${PUBLIC_BASE_URL}
       GITEA__i18n__LANGS: zh-CN
+      GITEA__i18n__NAMES: 简体中文
       TZ: ${TZ}
     volumes:
       - gitea_data:/data

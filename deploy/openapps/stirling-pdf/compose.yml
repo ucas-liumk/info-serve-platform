@@ -9,7 +9,8 @@ services:
       TZ: ${TZ}
       SYSTEM_DEFAULTLOCALE: zh-CN
       LANGS: zh_CN
-      DOCKER_ENABLE_SECURITY: "false"
+      SECURITY_ENABLELOGIN: "false"
+      DISABLE_ADDITIONAL_FEATURES: "false"
       INSTALL_BOOK_AND_ADVANCED_HTML_OPS: "false"
     volumes:
       - stirling_configs:/configs

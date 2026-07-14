@@ -211,6 +211,38 @@ async function main() {
     }
     console.log(`${existing ? '更新' : '新增'}应用：${definition.code}，状态=${PUBLISH_STATUS}`);
   }
+  return token;
 }
 
-await main();
+async function verifyPublished(token) {
+  const response = await fetch(`${BASE_URL}/appcenter/portal/apps?pageNum=1&pageSize=500&appType=offline`, {
+    headers: { clientid: CLIENT_ID, Authorization: `Bearer ${token}` }
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !Array.isArray(result.rows)) {
+    throw new Error(`离线应用门户列表验证失败：HTTP ${response.status}`);
+  }
+  const expectedPackages = new Set(definitions.map((item) => path.basename(findArchive(item.code))));
+  const published = result.rows.filter((item) => expectedPackages.has(item.packageName));
+  if (published.length !== expectedPackages.size) {
+    throw new Error(`离线应用门户列表不完整：期望 ${expectedPackages.size}，实际 ${published.length}`);
+  }
+
+  const sample = published[0];
+  const download = await fetch(`${BASE_URL}/appcenter/portal/apps/${sample.appId}/package/download`, {
+    headers: { clientid: CLIENT_ID, Authorization: `Bearer ${token}` }
+  });
+  if (!download.ok || !download.body) {
+    throw new Error(`离线包下载验证失败：HTTP ${download.status}`);
+  }
+  const reader = download.body.getReader();
+  const firstChunk = await reader.read();
+  await reader.cancel();
+  if (firstChunk.done || !firstChunk.value?.length) {
+    throw new Error('离线包下载验证失败：响应体为空');
+  }
+  console.log(`门户验证通过：${published.length} 个离线应用，${sample.packageName} 下载首块 ${firstChunk.value.length} 字节`);
+}
+
+const token = await main();
+await verifyPublished(token);
