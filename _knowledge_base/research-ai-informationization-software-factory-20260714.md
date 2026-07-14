@@ -53,6 +53,9 @@
 - DORA 2024 的调查结果显示，AI 与个体生产力、心流和满意度提升相关，但同时观察到交付稳定性和吞吐量的负面影响；DORA 因此强调小批量、健壮测试和以用户为中心等基础能力。这支持“AI 是放大器而不是质量保证”的核心判断。
 - DORA 强调以最终用户为中心、稳定的组织优先级和实验式持续改进。软件工厂不应只优化开发者生成代码的速度，而要缩短从业务问题到用户反馈的完整回路。
 - 本汇报可把“软件工厂”定义为组织内部的软件交付生产系统：通过标准模板、可复用组件、参考架构、AI 上下文、自动化流水线、环境与治理规则，为常见项目提供受支持的黄金路径，同时允许有依据的例外。该定义更接近现代平台工程，而不是传统的代码生成器或某一个产品。
+- DORA 的平台工程能力页面将内部开发平台的核心价值概括为简单、自助式的“黄金路径”，使开发者把注意力集中到用户价值；Google Cloud 进一步强调平台应作为产品运营，开发者是平台的内部客户。
+- Google Cloud 对黄金路径的示例资产包括入门指南、骨架代码、依赖管理、CI/CD 模板、基础设施即代码、Kubernetes 清单、策略护栏、日志监控和参考文档。它与本项目的 Spec/Plan、底座、部署清单、规约、门禁、RUNBOOK 高度对应，可作为“项目资产如何进入软件工厂”的映射依据。
+- 平台工程还应区分黄金路径、硬性护栏、故障安全网和人工检查点。不是所有规则都应做成阻断，也不能把所有风险交给人工审批。
 
 ### 阶段摘要（第 2—4 轮）
 
@@ -76,3 +79,6 @@
 | Agile Manifesto Principles | https://agilemanifesto.org/principles | 访问 2026-07-14 | 高 |
 | NIST SP 800-218 SSDF 1.1 | https://csrc.nist.gov/pubs/sp/800/218/final | 2022-02 | 高 |
 | DORA 2024 Report | https://dora.dev/research/2024/dora-report/ | 2024 | 高 |
+| DORA Platform Engineering Capability | https://dora.dev/capabilities/platform-engineering/ | 访问 2026-07-14 | 高 |
+| Google Cloud, Golden Paths | https://cloud.google.com/blog/products/application-development/golden-paths-for-engineering-execution-consistency | 2023-09-11 | 中高 |
+| Google Cloud, Platform Control Mechanisms | https://cloud.google.com/blog/products/application-modernization/platform-engineering-control-mechanisms | 2025-08-15 | 中高 |
