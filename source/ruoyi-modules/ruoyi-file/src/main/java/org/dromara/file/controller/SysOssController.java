@@ -2,6 +2,7 @@ package org.dromara.file.controller;
 
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +65,11 @@ public class SysOssController extends BaseController {
      *
      * @param file 文件
      */
-    @SaCheckPermission("system:oss:upload")
+    @SaCheckPermission(value = {
+        "system:oss:upload",
+        "appcenter:application:add",
+        "appcenter:application:edit"
+    }, mode = SaMode.OR)
     @Log(title = "OSS对象存储", businessType = BusinessType.INSERT)
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public R<SysOssUploadVo> upload(@RequestPart("file") MultipartFile file) {

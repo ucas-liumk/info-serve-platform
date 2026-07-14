@@ -60,9 +60,8 @@ export interface AppApplicationQuery extends PageQuery {
   accessMode: string;
 }
 
-export interface AppPackageUploadVo {
-  packageOssId: number | string;
-  packageName: string;
-  packageSize: number;
-  packageUrl?: string;
+export interface OssPackageUploadVo {
+  ossId: number | string;
+  fileName: string;
+  url?: string;
 }

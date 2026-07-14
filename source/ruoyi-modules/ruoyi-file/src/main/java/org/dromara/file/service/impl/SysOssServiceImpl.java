@@ -34,6 +34,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -177,10 +179,17 @@ public class SysOssServiceImpl implements ISysOssService {
         String suffix = StringUtils.substring(originalfileName, originalfileName.lastIndexOf("."), originalfileName.length());
         OssClient storage = OssFactory.instance();
         UploadResult uploadResult;
+        Path tempFile = null;
         try {
-            uploadResult = storage.uploadSuffix(file.getBytes(), suffix, file.getContentType());
+            tempFile = Files.createTempFile("info-serve-upload-", suffix);
+            file.transferTo(tempFile);
+            uploadResult = storage.uploadSuffix(tempFile.toFile(), suffix);
         } catch (IOException e) {
             throw new ServiceException(e.getMessage());
+        } finally {
+            if (tempFile != null) {
+                FileUtils.del(tempFile);
+            }
         }
         SysOssExt ext1 = new SysOssExt();
         ext1.setFileSize(file.getSize());

@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 @Service
 public class AppApplicationServiceImpl implements IAppApplicationService {
 
+    private static final long LEGACY_PACKAGE_UPLOAD_LIMIT = 64L * 1024 * 1024;
     private static final String ACCESS_MODE_ALL = "all";
     private static final String ACCESS_MODE_ROLE = "role";
     private static final String ACCESS_MODE_USER = "user";
@@ -145,6 +146,9 @@ public class AppApplicationServiceImpl implements IAppApplicationService {
     public AppPackageUploadVo uploadPackage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ServiceException("上传文件不能为空");
+        }
+        if (file.getSize() > LEGACY_PACKAGE_UPLOAD_LIMIT) {
+            throw new ServiceException("安装包超过 64MB，请使用文件服务大文件上传入口");
         }
         try {
             RemoteFile remoteFile = remoteFileService.upload(file.getName(), file.getOriginalFilename(), file.getContentType(), file.getBytes());

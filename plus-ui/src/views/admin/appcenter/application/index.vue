@@ -501,7 +501,11 @@ const handlePackageUpload = async (options: any) => {
   const uploadForm = new FormData();
   uploadForm.append('file', options.file);
   const res = await uploadApplicationPackage(uploadForm);
-  Object.assign(form.value, (res as any).data);
+  const uploaded = (res as any).data;
+  form.value.packageOssId = uploaded.ossId;
+  form.value.packageName = uploaded.fileName || options.file.name;
+  form.value.packageSize = options.file.size;
+  form.value.packageUrl = uploaded.url;
   appFormRef.value?.validateField('packageOssId');
   proxy?.$modal.msgSuccess('上传成功');
 };

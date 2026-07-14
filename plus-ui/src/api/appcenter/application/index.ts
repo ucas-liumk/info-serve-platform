@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { AppApplicationVo, AppApplicationForm, AppApplicationQuery, AppPackageUploadVo } from './types';
+import { AppApplicationVo, AppApplicationForm, AppApplicationQuery, OssPackageUploadVo } from './types';
 
 // 查询应用列表
 export function listApplication(query: AppApplicationQuery): AxiosPromise<AppApplicationVo[]> {
@@ -47,9 +47,9 @@ export function changeApplicationStatus(appId: string | number, status: string) 
 }
 
 // 上传离线安装包
-export function uploadApplicationPackage(data: FormData): AxiosPromise<AppPackageUploadVo> {
+export function uploadApplicationPackage(data: FormData): AxiosPromise<OssPackageUploadVo> {
   return request({
-    url: '/appcenter/application/package/upload',
+    url: '/file/oss/upload',
     method: 'post',
     data,
     timeout: 5 * 60 * 1000,
