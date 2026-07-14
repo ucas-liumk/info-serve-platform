@@ -133,5 +133,5 @@ rm -f "$PACKAGE_DIR/target-glibc.full"
 mkdir -p "$OUTPUT_ROOT/$PACKAGE_CODE"
 ARCHIVE="$OUTPUT_ROOT/$PACKAGE_CODE/$PACKAGE_CODE-$SAFE_VERSION-kylin-v10sp1-arm64.tar.gz"
 tar -C "$WORK_DIR" -czf "$ARCHIVE" "$(basename "$PACKAGE_DIR")"
-sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+(cd "$(dirname "$ARCHIVE")" && sha256sum "$(basename "$ARCHIVE")" > "$(basename "$ARCHIVE").sha256")
 echo "$ARCHIVE"
