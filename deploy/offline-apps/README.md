@@ -28,3 +28,17 @@ bash ./install.sh
 ```
 
 `install.sh` 是用户手工执行的安装脚本，应用中心不会自动调用 sudo。
+
+## 发布到应用中心
+
+先部署包含大文件磁盘直传修复的 `ruoyi-file` 与前端，再执行：
+
+```bash
+APP_CENTER_BASE_URL=http://127.0.0.1:7010/prod-api \
+APP_CENTER_ADMIN_PASSWORD='<管理员密码>' \
+APP_CENTER_PACKAGE_ROOT=/path/to/offline-packages \
+APP_CENTER_PUBLISH_STATUS=0 \
+node deploy/offline-apps/publish-to-appcenter.mjs
+```
+
+密码只从环境变量读取，不写入仓库。脚本按应用编码幂等新增或更新卡片；包名和大小未变化时复用已上传的 OSS 对象。默认状态为 `1`（下架），明确设置 `APP_CENTER_PUBLISH_STATUS=0` 才会上架。
