@@ -7,6 +7,17 @@
       </button>
     </div>
 
+    <button
+      v-if="tree.length > 0"
+      :class="['all-resources', { active: selected.length === 0 }]"
+      type="button"
+      :aria-pressed="selected.length === 0"
+      @click="clearSelection"
+    >
+      <el-icon><Files /></el-icon>
+      <span>全部资料</span>
+    </button>
+
     <p v-if="tree.length === 0" class="filter-empty">暂无栏目分类</p>
 
     <div v-for="group in tree" :key="group.categoryId" class="filter-group">
@@ -20,7 +31,13 @@
           @click.stop="onToggleGroup(group)"
           @keydown.stop
         ></button>
-        <button class="group-collapse" type="button" :aria-expanded="!isCollapsed(group.categoryCode)" @click="toggleCollapse(group.categoryCode)">
+        <button
+          class="group-collapse"
+          type="button"
+          :aria-expanded="!isCollapsed(group.categoryCode)"
+          :aria-controls="groupBodyId(group)"
+          @click="toggleCollapse(group.categoryCode)"
+        >
           <span :class="['chevron', { folded: isCollapsed(group.categoryCode) }]" aria-hidden="true">
             <el-icon><CaretBottom /></el-icon>
           </span>
@@ -29,7 +46,7 @@
         </button>
       </div>
 
-      <div v-show="!isCollapsed(group.categoryCode)" class="group-body">
+      <div :id="groupBodyId(group)" v-show="!isCollapsed(group.categoryCode)" class="group-body">
         <button
           v-for="cat in group.children ?? []"
           :key="cat.categoryId"
@@ -40,7 +57,7 @@
           @click="onToggleCategory(cat.categoryCode)"
         >
           <span :class="['checkbox', { 'is-checked': isSelected(cat.categoryCode) }]" aria-hidden="true"></span>
-          <span class="category-name">{{ cat.categoryName }}</span>
+          <span class="category-name" :title="cat.categoryName">{{ cat.categoryName }}</span>
           <em class="count">{{ cat.resourceCount ?? 0 }}</em>
         </button>
       </div>
@@ -54,7 +71,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { CaretBottom } from '@element-plus/icons-vue';
+import { CaretBottom, Files } from '@element-plus/icons-vue';
 import type { CategoryTreeNode } from '@/api/infoservice/types';
 import { getGroupCheckState, groupResourceCount, toggleCategory, toggleGroup } from '../categoryFacets';
 
@@ -71,6 +88,7 @@ const emit = defineEmits<{
 const collapsedCodes = ref<ReadonlySet<string>>(new Set());
 
 const isCollapsed = (code: string) => collapsedCodes.value.has(code);
+const groupBodyId = (group: CategoryTreeNode) => `resource-category-group-${group.categoryId}`;
 
 const toggleCollapse = (code: string) => {
   const next = new Set(collapsedCodes.value);
@@ -110,10 +128,7 @@ const clearSelection = () => emit('update:selected', []);
 
 <style scoped>
 .filter-panel {
-  border: 1px solid var(--ip-neutral-200);
-  border-radius: var(--ip-radius-md);
   background: var(--ip-neutral-0);
-  box-shadow: var(--ip-shadow-sm);
 }
 
 .filter-title {
@@ -121,8 +136,7 @@ const clearSelection = () => emit('update:selected', []);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--ip-neutral-100);
+  padding: 16px 16px 12px;
   color: var(--ip-neutral-900);
   font-size: var(--ip-font-emphasis);
   font-weight: 700;
@@ -148,6 +162,32 @@ const clearSelection = () => emit('update:selected', []);
   color: var(--ip-primary-600);
 }
 
+.all-resources {
+  width: calc(100% - 24px);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 8px;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  padding: 0 12px;
+  background: transparent;
+  color: var(--ip-neutral-600);
+  font-size: var(--ip-font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--ip-motion-fast) var(--ip-motion-ease),
+    color var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.all-resources:hover,
+.all-resources.active {
+  background: var(--ip-primary-50);
+  color: var(--ip-primary-700);
+}
+
 .filter-empty {
   margin: 0;
   padding: 16px;
@@ -157,16 +197,15 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .filter-group + .filter-group {
-  border-top: 1px solid var(--ip-neutral-100);
+  margin-top: 8px;
 }
 
 .group-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--ip-neutral-50);
-  border-left: 3px solid var(--ip-primary-500);
+  gap: 4px;
+  padding: 8px 12px;
+  background: transparent;
   color: var(--ip-neutral-900);
   font-size: var(--ip-font-body);
   font-weight: 700;
@@ -174,7 +213,7 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .group-header:hover {
-  background: var(--ip-neutral-100);
+  background: var(--ip-neutral-50);
 }
 
 .group-collapse .count {
@@ -187,7 +226,7 @@ const clearSelection = () => emit('update:selected', []);
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   border: 0;
   padding: 0;
   background: transparent;
@@ -199,9 +238,13 @@ const clearSelection = () => emit('update:selected', []);
 .group-name,
 .category-name {
   min-width: 0;
+  flex: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .chevron {
@@ -217,11 +260,18 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .count {
+  min-width: 28px;
+  flex: 0 0 auto;
   margin-left: auto;
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: var(--ip-neutral-100);
   color: var(--ip-neutral-400);
   font-size: var(--ip-font-caption);
   font-style: normal;
   font-weight: 500;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .checkbox {
@@ -268,19 +318,19 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .group-body {
-  margin: 4px 8px 8px 24px;
+  margin: 0 8px 8px 24px;
   padding-left: 8px;
-  border-left: 2px solid var(--ip-neutral-100);
+  border-left: 1px solid var(--ip-neutral-200);
 }
 
 .category-row {
   width: 100%;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 4px;
   border: 0;
   border-radius: var(--ip-radius-sm);
-  padding: 8px;
+  padding: 8px 12px;
   background: transparent;
   color: var(--ip-neutral-600);
   font-size: var(--ip-font-body);
@@ -292,18 +342,24 @@ const clearSelection = () => emit('update:selected', []);
     color var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
+.category-row .checkbox {
+  display: none;
+}
+
 .category-row:hover {
   background: var(--ip-neutral-50);
   color: var(--ip-primary-600);
 }
 
 .category-row.active {
+  box-shadow: inset 3px 0 var(--ip-primary-500);
   background: var(--ip-primary-50);
   color: var(--ip-primary-600);
   font-weight: 700;
 }
 
 .category-row.active .count {
+  background: var(--ip-primary-100);
   color: var(--ip-primary-600);
 }
 

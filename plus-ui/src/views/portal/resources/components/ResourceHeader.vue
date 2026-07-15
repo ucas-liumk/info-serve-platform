@@ -53,13 +53,14 @@ const emit = defineEmits<{
 
 <style scoped>
 .resource-header {
+  min-height: 76px;
   display: grid;
-  grid-template-columns: minmax(200px, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(160px, 240px) minmax(0, 1fr);
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   border: 1px solid var(--ip-neutral-200);
   border-radius: var(--ip-radius-md);
-  padding: 16px 24px;
+  padding: 12px 16px;
   background: var(--ip-neutral-0);
   box-shadow: var(--ip-shadow-sm);
 }
@@ -68,12 +69,10 @@ const emit = defineEmits<{
   min-width: 0;
 }
 .eyebrow {
-  color: var(--ip-primary-600);
-  font-size: var(--ip-font-caption);
-  font-weight: 700;
+  display: none;
 }
 .heading h1 {
-  margin: 4px 0 0;
+  margin: 0;
   color: var(--ip-neutral-900);
   font-size: var(--ip-font-title);
   line-height: 1.2;
@@ -93,7 +92,7 @@ const emit = defineEmits<{
   gap: 12px;
 }
 .search-group {
-  min-width: 280px;
+  min-width: 240px;
   max-width: 560px;
   flex: 1;
   display: grid;
@@ -165,7 +164,7 @@ button:focus-visible {
   box-shadow: var(--ip-focus-ring);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
   .resource-header {
     grid-template-columns: 1fr;
   }
@@ -176,6 +175,7 @@ button:focus-visible {
 
 @media (max-width: 767px) {
   .resource-header {
+    min-height: 0;
     gap: 16px;
     padding: 16px;
   }

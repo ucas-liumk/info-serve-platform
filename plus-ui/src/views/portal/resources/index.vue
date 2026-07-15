@@ -585,7 +585,7 @@ onBeforeUnmount(() => {
 .resources-app {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: 264px minmax(0, 1fr);
   gap: 24px;
   padding: 24px 32px 48px;
   background: linear-gradient(180deg, var(--ip-neutral-100), var(--ip-neutral-50));
@@ -639,7 +639,7 @@ onBeforeUnmount(() => {
 
 .resource-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -690,23 +690,28 @@ onBeforeUnmount(() => {
   background: var(--ip-primary-600);
 }
 
+@media (max-width: 1320px) {
+  .resource-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1199px) {
   .resources-app {
     padding-inline: 24px;
   }
+}
 
-  .resource-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 1120px) {
+  .resources-app {
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 16px;
+    padding: 16px;
   }
 }
 
 @media (max-width: 980px) {
-  .resources-app {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    padding: 16px;
-  }
-
   .resource-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

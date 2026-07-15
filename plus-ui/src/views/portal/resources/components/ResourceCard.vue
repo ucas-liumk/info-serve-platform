@@ -14,7 +14,8 @@
     </div>
 
     <div class="resource-body">
-      <button class="title-button" type="button" @click.stop="emit('preview', resource)">
+      <span class="resource-category">{{ resource.categoryName || typeLabel }}</span>
+      <button class="title-button" type="button" :title="resource.title" @click.stop="emit('preview', resource)">
         {{ resource.title }}
       </button>
       <div class="resource-meta">
@@ -25,13 +26,13 @@
     </div>
 
     <div class="card-actions">
-      <button class="action-button preview" type="button" @click.stop="emit('preview', resource)">
+      <button class="action-button preview" type="button" title="预览" aria-label="预览资料" @click.stop="emit('preview', resource)">
         <el-icon><View /></el-icon>
-        <span>预览</span>
+        <span class="action-label">预览</span>
       </button>
-      <button class="action-button" type="button" @click.stop="emit('download', resource)">
+      <button class="action-button" type="button" title="下载" aria-label="下载资料" @click.stop="emit('download', resource)">
         <el-icon><Download /></el-icon>
-        <span>下载</span>
+        <span class="action-label">下载</span>
       </button>
       <button
         :class="['action-button', 'favorite', { active: resource.favorited }]"
@@ -304,16 +305,17 @@ const formatSize = (size?: number) => {
 
 <style scoped>
 .resource-card {
-  min-height: 184px;
+  min-height: 136px;
+  container-type: inline-size;
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) 32px;
+  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   align-items: start;
-  column-gap: 16px;
-  row-gap: 8px;
+  column-gap: 12px;
+  row-gap: 4px;
   border: 1px solid var(--ip-neutral-200);
   border-radius: var(--ip-radius-md);
-  padding: 16px;
+  padding: 12px;
   background: var(--ip-neutral-0);
   box-shadow: var(--ip-shadow-sm);
   cursor: pointer;
@@ -333,8 +335,8 @@ const formatSize = (size?: number) => {
   position: relative;
   grid-row: 1 / span 2;
   align-self: start;
-  width: 112px;
-  height: 142px;
+  width: 76px;
+  height: 108px;
   /* 纯装饰层（aria-hidden）：缩略图渲染后不得拦截与操作按钮重叠区域的点击 */
   pointer-events: none;
 }
@@ -353,30 +355,30 @@ const formatSize = (size?: number) => {
   content: '';
   position: absolute;
   inset: 41% 0 auto;
-  height: 38px;
-  background: linear-gradient(135deg, #f6d34a 0%, #f4a812 46%, #f75f3a 100%);
+  height: 32px;
+  background: var(--ip-warning-soft);
 }
 
 .preview-sheet.office::before {
-  background: linear-gradient(135deg, #ffdf56 0%, #ff9d2d 44%, #ff5c57 100%);
+  background: var(--ip-warning-soft);
 }
 
 .preview-sheet.pdf::before,
 .preview-sheet.ofd::before {
-  background: linear-gradient(135deg, #fff1bd 0%, #ff5a4f 48%, #b51027 100%);
+  background: var(--ip-primary-100);
 }
 
 .preview-sheet.image::before {
-  background: linear-gradient(135deg, #6ad6ff 0%, #2f8df5 48%, #2651d6 100%);
+  background: var(--ip-primary-200);
 }
 
 .preview-sheet.video::before,
 .preview-sheet.audio::before {
-  background: linear-gradient(135deg, #9ae6c5 0%, #2fb981 48%, #1680a8 100%);
+  background: var(--ip-mod-resources-soft);
 }
 
 .preview-sheet.text::before {
-  background: linear-gradient(135deg, #e6edf7 0%, #aebbd0 48%, #64748b 100%);
+  background: var(--ip-neutral-200);
 }
 
 .sheet-front {
@@ -392,8 +394,8 @@ const formatSize = (size?: number) => {
   z-index: 2;
   width: 100%;
   height: 100%;
-  background: #fff;
-  object-fit: cover;
+  background: var(--ip-neutral-0);
+  object-fit: contain;
 }
 
 .cover-ribbon,
@@ -405,11 +407,11 @@ const formatSize = (size?: number) => {
 
 .cover-ribbon {
   grid-row: 2;
-  min-width: 66px;
-  max-width: 78px;
+  min-width: 52px;
+  max-width: 64px;
   overflow: hidden;
   border-radius: 999px;
-  padding: 3px 8px;
+  padding: 2px 4px;
   background: var(--ip-mod-resources-soft);
   color: var(--ip-mod-resources);
   font-size: var(--ip-font-caption);
@@ -421,7 +423,7 @@ const formatSize = (size?: number) => {
 
 .sheet-front strong {
   grid-row: 3;
-  margin-top: 6px;
+  margin-top: 4px;
   color: var(--ip-neutral-900);
   font-size: var(--ip-font-emphasis);
   font-weight: 700;
@@ -429,8 +431,8 @@ const formatSize = (size?: number) => {
 }
 
 .sheet-front em {
-  max-width: 76px;
-  margin-top: 5px;
+  max-width: 64px;
+  margin-top: 4px;
   overflow: hidden;
   color: var(--ip-neutral-500);
   font-size: var(--ip-font-caption);
@@ -446,7 +448,17 @@ const formatSize = (size?: number) => {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding-top: 22px;
+  padding-top: 0;
+}
+
+.resource-category {
+  overflow: hidden;
+  color: var(--ip-primary-600);
+  font-size: var(--ip-font-caption);
+  line-height: 1.2;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .title-button {
@@ -474,7 +486,7 @@ const formatSize = (size?: number) => {
 }
 
 .resource-meta {
-  margin-top: 10px;
+  margin-top: 6px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -498,32 +510,32 @@ const formatSize = (size?: number) => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: nowrap;
   min-width: 0;
 }
 
 .action-button {
   height: 32px;
-  min-width: 64px;
+  min-width: 60px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   border: 1px solid var(--ip-neutral-200);
   border-radius: var(--ip-radius-sm);
-  padding: 0 8px;
+  padding: 0 6px;
   background: var(--ip-neutral-0);
   color: var(--ip-neutral-600);
   font-size: var(--ip-font-hint);
   font-weight: 600;
   cursor: pointer;
   transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    color 0.16s ease,
-    box-shadow 0.16s ease;
+    border-color var(--ip-motion-fast) var(--ip-motion-ease),
+    background var(--ip-motion-fast) var(--ip-motion-ease),
+    color var(--ip-motion-fast) var(--ip-motion-ease),
+    box-shadow var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
 .action-button.favorite {
@@ -555,38 +567,25 @@ const formatSize = (size?: number) => {
   color: var(--ip-mod-resources);
 }
 
-@media (max-width: 1540px) {
-  .resource-card {
-    min-height: 178px;
-    grid-template-columns: 104px minmax(0, 1fr);
-    column-gap: 10px;
-    row-gap: 8px;
-    padding: 12px;
+@container (max-width: 279px) {
+  .action-button {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
   }
-
-  .preview-stack {
-    width: 104px;
-    height: 132px;
-  }
-
-  .title-button {
-    font-size: 15px;
-  }
-
-  .resource-body {
-    padding-top: 19px;
-  }
-
-  .resource-meta {
-    gap: 8px;
-    font-size: 11px;
+  .action-label {
+    display: none;
   }
 }
 
 @media (max-width: 620px) {
   .resource-card {
-    grid-template-columns: 104px minmax(0, 1fr);
-    padding: 14px;
+    grid-template-columns: 88px minmax(0, 1fr);
+    padding: 12px;
+  }
+  .preview-stack {
+    width: 88px;
+    height: 124px;
   }
 
   .card-actions {

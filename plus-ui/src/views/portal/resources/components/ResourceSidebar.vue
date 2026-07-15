@@ -1,33 +1,35 @@
 <template>
   <aside class="resource-sidebar" @keydown.esc="closeCompactFilters">
-    <div class="side-brand">
-      <img src="@/assets/portal/module-resource.png" alt="资料共享" />
-      <div><strong>资料共享</strong><span>知识汇聚 · 共享价值</span></div>
-    </div>
-
-    <button class="home-button" type="button" @click="goPortalHome">
-      <el-icon><House /></el-icon><span>返回首页</span>
-    </button>
-
-    <button
-      v-if="isCompact"
-      ref="disclosureRef"
-      class="filter-disclosure"
-      type="button"
-      aria-controls="resource-category-filters"
-      :aria-expanded="filtersExpanded"
-      @click="toggleCompactFilters"
-    >
-      <span>资料栏目与筛选</span>
-      <el-icon :class="{ expanded: filtersExpanded }"><ArrowDown /></el-icon>
-    </button>
-
-    <div id="resource-category-filters" ref="filterRegionRef" class="filter-region" :hidden="isCompact && !filtersExpanded">
-      <div v-if="loadError" class="category-error" role="alert">
-        <span>{{ loadError }}</span
-        ><button type="button" @click="emit('retry')">重试</button>
+    <div class="resource-sidebar-inner">
+      <div class="side-brand">
+        <img src="@/assets/portal/module-resource.png" alt="资料共享" />
+        <div><strong>资料共享</strong><span>知识汇聚 · 共享价值</span></div>
       </div>
-      <ResourceFilterPanel :tree="categoryTree" :selected="selectedCategories" @update:selected="onUpdateSelected" />
+
+      <button class="home-button" type="button" @click="goPortalHome">
+        <el-icon><House /></el-icon><span>返回首页</span>
+      </button>
+
+      <button
+        v-if="isCompact"
+        ref="disclosureRef"
+        class="filter-disclosure"
+        type="button"
+        aria-controls="resource-category-filters"
+        :aria-expanded="filtersExpanded"
+        @click="toggleCompactFilters"
+      >
+        <span>资料栏目与筛选</span>
+        <el-icon :class="{ expanded: filtersExpanded }"><ArrowDown /></el-icon>
+      </button>
+
+      <div id="resource-category-filters" ref="filterRegionRef" class="filter-region" :hidden="isCompact && !filtersExpanded">
+        <div v-if="loadError" class="category-error" role="alert">
+          <span>{{ loadError }}</span
+          ><button type="button" @click="emit('retry')">重试</button>
+        </div>
+        <ResourceFilterPanel :tree="categoryTree" :selected="selectedCategories" @update:selected="onUpdateSelected" />
+      </div>
     </div>
   </aside>
 </template>
@@ -77,7 +79,7 @@ const closeCompactFilters = () => {
 };
 
 onMounted(() => {
-  mediaQuery = window.matchMedia('(max-width: 980px)');
+  mediaQuery = window.matchMedia('(max-width: 1120px)');
   syncViewport();
   mediaQuery.addEventListener('change', syncViewport);
 });
@@ -87,24 +89,31 @@ onBeforeUnmount(() => mediaQuery?.removeEventListener('change', syncViewport));
 
 <style scoped>
 .resource-sidebar {
+  min-height: 100%;
+  align-self: stretch;
+  margin: 0;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-md);
+  padding: 0;
+  background: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
+}
+.resource-sidebar-inner {
   position: sticky;
   top: 24px;
-  align-self: start;
   max-height: calc(100vh - 48px);
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 12px;
+  overflow: hidden;
 }
 .side-brand {
   min-height: 80px;
   display: flex;
   align-items: center;
   gap: 12px;
-  border: 1px solid var(--ip-neutral-200);
-  border-radius: var(--ip-radius-md);
+  border-bottom: 1px solid var(--ip-neutral-100);
   padding: 16px;
   background: var(--ip-neutral-0);
-  box-shadow: var(--ip-shadow-sm);
 }
 .side-brand img {
   width: 40px;
@@ -130,7 +139,7 @@ onBeforeUnmount(() => mediaQuery?.removeEventListener('change', syncViewport));
 }
 .home-button,
 .filter-disclosure {
-  width: 100%;
+  width: calc(100% - 32px);
   min-height: 36px;
   display: inline-flex;
   align-items: center;
@@ -145,6 +154,9 @@ onBeforeUnmount(() => mediaQuery?.removeEventListener('change', syncViewport));
   font-weight: 600;
   cursor: pointer;
 }
+.home-button {
+  margin: 12px 16px;
+}
 .home-button:hover,
 .filter-disclosure:hover {
   border-color: var(--ip-primary-300);
@@ -154,6 +166,7 @@ onBeforeUnmount(() => mediaQuery?.removeEventListener('change', syncViewport));
 .filter-region {
   min-height: 0;
   overflow: auto;
+  border-top: 1px solid var(--ip-neutral-100);
 }
 .filter-region[hidden] {
   display: none;
@@ -196,36 +209,55 @@ button:focus-visible {
   box-shadow: var(--ip-focus-ring);
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1120px) {
   .resource-sidebar {
+    min-height: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .resource-sidebar-inner {
     position: static;
     max-height: none;
+    overflow: visible;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: auto auto auto;
+    gap: 12px;
   }
   .side-brand {
     grid-column: 1;
+    border: 1px solid var(--ip-neutral-200);
+    border-radius: var(--ip-radius-md);
+    box-shadow: var(--ip-shadow-sm);
   }
   .home-button {
     grid-column: 2;
     align-self: stretch;
     width: auto;
     min-width: 112px;
+    margin: 0;
   }
   .filter-disclosure {
     grid-column: 1 / -1;
     display: inline-flex;
+    width: 100%;
     min-height: 44px;
   }
   .filter-region {
     grid-column: 1 / -1;
     max-height: none;
     overflow: visible;
+    border-top: 0;
+  }
+  .filter-region :deep(.filter-panel) {
+    border: 1px solid var(--ip-neutral-200);
+    border-radius: var(--ip-radius-md);
+    box-shadow: var(--ip-shadow-sm);
   }
 }
 
 @media (max-width: 480px) {
-  .resource-sidebar {
+  .resource-sidebar-inner {
     grid-template-columns: 1fr;
   }
   .side-brand,
