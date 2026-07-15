@@ -6,7 +6,7 @@
         <canvas v-else-if="pdfThumbnailUrl" v-show="pdfThumbnailReady" ref="thumbnailCanvasRef" class="thumbnail-canvas"></canvas>
         <img v-else-if="imageThumbnailUrl" :src="imageThumbnailUrl" :alt="resource.title" @error="imageThumbnailBroken = true" />
         <template v-if="showFallbackCover">
-          <span class="cover-ribbon">{{ resource.categoryName || '资源共享' }}</span>
+          <span class="cover-ribbon">{{ resource.categoryName || '资料共享' }}</span>
           <strong>{{ typeLabel }}</strong>
           <em>{{ coverTitle }}</em>
         </template>
@@ -25,7 +25,7 @@
     </div>
 
     <div class="card-actions">
-      <button class="action-button primary" type="button" @click.stop="emit('preview', resource)">
+      <button class="action-button preview" type="button" @click.stop="emit('preview', resource)">
         <el-icon><View /></el-icon>
         <span>预览</span>
       </button>
@@ -241,7 +241,7 @@ const renderPdfThumbnail = async () => {
 
     canvas.width = targetWidth;
     canvas.height = targetHeight;
-    context.fillStyle = '#fff';
+    context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ip-neutral-0').trim() || 'white';
     context.fillRect(0, 0, targetWidth, targetHeight);
     context.save();
     context.translate((targetWidth - viewport.width) / 2, (targetHeight - viewport.height) / 2);
@@ -304,28 +304,28 @@ const formatSize = (size?: number) => {
 
 <style scoped>
 .resource-card {
-  min-height: 186px;
+  min-height: 184px;
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) 32px;
   align-items: start;
   column-gap: 16px;
   row-gap: 8px;
-  border: 1px solid #e3e8f0;
-  border-radius: 8px;
-  padding: 14px 16px;
-  background: #fff;
-  box-shadow: 0 8px 22px rgba(20, 36, 67, 0.04);
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-md);
+  padding: 16px;
+  background: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
   cursor: pointer;
   transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+    border-color var(--ip-motion-fast) var(--ip-motion-ease),
+    box-shadow var(--ip-motion-fast) var(--ip-motion-ease),
+    transform var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
 .resource-card:hover {
-  border-color: rgba(47, 138, 122, 0.32);
-  box-shadow: 0 14px 30px rgba(20, 36, 67, 0.08);
+  border-color: var(--ip-primary-200);
+  box-shadow: var(--ip-shadow-md);
   transform: translateY(-1px);
 }
 
@@ -343,10 +343,10 @@ const formatSize = (size?: number) => {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  border: 1px solid #dfe5ee;
-  border-radius: 7px;
-  background: #fff;
-  box-shadow: 0 10px 24px rgba(20, 36, 67, 0.12);
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .preview-sheet::before {
@@ -383,7 +383,7 @@ const formatSize = (size?: number) => {
   display: grid;
   grid-template-rows: 1fr auto auto 1fr;
   justify-items: center;
-  color: #10223f;
+  color: var(--ip-neutral-900);
 }
 
 .sheet-front img,
@@ -410,10 +410,10 @@ const formatSize = (size?: number) => {
   overflow: hidden;
   border-radius: 999px;
   padding: 3px 8px;
-  background: var(--resource-accent-soft, #e7f4f0);
-  color: var(--resource-accent, #2f8a7a);
-  font-size: 10px;
-  font-weight: 800;
+  background: var(--ip-mod-resources-soft);
+  color: var(--ip-mod-resources);
+  font-size: var(--ip-font-caption);
+  font-weight: 600;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -422,9 +422,9 @@ const formatSize = (size?: number) => {
 .sheet-front strong {
   grid-row: 3;
   margin-top: 6px;
-  color: #10223f;
-  font-size: 17px;
-  font-weight: 950;
+  color: var(--ip-neutral-900);
+  font-size: var(--ip-font-emphasis);
+  font-weight: 700;
   letter-spacing: 0;
 }
 
@@ -432,10 +432,10 @@ const formatSize = (size?: number) => {
   max-width: 76px;
   margin-top: 5px;
   overflow: hidden;
-  color: #56657e;
-  font-size: 10px;
+  color: var(--ip-neutral-500);
+  font-size: var(--ip-font-caption);
   font-style: normal;
-  font-weight: 750;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -454,32 +454,36 @@ const formatSize = (size?: number) => {
   border: 0;
   padding: 0;
   background: transparent;
-  color: #10223f;
-  font-size: 16px;
+  overflow: hidden;
+  color: var(--ip-neutral-900);
+  font-size: var(--ip-font-emphasis);
   line-height: 1.34;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
   text-align: left;
+  display: -webkit-box;
   white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow-wrap: anywhere;
   cursor: pointer;
 }
 
 .title-button:hover {
-  color: var(--resource-primary, #245f8f);
+  color: var(--ip-primary-600);
 }
 
 .resource-meta {
   margin-top: 10px;
   display: flex;
   align-items: center;
-  gap: 11px;
-  flex-wrap: nowrap;
-  color: var(--resource-weak, #96a1af);
-  font-size: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--ip-neutral-500);
+  font-size: var(--ip-font-caption);
   font-weight: 400;
   line-height: 1;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .resource-meta span {
@@ -507,13 +511,13 @@ const formatSize = (size?: number) => {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  border: 1px solid var(--resource-input-border, #d3dee8);
-  border-radius: 6px;
-  padding: 0 9px;
-  background: #f8fafc;
-  color: var(--resource-text, #32445c);
-  font-size: 13px;
-  font-weight: 700;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-sm);
+  padding: 0 8px;
+  background: var(--ip-neutral-0);
+  color: var(--ip-neutral-600);
+  font-size: var(--ip-font-hint);
+  font-weight: 600;
   cursor: pointer;
   transition:
     border-color 0.16s ease,
@@ -529,34 +533,26 @@ const formatSize = (size?: number) => {
 }
 
 .action-button:hover {
-  border-color: var(--resource-primary, #245f8f);
-  background: var(--resource-primary-soft, #eaf2f8);
-  color: var(--resource-primary, #245f8f);
+  border-color: var(--ip-primary-300);
+  background: var(--ip-primary-50);
+  color: var(--ip-primary-700);
 }
 
-.action-button.primary {
-  border-color: var(--resource-primary, #245f8f);
-  background: var(--resource-primary, #245f8f);
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(36, 95, 143, 0.18);
-}
-
-.action-button.primary:hover {
-  border-color: var(--resource-primary-deep, #183f63);
-  background: var(--resource-primary-deep, #183f63);
-  color: #fff;
+.action-button.preview {
+  border-color: var(--ip-primary-300);
+  color: var(--ip-primary-700);
 }
 
 .action-button.favorite.active {
-  border-color: rgba(47, 138, 122, 0.38);
-  background: var(--resource-accent-soft, #e7f4f0);
-  color: var(--resource-accent, #2f8a7a);
+  border-color: var(--ip-mod-resources-border);
+  background: var(--ip-mod-resources-soft);
+  color: var(--ip-mod-resources);
 }
 
 .action-button.favorite.active:hover {
-  border-color: var(--resource-accent, #2f8a7a);
-  background: #dcefe9;
-  color: var(--resource-accent, #2f8a7a);
+  border-color: var(--ip-mod-resources);
+  background: var(--ip-mod-resources-soft);
+  color: var(--ip-mod-resources);
 }
 
 @media (max-width: 1540px) {
@@ -595,6 +591,19 @@ const formatSize = (size?: number) => {
 
   .card-actions {
     flex-wrap: nowrap;
+  }
+
+  .action-button {
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resource-card {
+    transition: none;
+  }
+  .resource-card:hover {
+    transform: none;
   }
 }
 </style>

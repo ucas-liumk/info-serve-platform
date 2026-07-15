@@ -1,7 +1,7 @@
 <template>
   <aside class="filter-panel">
     <div class="filter-title">
-      <span>资源栏目</span>
+      <span>资料栏目</span>
       <button v-if="tree.length > 0" class="fold-toggle" type="button" @click="toggleAllGroups">
         {{ allCollapsed ? '全部展开' : '全部收起' }}
       </button>
@@ -10,18 +10,7 @@
     <p v-if="tree.length === 0" class="filter-empty">暂无栏目分类</p>
 
     <div v-for="group in tree" :key="group.categoryId" class="filter-group">
-      <div
-        class="group-header"
-        role="button"
-        tabindex="0"
-        :aria-expanded="!isCollapsed(group.categoryCode)"
-        @click="toggleCollapse(group.categoryCode)"
-        @keydown.enter.prevent="toggleCollapse(group.categoryCode)"
-        @keydown.space.prevent="toggleCollapse(group.categoryCode)"
-      >
-        <span :class="['chevron', { folded: isCollapsed(group.categoryCode) }]" aria-hidden="true">
-          <el-icon><CaretBottom /></el-icon>
-        </span>
+      <div class="group-header">
         <button
           :class="['checkbox', groupCheckboxClass(group)]"
           type="button"
@@ -31,8 +20,13 @@
           @click.stop="onToggleGroup(group)"
           @keydown.stop
         ></button>
-        <span class="group-name">{{ group.categoryName }}</span>
-        <em class="count">{{ groupResourceCount(group) }}</em>
+        <button class="group-collapse" type="button" :aria-expanded="!isCollapsed(group.categoryCode)" @click="toggleCollapse(group.categoryCode)">
+          <span :class="['chevron', { folded: isCollapsed(group.categoryCode) }]" aria-hidden="true">
+            <el-icon><CaretBottom /></el-icon>
+          </span>
+          <span class="group-name">{{ group.categoryName }}</span>
+          <em class="count">{{ groupResourceCount(group) }}</em>
+        </button>
       </div>
 
       <div v-show="!isCollapsed(group.categoryCode)" class="group-body">
@@ -119,7 +113,7 @@ const clearSelection = () => emit('update:selected', []);
   border: 1px solid var(--ip-neutral-200);
   border-radius: var(--ip-radius-md);
   background: var(--ip-neutral-0);
-  box-shadow: var(--ip-shadow-md);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .filter-title {
@@ -127,11 +121,16 @@ const clearSelection = () => emit('update:selected', []);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--ip-neutral-100);
   color: var(--ip-neutral-900);
   font-size: var(--ip-font-emphasis);
-  font-weight: 800;
+  font-weight: 700;
+}
+
+.filter-title > span,
+.fold-toggle {
+  white-space: nowrap;
 }
 
 .fold-toggle {
@@ -151,7 +150,7 @@ const clearSelection = () => emit('update:selected', []);
 
 .filter-empty {
   margin: 0;
-  padding: 18px 16px;
+  padding: 16px;
   color: var(--ip-neutral-400);
   font-size: var(--ip-font-hint);
   text-align: center;
@@ -165,13 +164,12 @@ const clearSelection = () => emit('update:selected', []);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   background: var(--ip-neutral-50);
   border-left: 3px solid var(--ip-primary-500);
   color: var(--ip-neutral-900);
   font-size: var(--ip-font-body);
   font-weight: 700;
-  cursor: pointer;
   transition: background var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
@@ -179,9 +177,23 @@ const clearSelection = () => emit('update:selected', []);
   background: var(--ip-neutral-100);
 }
 
-.group-header .count {
+.group-collapse .count {
   font-weight: 700;
   color: var(--ip-neutral-500);
+}
+
+.group-collapse {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
 
 .group-name,
@@ -214,9 +226,9 @@ const clearSelection = () => emit('update:selected', []);
 
 .checkbox {
   position: relative;
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
   box-sizing: border-box;
   border: 1px solid var(--ip-neutral-300);
   padding: 0;
@@ -236,8 +248,8 @@ const clearSelection = () => emit('update:selected', []);
 .checkbox.is-checked::after {
   content: '';
   position: absolute;
-  left: 4px;
-  top: 1px;
+  left: 5px;
+  top: 2px;
   width: 4px;
   height: 8px;
   border: solid var(--ip-neutral-0);
@@ -256,7 +268,7 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .group-body {
-  margin: 4px 10px 8px 25px;
+  margin: 4px 8px 8px 24px;
   padding-left: 8px;
   border-left: 2px solid var(--ip-neutral-100);
 }
@@ -268,7 +280,7 @@ const clearSelection = () => emit('update:selected', []);
   gap: 8px;
   border: 0;
   border-radius: var(--ip-radius-sm);
-  padding: 6px 8px;
+  padding: 8px;
   background: transparent;
   color: var(--ip-neutral-600);
   font-size: var(--ip-font-body);
@@ -296,7 +308,7 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .filter-clear {
-  padding: 10px 16px 14px;
+  padding: 8px 16px 16px;
   border-top: 1px solid var(--ip-neutral-100);
 }
 
@@ -304,7 +316,8 @@ const clearSelection = () => emit('update:selected', []);
   width: 100%;
   border: 1px solid var(--ip-neutral-200);
   border-radius: var(--ip-radius-sm);
-  padding: 7px 0;
+  min-height: 36px;
+  padding: 0 8px;
   background: var(--ip-neutral-0);
   color: var(--ip-neutral-500);
   font-size: var(--ip-font-hint);
@@ -314,6 +327,12 @@ const clearSelection = () => emit('update:selected', []);
     border-color var(--ip-motion-fast) var(--ip-motion-ease),
     background var(--ip-motion-fast) var(--ip-motion-ease),
     color var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+button:focus-visible,
+.group-collapse:focus-visible {
+  outline: none;
+  box-shadow: var(--ip-focus-ring);
 }
 
 .filter-clear button:hover:not(:disabled) {

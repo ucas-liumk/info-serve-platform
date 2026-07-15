@@ -1,45 +1,24 @@
 <template>
   <div class="resources-app">
-    <ResourceSidebar :category-tree="categoryTree" :selected-categories="selectedCategories" @update:selected-categories="changeSelectedCategories" />
+    <ResourceSidebar
+      :category-tree="categoryTree"
+      :selected-categories="selectedCategories"
+      :load-error="categoryLoadError"
+      @update:selected-categories="changeSelectedCategories"
+      @retry="loadCategoryTree"
+    />
 
     <main class="resource-main">
-      <header class="resource-topbar">
-        <div class="title-block">
-          <h1>{{ resourcePageTitle }}</h1>
-          <p>{{ resourcePageSubtitle }}</p>
-        </div>
+      <ResourceHeader
+        v-model:keyword="keyword"
+        :title="resourcePageTitle"
+        :subtitle="resourcePageSubtitle"
+        @search="reloadWithFacets"
+        @upload="openCreateDialog"
+        @mine="openMyResources"
+      />
 
-        <div class="top-actions">
-          <div class="search-box">
-            <el-input
-              v-model="keyword"
-              class="resource-search"
-              clearable
-              placeholder="搜索资源标题、关键词、作者、标签等"
-              size="large"
-              @keyup.enter="reloadWithFacets"
-              @clear="reloadWithFacets"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-            <button class="search-button" type="button" @click="reloadWithFacets">搜索</button>
-          </div>
-
-          <PortalNotificationBell />
-          <button class="upload-button" type="button" @click="openCreateDialog">
-            <el-icon><UploadFilled /></el-icon>
-            <span>上传资料</span>
-          </button>
-          <button class="mine-button" type="button" @click="openMyResources">
-            <el-icon><User /></el-icon>
-            <span>我的资源</span>
-          </button>
-        </div>
-      </header>
-
-      <section v-loading="loading" class="resource-content">
+      <section class="resource-content">
         <ResourceToolbar
           :total="total"
           :sort="sort"
@@ -56,8 +35,16 @@
 
         <ResourceCategoryChips :chips="selectedChips" @remove="removeChip" />
 
-        <div class="resource-results">
-          <div v-if="displayMode === 'grid'" class="resource-grid">
+        <div class="resource-results" :aria-busy="loading">
+          <ResourceLoadingSkeleton v-if="showSkeleton" :mode="displayMode" />
+
+          <div v-else-if="loadError" class="result-error" role="alert">
+            <strong>资料加载失败</strong>
+            <span>请检查网络连接后重新加载，已有筛选条件会继续保留。</span>
+            <button type="button" @click="reload">重新加载</button>
+          </div>
+
+          <div v-else-if="displayMode === 'grid' && resources.length > 0" class="resource-grid">
             <ResourceCard
               v-for="item in resources"
               :key="item.resourceId"
@@ -67,9 +54,19 @@
               @favorite="toggleFavorite"
             />
           </div>
-          <ResourceList v-else :resources="resources" @preview="openPreview" @download="openDownload" @favorite="toggleFavorite" />
+          <ResourceList
+            v-else-if="resources.length > 0"
+            :resources="resources"
+            @preview="openPreview"
+            @download="openDownload"
+            @favorite="toggleFavorite"
+          />
 
-          <el-empty v-if="!loading && resources.length === 0" description="暂无资料" />
+          <el-empty v-else-if="!loading" description="暂无资料">
+            <button v-if="selectedCategories.length > 0 || committedKeyword" class="empty-action" type="button" @click="clearAllFilters">
+              清除筛选
+            </button>
+          </el-empty>
         </div>
       </section>
 
@@ -77,7 +74,8 @@
         v-if="total > PAGE_SIZE_OPTIONS[0]"
         class="pager"
         background
-        layout="total, sizes, prev, pager, next, jumper"
+        :layout="paginationLayout"
+        :pager-count="mobileViewport ? 5 : 7"
         :total="total"
         :page-size="pageSize"
         :page-sizes="[...PAGE_SIZE_OPTIONS]"
@@ -117,13 +115,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Search, UploadFilled, User } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/modules/user';
 import { getToken } from '@/utils/auth';
-import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
 import {
   changePortalResourceStatus,
   createPortalResource,
@@ -138,11 +134,14 @@ import {
 import type { CategoryTreeNode, InfoResource, ResourcePortalPayload, ResourceUploadProgress, ResourceUploadResult } from '@/api/infoservice/types';
 import { downloadPortalResource } from './download';
 import { buildSelectedChips, encodeCategoryCodes, removeCategory, resolveSelectionTitle } from './categoryFacets';
+import { createLatestRequestGuard } from './resourceRequestState';
 import { normalizePageSize, PAGE_SIZE_OPTIONS, persistPageSize, readStoredPageSize } from '../pageSizing';
 import MyResourcesDrawer from './components/MyResourcesDrawer.vue';
 import ResourceCard from './components/ResourceCard.vue';
 import ResourceCategoryChips from './components/ResourceCategoryChips.vue';
+import ResourceHeader from './components/ResourceHeader.vue';
 import ResourceList from './components/ResourceList.vue';
+import ResourceLoadingSkeleton from './components/ResourceLoadingSkeleton.vue';
 import ResourceSidebar from './components/ResourceSidebar.vue';
 import ResourceToolbar from './components/ResourceToolbar.vue';
 import ResourceUploadDialog from './components/ResourceUploadDialog.vue';
@@ -179,6 +178,10 @@ const pageSize = ref(readStoredPageSize(PAGE_SIZE_STORAGE_KEY));
 const total = ref(0);
 const myResourcesTotal = ref(0);
 const loading = ref(false);
+const showSkeleton = ref(false);
+const loadError = ref('');
+const categoryLoadError = ref('');
+const mobileViewport = ref(false);
 const myResourcesLoading = ref(false);
 const myResourcesVisible = ref(false);
 const uploadVisible = ref(false);
@@ -189,6 +192,7 @@ const isLoggedIn = computed(() => Boolean(userStore.token || getToken()));
 const resourcePageTitle = computed(() => resolveSelectionTitle(categoryTree.value, selectedCategories.value));
 const resourcePageSubtitle = computed(() => `当前筛选共 ${total.value} 条资料`);
 const selectedChips = computed(() => buildSelectedChips(categoryTree.value, selectedCategories.value));
+const paginationLayout = computed(() => (mobileViewport.value ? 'prev, pager, next' : 'total, sizes, prev, pager, next, jumper'));
 
 const ensureLogin = () => {
   if (isLoggedIn.value) {
@@ -201,13 +205,19 @@ const ensureLogin = () => {
 /** 已提交的搜索关键词：勾选/排序/翻页只读它，避免输入半截的词被隐式带入列表而计数还是旧口径 */
 const committedKeyword = ref('');
 
-/** 请求序号：丢弃过期响应，防止快速连点勾选时旧结果覆盖新结果 */
-let reloadSeq = 0;
-let treeSeq = 0;
+const listGuard = createLatestRequestGuard();
+const treeGuard = createLatestRequestGuard();
+let skeletonTimer: ReturnType<typeof setTimeout> | undefined;
+let mobileQuery: MediaQueryList | undefined;
+
+const syncMobileViewport = (event?: MediaQueryListEvent) => {
+  mobileViewport.value = event?.matches ?? mobileQuery?.matches ?? false;
+};
 
 /** 分面计数树：同步已提交关键词+工具条筛选，但不含分类勾选自身（标准分面语义） */
 const loadCategoryTree = async () => {
-  const seq = ++treeSeq;
+  const seq = treeGuard.begin();
+  categoryLoadError.value = '';
   try {
     const res: any = await getResourceCategoryTree({
       keyword: committedKeyword.value,
@@ -215,17 +225,26 @@ const loadCategoryTree = async () => {
       uploadedWithin: uploadedWithin.value,
       sizeRange: sizeRange.value
     });
-    if (seq === treeSeq) {
+    if (treeGuard.isCurrent(seq)) {
       categoryTree.value = res.data || [];
     }
-  } catch {
-    // 计数树刷新失败保留旧数据，避免左栏闪空；错误提示由全局请求拦截器兜底
+  } catch (error) {
+    if (treeGuard.isCurrent(seq)) {
+      categoryLoadError.value = '栏目刷新失败';
+    }
+    console.error('[resources] 栏目加载失败', error);
   }
 };
 
 const reload = async () => {
-  const seq = ++reloadSeq;
+  const seq = listGuard.begin();
+  clearTimeout(skeletonTimer);
+  loadError.value = '';
   loading.value = true;
+  showSkeleton.value = false;
+  skeletonTimer = setTimeout(() => {
+    if (listGuard.isCurrent(seq)) showSkeleton.value = true;
+  }, 300);
   try {
     const res: any = await listResources({
       scope: 'public',
@@ -238,7 +257,7 @@ const reload = async () => {
       pageNum: pageNum.value,
       pageSize: pageSize.value
     });
-    if (seq !== reloadSeq) {
+    if (!listGuard.isCurrent(seq)) {
       return;
     }
     resources.value = res.rows || [];
@@ -249,9 +268,16 @@ const reload = async () => {
       pageNum.value = lastPage;
       await reload();
     }
+  } catch (error) {
+    if (listGuard.isCurrent(seq)) {
+      loadError.value = '资料加载失败';
+    }
+    console.error('[resources] 资料加载失败', error);
   } finally {
-    if (seq === reloadSeq) {
+    if (listGuard.isCurrent(seq)) {
+      clearTimeout(skeletonTimer);
       loading.value = false;
+      showSkeleton.value = false;
     }
   }
 };
@@ -265,9 +291,19 @@ const reloadFirst = () => {
 const reloadWithFacets = async () => {
   committedKeyword.value = keyword.value;
   pageNum.value = 1;
-  await Promise.all([reload(), loadCategoryTree()]).catch(() => {
-    // 列表失败由全局拦截器提示；此处仅防未处理的 Promise 拒绝
-  });
+  await Promise.all([reload(), loadCategoryTree()]);
+};
+
+const clearAllFilters = () => {
+  keyword.value = '';
+  committedKeyword.value = '';
+  selectedCategories.value = [];
+  previewType.value = 'all';
+  uploadedWithin.value = 'all';
+  sizeRange.value = 'all';
+  sort.value = 'latest';
+  pageNum.value = 1;
+  void Promise.all([reload(), loadCategoryTree()]);
 };
 
 const loadMyResources = async () => {
@@ -498,7 +534,7 @@ const submitResource = async (payload: ResourceSubmitPayload) => {
         );
         patchProgress(index, { percent: 100, status: 'done' });
       }
-      ElMessage.success(files.length === 1 ? '资料已发布，可在我的资源中管理' : `已发布 ${files.length} 份资料，可在我的资源中管理`);
+      ElMessage.success(files.length === 1 ? '资料已发布，可在我的资料中管理' : `已发布 ${files.length} 份资料，可在我的资料中管理`);
     }
     uploadVisible.value = false;
     await refreshOwnedViews();
@@ -533,224 +569,115 @@ const deleteOwnResource = async (resource: InfoResource) => {
 };
 
 onMounted(async () => {
+  mobileQuery = window.matchMedia('(max-width: 767px)');
+  syncMobileViewport();
+  mobileQuery.addEventListener('change', syncMobileViewport);
   await Promise.all([loadCategoryTree(), reload()]);
+});
+
+onBeforeUnmount(() => {
+  clearTimeout(skeletonTimer);
+  mobileQuery?.removeEventListener('change', syncMobileViewport);
 });
 </script>
 
 <style scoped>
 .resources-app {
   min-height: 100vh;
-  --resource-primary: #245f8f;
-  --resource-primary-deep: #183f63;
-  --resource-primary-soft: #eaf2f8;
-  --resource-accent: #2f8a7a;
-  --resource-accent-soft: #e7f4f0;
-  --resource-title: #14243a;
-  --resource-text: #32445c;
-  --resource-muted: #68788c;
-  --resource-weak: #96a1af;
-  --resource-border: #dce5ed;
-  --resource-input-border: #d3dee8;
   display: grid;
-  grid-template-columns: 276px minmax(0, 1fr);
-  gap: 22px;
-  padding: 18px 28px 44px;
-  background: linear-gradient(180deg, rgba(241, 244, 248, 0.95) 0%, rgba(247, 249, 252, 0.82) 320px), #f5f7fa;
-  color: var(--resource-text);
-  font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px 32px 48px;
+  background: linear-gradient(180deg, var(--ip-neutral-100), var(--ip-neutral-50));
+  color: var(--ip-neutral-700);
 }
 
 .resources-app :deep(.el-input__wrapper),
 .resources-app :deep(.el-select__wrapper) {
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 0 0 1px var(--resource-input-border) inset;
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-neutral-0);
+  box-shadow: 0 0 0 1px var(--ip-neutral-300) inset;
 }
 
 .resources-app :deep(.el-input__wrapper:hover),
 .resources-app :deep(.el-select__wrapper:hover),
 .resources-app :deep(.el-input__wrapper.is-focus),
 .resources-app :deep(.el-select__wrapper.is-focused) {
-  box-shadow: 0 0 0 1px var(--resource-primary) inset;
+  box-shadow: 0 0 0 1px var(--ip-primary-600) inset;
 }
 
 .resources-app :deep(.el-input__inner),
 .resources-app :deep(.el-select__placeholder) {
-  color: var(--resource-text);
-  font-weight: 650;
+  color: var(--ip-neutral-700);
+  font-weight: 500;
 }
 
 .resources-app :deep(.el-input__inner::placeholder) {
-  color: var(--resource-muted);
-}
-
-.upload-button,
-.mine-button,
-.search-button {
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1;
-  font-weight: 850;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+  color: var(--ip-neutral-400);
 }
 
 .resource-main {
   min-width: 0;
   display: grid;
   align-content: start;
-  gap: 12px;
-}
-
-.resource-topbar {
-  position: relative;
-  min-height: 86px;
-  display: grid;
-  grid-template-columns: minmax(220px, 390px) minmax(0, 1fr);
-  align-items: center;
-  gap: 18px;
-  box-sizing: border-box;
-  border: 1px solid var(--resource-border);
-  border-radius: 8px;
-  padding: 14px 16px 14px 20px;
-  overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
-}
-
-.resource-topbar::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--resource-accent);
-  pointer-events: none;
-}
-
-.title-block {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-}
-
-.title-block h1 {
-  margin: 0;
-  color: var(--resource-title);
-  font-size: 28px;
-  line-height: 1.15;
-  font-weight: 900;
-}
-
-.title-block p {
-  margin: 6px 0 0;
-  overflow: hidden;
-  color: var(--resource-muted);
-  font-size: 13px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.top-actions {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.search-box {
-  min-width: 300px;
-  max-width: 620px;
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.resource-search {
-  min-width: 0;
-  --el-input-height: 40px;
-}
-
-:deep(.resource-search .el-input__wrapper) {
-  padding: 0 14px;
-  border-radius: 8px;
-}
-
-:deep(.resource-search .el-input__inner) {
-  font-size: 14px;
-}
-
-.search-button {
-  border: 1px solid var(--resource-primary);
-  padding: 0 16px;
-  background: var(--resource-primary);
-  color: #fff;
-}
-
-.search-button:hover,
-.upload-button:hover {
-  background: var(--resource-primary-deep);
-  box-shadow: 0 8px 20px rgba(36, 95, 143, 0.18);
-  transform: translateY(-1px);
-}
-
-.upload-button {
-  flex: 0 0 auto;
-  border: 1px solid var(--resource-primary);
-  padding: 0 15px;
-  background: var(--resource-primary);
-  color: #fff;
-}
-
-.mine-button {
-  flex: 0 0 auto;
-  border: 1px solid var(--resource-input-border);
-  padding: 0 15px;
-  background: #fff;
-  color: var(--resource-text);
-}
-
-.mine-button:hover {
-  border-color: var(--resource-primary);
-  background: var(--resource-primary-soft);
-  color: var(--resource-primary);
-  box-shadow: 0 8px 20px rgba(36, 95, 143, 0.1);
-  transform: translateY(-1px);
+  gap: 16px;
 }
 
 .resource-content {
   min-height: calc(100vh - 150px);
-  border: 1px solid var(--resource-border);
-  border-radius: 8px;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-md);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.08);
+  background: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .resource-results {
   min-height: 360px;
-  padding: 16px 18px 14px;
+  padding: 24px;
 }
 
 .resource-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.result-error {
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--ip-neutral-600);
+  text-align: center;
+}
+
+.result-error strong {
+  color: var(--ip-neutral-900);
+  font-size: var(--ip-font-emphasis);
+  font-weight: 700;
+}
+.result-error span {
+  font-size: var(--ip-font-body);
+}
+.result-error button,
+.empty-action {
+  min-height: 36px;
+  border: 1px solid var(--ip-primary-300);
+  border-radius: var(--ip-radius-sm);
+  padding: 0 16px;
+  background: var(--ip-neutral-0);
+  color: var(--ip-primary-700);
+  font-size: var(--ip-font-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+.result-error button:hover,
+.empty-action:hover {
+  border-color: var(--ip-primary-600);
+  background: var(--ip-primary-50);
 }
 
 .pager {
@@ -760,31 +687,23 @@ onMounted(async () => {
 }
 
 .resources-app :deep(.el-pagination.is-background .el-pager li.is-active) {
-  background: var(--resource-primary);
+  background: var(--ip-primary-600);
 }
 
-@media (max-width: 1360px) {
+@media (max-width: 1199px) {
   .resources-app {
-    grid-template-columns: 256px minmax(0, 1fr);
-    padding-inline: 22px;
+    padding-inline: 24px;
   }
 
   .resource-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .resource-topbar {
-    grid-template-columns: 1fr;
-  }
-
-  .top-actions {
-    justify-content: flex-start;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 980px) {
   .resources-app {
     grid-template-columns: 1fr;
+    gap: 16px;
     padding: 16px;
   }
 
@@ -793,30 +712,22 @@ onMounted(async () => {
   }
 }
 
-@media (max-width: 760px) {
-  .top-actions,
-  .search-box {
-    width: 100%;
+@media (max-width: 767px) {
+  .resources-app {
+    padding: 12px;
   }
-
-  .top-actions {
-    align-items: stretch;
-    flex-direction: column;
+  .resource-results {
+    padding: 16px;
   }
-
-  .search-box {
-    min-width: 0;
-    grid-template-columns: 1fr;
-  }
-
-  .upload-button,
-  .mine-button,
-  .search-button {
-    width: 100%;
-  }
-
   .resource-grid {
     grid-template-columns: 1fr;
+  }
+  .pager {
+    --el-pagination-button-width: 44px;
+  }
+  .result-error button,
+  .empty-action {
+    min-height: 44px;
   }
 }
 </style>

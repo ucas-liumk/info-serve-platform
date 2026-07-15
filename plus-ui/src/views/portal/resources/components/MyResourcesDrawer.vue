@@ -3,7 +3,7 @@
     <section class="drawer-shell">
       <header class="drawer-head">
         <div>
-          <strong>我的资源</strong>
+          <strong>我的资料</strong>
           <span>上传、收藏、下载与浏览记录</span>
         </div>
         <button class="close-button" type="button" title="关闭" @click="visible = false">
@@ -54,7 +54,11 @@
               <button v-if="activeTab === 'uploads'" class="danger" type="button" @click="emit('delete', item)">删除</button>
             </div>
           </article>
-          <el-empty v-if="!loading && resources.length === 0" :image-size="92" :description="activeTab === 'uploads' ? '暂无上传资料' : '暂无收藏记录'" />
+          <el-empty
+            v-if="!loading && resources.length === 0"
+            :image-size="92"
+            :description="activeTab === 'uploads' ? '暂无上传资料' : '暂无收藏记录'"
+          />
         </template>
 
         <el-empty v-else :image-size="92" :description="emptyText" />

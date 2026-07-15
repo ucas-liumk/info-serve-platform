@@ -1,41 +1,55 @@
 <template>
-  <div class="resource-list">
-    <article v-for="item in resources" :key="item.resourceId" class="resource-row" @click="emit('preview', item)">
-      <div class="row-icon">
-        <el-icon><Document /></el-icon>
-      </div>
-      <div class="row-main">
-        <div class="row-title">
-          <button type="button" @click.stop="emit('preview', item)">{{ item.title }}</button>
-          <span>{{ item.categoryName || '未分类' }}</span>
-          <em>{{ item.fileSuffix || item.previewType || 'file' }}</em>
-        </div>
-        <p>{{ item.description || item.originalName || '暂无简介' }}</p>
-        <div class="row-meta">
-          <span>{{ formatSize(item.fileSize) }}</span>
-          <span>浏览 {{ item.viewCount || 0 }}</span>
-          <span>下载 {{ item.downloadCount || 0 }}</span>
-          <span>{{ item.createTime || '-' }}</span>
-        </div>
-      </div>
-      <div class="row-actions">
-        <button type="button" @click.stop="emit('preview', item)">
-          <el-icon><View /></el-icon>
-          预览
-        </button>
-        <button type="button" @click.stop="emit('download', item)">
-          <el-icon><Download /></el-icon>
-          下载
-        </button>
-        <button :class="{ active: item.favorited }" type="button" @click.stop="emit('favorite', item)">
-          <el-icon>
-            <StarFilled v-if="item.favorited" />
-            <Star v-else />
-          </el-icon>
-          {{ item.favorited ? '已收藏' : '收藏' }}
-        </button>
-      </div>
-    </article>
+  <div class="table-shell">
+    <table class="resource-table">
+      <thead>
+        <tr>
+          <th scope="col">资料名称</th>
+          <th scope="col">分类 / 类型</th>
+          <th scope="col">文件大小</th>
+          <th scope="col">浏览 / 下载</th>
+          <th scope="col">发布时间</th>
+          <th scope="col">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in resources" :key="item.resourceId" @dblclick="emit('preview', item)">
+          <td data-label="资料名称">
+            <div class="name-cell">
+              <span class="file-icon" aria-hidden="true"
+                ><el-icon><Document /></el-icon
+              ></span>
+              <span class="name-copy">
+                <button type="button" :title="item.title" @click="emit('preview', item)">{{ item.title }}</button>
+                <small :title="item.description || item.originalName || '暂无简介'">{{ item.description || item.originalName || '暂无简介' }}</small>
+              </span>
+            </div>
+          </td>
+          <td data-label="分类 / 类型">
+            <span class="category-tag">{{ item.categoryName || '未分类' }}</span>
+            <span class="type-text">{{ typeLabel(item) }}</span>
+          </td>
+          <td data-label="文件大小">{{ formatSize(item.fileSize) }}</td>
+          <td data-label="浏览 / 下载">
+            <span class="metric">{{ item.viewCount || 0 }} / {{ item.downloadCount || 0 }}</span>
+          </td>
+          <td class="date-cell" data-label="发布时间">{{ formatDate(item.createTime) }}</td>
+          <td data-label="操作">
+            <div class="row-actions">
+              <button type="button" @click="emit('preview', item)">
+                <el-icon><View /></el-icon><span>预览</span>
+              </button>
+              <button type="button" @click="emit('download', item)">
+                <el-icon><Download /></el-icon><span>下载</span>
+              </button>
+              <button :class="{ active: item.favorited }" type="button" @click="emit('favorite', item)">
+                <el-icon><StarFilled v-if="item.favorited" /><Star v-else /></el-icon>
+                <span>{{ item.favorited ? '已收藏' : '收藏' }}</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
@@ -43,15 +57,17 @@
 import { Document, Download, Star, StarFilled, View } from '@element-plus/icons-vue';
 import type { InfoResource } from '@/api/infoservice/types';
 
-defineProps<{
-  resources: InfoResource[];
-}>();
-
+defineProps<{ resources: InfoResource[] }>();
 const emit = defineEmits<{
   (e: 'preview', resource: InfoResource): void;
   (e: 'download', resource: InfoResource): void;
   (e: 'favorite', resource: InfoResource): void;
 }>();
+
+const typeLabel = (resource: InfoResource) =>
+  String(resource.fileSuffix || resource.previewType || 'file')
+    .replace(/^\./, '')
+    .toUpperCase();
 
 const formatSize = (size?: number) => {
   if (!size) return '-';
@@ -59,159 +75,276 @@ const formatSize = (size?: number) => {
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 };
+
+const formatDate = (value?: string) => {
+  if (!value) return '-';
+  return String(value).replace('T', ' ').slice(0, 16);
+};
 </script>
 
 <style scoped>
-.resource-list {
-  display: grid;
+.table-shell {
+  overflow: hidden;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-md);
+  background: var(--ip-neutral-0);
+}
+.resource-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: var(--ip-neutral-700);
+  font-size: var(--ip-font-hint);
+}
+th {
+  height: 44px;
+  padding: 0 12px;
+  background: var(--ip-neutral-100);
+  color: var(--ip-neutral-600);
+  font-weight: 600;
+  text-align: left;
+}
+th:first-child {
+  width: 30%;
+}
+th:nth-child(2) {
+  width: 13%;
+}
+th:nth-child(3) {
+  width: 9%;
+}
+th:nth-child(4) {
+  width: 10%;
+}
+th:nth-child(5) {
+  width: 14%;
+}
+th:last-child {
+  width: 24%;
+}
+td {
+  min-width: 0;
+  height: 72px;
+  border-top: 1px solid var(--ip-neutral-100);
+  padding: 12px;
+  vertical-align: middle;
+}
+tbody tr {
+  transition: background var(--ip-motion-fast) var(--ip-motion-ease);
+}
+tbody tr:hover {
+  background: var(--ip-neutral-50);
+}
+.name-cell {
+  min-width: 0;
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
-
-.resource-row {
-  min-height: 104px;
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  border: 1px solid var(--resource-border, #dce5ed);
-  border-radius: 8px;
-  padding: 14px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(11, 24, 51, 0.05);
-  cursor: pointer;
-}
-
-.resource-row:hover {
-  border-color: #b8c9d9;
-  background: #fbfcfe;
-}
-
-.row-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
+.file-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--resource-accent-soft, #e7f4f0);
-  color: var(--resource-accent, #2f8a7a);
-  font-size: 23px;
+  border-radius: var(--ip-radius-sm);
+  background: var(--ip-mod-resources-soft);
+  color: var(--ip-mod-resources);
+  font-size: 20px;
 }
-
-.row-main {
+.name-copy {
   min-width: 0;
+  display: grid;
+  gap: 4px;
 }
-
-.row-title {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.row-title button {
-  max-width: min(100%, 520px);
+.name-copy button {
+  max-width: 100%;
   overflow: hidden;
   border: 0;
   padding: 0;
   background: transparent;
-  color: var(--resource-title, #14243a);
-  font-size: 16px;
-  font-weight: 850;
+  color: var(--ip-neutral-900);
+  font-size: var(--ip-font-body);
+  font-weight: 600;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
 }
-
-.row-title button:hover {
-  color: var(--resource-primary, #245f8f);
+.name-copy button:hover {
+  color: var(--ip-primary-600);
 }
-
-.row-title span,
-.row-title em {
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 6px;
-  padding: 0 7px;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 700;
-}
-
-.row-title span {
-  background: var(--resource-accent-soft, #e7f4f0);
-  color: var(--resource-accent, #2f8a7a);
-}
-
-.row-title em {
-  background: #f5f7fa;
-  color: var(--resource-muted, #68788c);
-}
-
-.row-main p {
-  margin: 8px 0 0;
+.name-copy small {
   overflow: hidden;
-  color: var(--resource-muted, #68788c);
-  font-size: 13px;
-  font-weight: 650;
+  color: var(--ip-neutral-500);
+  font-size: var(--ip-font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.row-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 9px;
-  color: var(--resource-weak, #96a1af);
-  font-size: 12px;
-  font-weight: 650;
+.category-tag {
+  display: inline-flex;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: var(--ip-radius-full);
+  padding: 4px 8px;
+  background: var(--ip-mod-resources-soft);
+  color: var(--ip-mod-resources);
+  font-size: var(--ip-font-caption);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
+.type-text {
+  display: block;
+  margin-top: 4px;
+  color: var(--ip-neutral-400);
+  font-size: var(--ip-font-caption);
+}
+.metric {
+  white-space: nowrap;
+}
+.date-cell {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .row-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
-
 .row-actions button {
+  min-width: 32px;
   height: 32px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border: 1px solid var(--resource-border, #dce5ed);
-  border-radius: 8px;
-  padding: 0 10px;
-  background: #fff;
-  color: var(--resource-text, #32445c);
-  font-weight: 700;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-sm);
+  padding: 0 8px;
+  background: var(--ip-neutral-0);
+  color: var(--ip-neutral-600);
+  font-size: var(--ip-font-caption);
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
-
 .row-actions button:hover {
-  border-color: var(--resource-primary, #245f8f);
-  color: var(--resource-primary, #245f8f);
-  background: var(--resource-primary-soft, #eaf2f8);
+  border-color: var(--ip-primary-300);
+  background: var(--ip-primary-50);
+  color: var(--ip-primary-700);
 }
-
 .row-actions button.active {
-  border-color: rgba(47, 138, 122, 0.38);
-  background: var(--resource-accent-soft, #e7f4f0);
-  color: var(--resource-accent, #2f8a7a);
+  border-color: var(--ip-mod-resources-border);
+  background: var(--ip-mod-resources-soft);
+  color: var(--ip-mod-resources);
+}
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--ip-focus-ring);
 }
 
-@media (max-width: 760px) {
-  .resource-row {
-    grid-template-columns: 42px minmax(0, 1fr);
+@media (max-width: 1199px) {
+  th:nth-child(3),
+  td:nth-child(3),
+  th:nth-child(4),
+  td:nth-child(4) {
+    display: none;
   }
+  th:first-child {
+    width: 40%;
+  }
+  th:nth-child(2) {
+    width: 18%;
+  }
+  th:nth-child(5) {
+    width: 18%;
+  }
+  th:last-child {
+    width: 24%;
+  }
+  .row-actions button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+}
 
-  .row-actions {
+@media (max-width: 767px) {
+  .table-shell {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+  .resource-table,
+  tbody {
+    display: block;
+  }
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--ip-neutral-200);
+    border-radius: var(--ip-radius-md);
+    padding: 16px;
+    background: var(--ip-neutral-0);
+    box-shadow: var(--ip-shadow-sm);
+  }
+  td,
+  td:nth-child(3),
+  td:nth-child(4) {
+    height: auto;
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    padding: 0;
+  }
+  td::before {
+    content: attr(data-label);
+    color: var(--ip-neutral-400);
+    font-size: var(--ip-font-caption);
+    font-weight: 600;
+  }
+  td:first-child,
+  td:last-child {
     grid-column: 1 / -1;
-    justify-content: flex-start;
+    display: block;
+  }
+  td:first-child::before,
+  td:last-child::before {
+    display: none;
+  }
+  .date-cell {
+    white-space: normal;
+  }
+  .row-actions {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .row-actions button {
+    min-height: 44px;
+  }
+  .row-actions button span {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
   }
 }
 </style>
