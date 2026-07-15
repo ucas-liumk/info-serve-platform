@@ -11,7 +11,7 @@
         </el-select>
       </label>
       <label class="toolbar-filter">
-        <span>资源类型</span>
+        <span>资料类型</span>
         <el-select :model-value="previewType" class="toolbar-select" size="large" @change="emit('update:previewType', $event)">
           <el-option label="全部类型" value="all" />
           <el-option label="Office/WPS" value="office" />
@@ -46,11 +46,25 @@
     </div>
     <div class="toolbar-right">
       <span class="total-text">共 {{ total }} 份资料</span>
-      <div class="mode-switch" aria-label="显示方式">
-        <button :class="{ active: displayMode === 'grid' }" type="button" title="网格视图" @click="emit('update:displayMode', 'grid')">
+      <div class="mode-switch" aria-label="显示方式" role="group">
+        <button
+          :class="{ active: displayMode === 'grid' }"
+          type="button"
+          title="网格视图"
+          aria-label="切换为网格视图"
+          :aria-pressed="displayMode === 'grid'"
+          @click="emit('update:displayMode', 'grid')"
+        >
           <el-icon><Grid /></el-icon>
         </button>
-        <button :class="{ active: displayMode === 'list' }" type="button" title="列表视图" @click="emit('update:displayMode', 'list')">
+        <button
+          :class="{ active: displayMode === 'list' }"
+          type="button"
+          title="表格视图"
+          aria-label="切换为表格视图"
+          :aria-pressed="displayMode === 'list'"
+          @click="emit('update:displayMode', 'list')"
+        >
           <el-icon><List /></el-icon>
         </button>
       </div>
@@ -86,16 +100,16 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border-bottom: 1px solid #e1e9f6;
-  padding: 14px 20px;
-  background: #fff;
+  border-bottom: 1px solid var(--ip-neutral-200);
+  padding: 16px 24px;
+  background: var(--ip-neutral-0);
 }
 
 .toolbar-controls,
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -103,9 +117,9 @@ const emit = defineEmits<{
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #53668f;
-  font-size: 13px;
-  font-weight: 750;
+  color: var(--ip-neutral-600);
+  font-size: var(--ip-font-hint);
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -114,60 +128,80 @@ const emit = defineEmits<{
 }
 
 .toolbar-select :deep(.el-select__wrapper) {
-  min-height: 34px;
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px #dbe5f4 inset;
+  min-height: 36px;
+  border-radius: var(--ip-radius-sm);
+  box-shadow: 0 0 0 1px var(--ip-neutral-200) inset;
 }
 
 .total-text {
-  color: #53668f;
-  font-size: 13px;
-  font-weight: 750;
+  color: var(--ip-neutral-500);
+  font-size: var(--ip-font-hint);
+  font-weight: 600;
 }
 
 .mode-switch {
-  height: 34px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid #dbe5f4;
-  border-radius: 8px;
-  padding: 3px;
-  background: #f7faff;
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-sm);
+  padding: 0;
+  background: var(--ip-neutral-50);
 }
 
 .mode-switch button {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--ip-radius-sm);
   background: transparent;
-  color: #53668f;
+  color: var(--ip-neutral-500);
   cursor: pointer;
 }
 
 .mode-switch button.active {
-  background: #1260e8;
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(18, 96, 232, 0.18);
+  background: var(--ip-primary-600);
+  color: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .mode-switch button:hover:not(.active) {
-  color: #1260e8;
-  background: #edf4ff;
+  color: var(--ip-primary-600);
+  background: var(--ip-primary-50);
 }
 
-@media (max-width: 760px) {
+.mode-switch button:focus-visible {
+  outline: none;
+  box-shadow: var(--ip-focus-ring);
+}
+
+@media (max-width: 767px) {
   .resource-toolbar {
     align-items: flex-start;
     flex-direction: column;
   }
 
   .toolbar-select {
-    width: min(100%, 148px);
+    width: min(100%, 144px);
+  }
+
+  .resource-toolbar {
+    padding: 16px;
+  }
+  .toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .mode-switch {
+    height: 48px;
+  }
+  .mode-switch button {
+    width: 44px;
+    height: 44px;
   }
 }
 </style>

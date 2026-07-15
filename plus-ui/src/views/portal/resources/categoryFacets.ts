@@ -97,10 +97,10 @@ export const buildSelectedChips = (tree: readonly CategoryTreeNode[], selected: 
   return selected.map((code) => ({ code, name: nameIndex.get(code) ?? code }));
 };
 
-/** 页面标题：空选→全部资源；单选→分类名；多选→已选 N 个分类 */
+/** 页面标题：空选→全部资料；单选→分类名；多选→已选 N 个分类 */
 export const resolveSelectionTitle = (tree: readonly CategoryTreeNode[], selected: readonly string[]): string => {
   if (selected.length === 0) {
-    return '全部资源';
+    return '全部资料';
   }
   if (selected.length === 1) {
     return buildNameIndex(tree).get(selected[0]) ?? '当前分类';

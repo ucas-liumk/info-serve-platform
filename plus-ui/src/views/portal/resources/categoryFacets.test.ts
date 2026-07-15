@@ -174,8 +174,8 @@ describe('buildSelectedChips', () => {
 });
 
 describe('resolveSelectionTitle', () => {
-  it('is 全部资源 when nothing is selected', () => {
-    expect(resolveSelectionTitle(tree, [])).toBe('全部资源');
+  it('is 全部资料 when nothing is selected', () => {
+    expect(resolveSelectionTitle(tree, [])).toBe('全部资料');
   });
 
   it('is the category name for a single selection', () => {

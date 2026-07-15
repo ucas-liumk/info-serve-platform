@@ -46,7 +46,7 @@ const openMore = () => emit('more');
 .module-zone {
   max-width: var(--portal-max);
   position: relative;
-  margin: 190px auto 0;
+  margin: var(--ip-home-module-offset-canvas) auto 0;
 }
 
 .more-service {
@@ -107,9 +107,13 @@ const openMore = () => emit('more');
   align-items: center;
   padding: 18px 18px 20px;
   border: 1px solid var(--ip-neutral-200);
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 252, 255, 0.94) 100%);
-  box-shadow: var(--ip-shadow-md);
+  border-radius: var(--ip-radius-md);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ip-neutral-0) 96%, transparent) 0%,
+    color-mix(in srgb, var(--ip-neutral-50) 94%, transparent) 100%
+  );
+  box-shadow: var(--ip-shadow-sm);
   color: var(--portal-blue);
   cursor: pointer;
   transition:
@@ -132,7 +136,7 @@ const openMore = () => emit('more');
 .module-card:hover {
   transform: translateY(-3px);
   border-color: var(--ip-primary-200);
-  box-shadow: var(--ip-shadow-lg);
+  box-shadow: var(--ip-shadow-md);
 }
 
 .module-card:hover::before {
@@ -203,10 +207,18 @@ const openMore = () => emit('more');
   filter: drop-shadow(0 1px 1px rgba(7, 61, 148, 0.2));
 }
 
+.module-card:focus-visible {
+  box-shadow: var(--ip-focus-ring), var(--ip-shadow-sm);
+}
+
+.more-service:focus-visible {
+  box-shadow: var(--ip-focus-ring), var(--ip-shadow-sm);
+}
+
 @media (max-width: 1460px) {
   .module-zone {
     gap: 16px;
-    margin-top: 112px;
+    margin-top: var(--ip-home-module-offset-wide);
   }
 
   .module-card {
@@ -230,7 +242,7 @@ const openMore = () => emit('more');
 
 @media (max-width: 1180px) {
   .module-zone {
-    margin-top: 96px;
+    margin-top: var(--ip-home-module-offset-desktop);
   }
 
   .module-grid {
@@ -302,7 +314,7 @@ const openMore = () => emit('more');
 
 @media (max-width: 640px) {
   .module-zone {
-    margin-top: 40px;
+    margin-top: 48px;
   }
 
   .module-card {
@@ -326,6 +338,19 @@ const openMore = () => emit('more');
 
   .module-card {
     min-height: 232px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .module-card,
+  .module-card::before,
+  .more-service {
+    transition: none;
+  }
+
+  .module-card:hover,
+  .more-service:hover {
+    transform: none;
   }
 }
 </style>

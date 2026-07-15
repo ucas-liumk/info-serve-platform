@@ -1,0 +1,37 @@
+.preview-workbench { position: relative; width: 56px; min-width: 56px; min-height: 0; display: flex; gap: 8px; }
+.preview-workbench.is-open:not(.is-overlay) { width: calc(var(--preview-drawer-width) + 64px); }
+.workspace-rail { position: relative; z-index: 5; width: 56px; min-width: 56px; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1px solid var(--ip-neutral-200); border-radius: var(--ip-radius-md); padding: 8px 6px; background: var(--ip-neutral-0); box-shadow: var(--ip-shadow-sm); }
+.rail-button, .rail-collapse, .drawer-close { display: inline-flex; align-items: center; justify-content: center; border-radius: var(--ip-radius-sm); cursor: pointer; transition: background var(--ip-motion-fast) var(--ip-motion-ease), color var(--ip-motion-fast) var(--ip-motion-ease), border-color var(--ip-motion-fast) var(--ip-motion-ease); }
+.rail-button { position: relative; width: 42px; min-height: 44px; flex-direction: column; gap: 2px; border: 1px solid transparent; background: transparent; color: var(--ip-neutral-600); }
+.rail-button svg { width: 20px; height: 20px; }
+.rail-button span { max-width: 40px; overflow: hidden; font-size: var(--ip-font-caption); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.rail-button:hover { border-color: var(--ip-primary-200); background: var(--ip-primary-50); color: var(--ip-primary-700); }
+.rail-button.is-active { border-color: var(--ip-primary-200); background: var(--ip-primary-100); color: var(--ip-primary-700); box-shadow: inset 3px 0 var(--ip-primary-600); }
+.rail-collapse { width: 36px; height: 36px; margin-top: auto; border: 1px solid var(--ip-neutral-300); background: var(--ip-neutral-700); color: var(--ip-neutral-0); }
+.rail-collapse:disabled { border-color: var(--ip-neutral-200); background: var(--ip-neutral-100); color: var(--ip-neutral-400); cursor: not-allowed; }
+.workspace-drawer { position: relative; z-index: 4; width: var(--preview-drawer-width); min-width: 320px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--ip-neutral-200); border-radius: var(--ip-radius-md); padding: 0; background: var(--ip-neutral-0); box-shadow: var(--ip-shadow-lg); animation: drawer-in var(--ip-motion-panel) var(--ip-motion-ease); }
+.drawer-header { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--ip-neutral-200); padding: 8px 12px 8px 16px; }
+.drawer-header > div { display: grid; gap: 2px; }
+.drawer-kicker { color: var(--ip-neutral-500); font-size: var(--ip-font-caption); }
+.drawer-header strong { color: var(--ip-neutral-900); font-size: var(--ip-font-body); font-weight: 700; }
+.drawer-close { width: 36px; height: 36px; border: 1px solid var(--ip-neutral-300); background: var(--ip-neutral-0); color: var(--ip-neutral-700); }
+.drawer-close:hover { border-color: var(--ip-primary-300); background: var(--ip-primary-50); color: var(--ip-primary-700); }
+.drawer-close svg { width: 20px; height: 20px; }
+.drawer-content { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.resize-handle { position: absolute; inset: 0 auto 0 0; z-index: 8; width: 6px; cursor: col-resize; }
+.resize-handle:hover, .is-resizing .resize-handle { background: var(--ip-primary-200); }
+.drawer-backdrop { position: fixed; inset: 0; z-index: 2; border: 0; padding: 0; background: color-mix(in srgb, var(--ip-neutral-900) 35%, transparent); cursor: default; }
+.is-overlay .workspace-drawer { position: absolute; inset: 0 64px 0 auto; }
+@keyframes drawer-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .workspace-drawer { animation: none; } }
+@media (min-width: 768px) { .rail-button span { display: none; } }
+@media (max-width: 767px) {
+  .preview-workbench, .preview-workbench.is-open { position: fixed; inset: auto 8px 8px; z-index: 20; width: auto; height: 56px; min-width: 0; }
+  .workspace-rail { width: 100%; min-width: 0; height: 56px; flex-direction: row; justify-content: space-around; gap: 4px; padding: 4px 8px; box-shadow: var(--ip-shadow-lg); }
+  .rail-button { width: auto; min-width: 88px; min-height: 44px; flex-direction: row; gap: 6px; }
+  .rail-button span { max-width: none; font-size: var(--ip-font-hint); }
+  .rail-button.is-active { box-shadow: inset 0 -3px var(--ip-primary-600); }
+  .workspace-drawer { position: fixed !important; inset: auto 0 0 !important; z-index: 22; width: 100%; min-width: 0; max-height: 78dvh; border-radius: var(--ip-radius-lg); }
+  .drawer-backdrop { z-index: 21; }
+  .drawer-close { width: 44px; height: 44px; }
+}

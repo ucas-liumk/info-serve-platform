@@ -57,9 +57,8 @@ const statsItems = computed(() => {
   margin: 24px auto 0;
   padding: 18px 28px;
   border: 1px solid var(--ip-neutral-200);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: var(--ip-shadow-md);
+  border-radius: var(--ip-radius-md);
+  background: color-mix(in srgb, var(--ip-neutral-0) 88%, transparent);
   backdrop-filter: blur(10px);
 }
 
@@ -68,7 +67,7 @@ const statsItems = computed(() => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border-right: 1px solid var(--ip-neutral-200);
+  border-right: 1px solid color-mix(in srgb, var(--ip-neutral-200) 72%, transparent);
 }
 
 .stats-heading strong {
@@ -97,7 +96,7 @@ const statsItems = computed(() => {
   align-items: center;
   gap: 12px;
   padding: 0 14px;
-  border-right: 1px solid var(--ip-neutral-200);
+  border-right: 1px solid color-mix(in srgb, var(--ip-neutral-200) 72%, transparent);
 }
 
 .stat-item:last-child {
@@ -105,9 +104,9 @@ const statsItems = computed(() => {
 }
 
 .stat-icon {
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -118,7 +117,7 @@ const statsItems = computed(() => {
 }
 
 .stat-icon .el-icon {
-  font-size: 28px;
+  font-size: 24px;
 }
 
 .stat-copy {

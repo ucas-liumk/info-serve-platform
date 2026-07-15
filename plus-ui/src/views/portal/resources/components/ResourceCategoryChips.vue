@@ -25,7 +25,7 @@ const emit = defineEmits<{
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 12px 18px 0;
+  padding: 12px 24px 0;
 }
 
 .category-chip {
@@ -34,7 +34,7 @@ const emit = defineEmits<{
   gap: 4px;
   border: 1px solid var(--ip-primary-200);
   border-radius: var(--ip-radius-full);
-  padding: 3px 6px 3px 12px;
+  padding: 4px 8px 4px 12px;
   background: var(--ip-primary-50);
   color: var(--ip-primary-600);
   font-size: var(--ip-font-caption);

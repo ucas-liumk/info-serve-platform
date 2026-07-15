@@ -1,27 +1,27 @@
 <template>
   <aside class="filter-panel">
     <div class="filter-title">
-      <span>资源栏目</span>
+      <span>资料栏目</span>
       <button v-if="tree.length > 0" class="fold-toggle" type="button" @click="toggleAllGroups">
         {{ allCollapsed ? '全部展开' : '全部收起' }}
       </button>
     </div>
 
+    <button
+      v-if="tree.length > 0"
+      :class="['all-resources', { active: selected.length === 0 }]"
+      type="button"
+      :aria-pressed="selected.length === 0"
+      @click="clearSelection"
+    >
+      <el-icon><Files /></el-icon>
+      <span>全部资料</span>
+    </button>
+
     <p v-if="tree.length === 0" class="filter-empty">暂无栏目分类</p>
 
     <div v-for="group in tree" :key="group.categoryId" class="filter-group">
-      <div
-        class="group-header"
-        role="button"
-        tabindex="0"
-        :aria-expanded="!isCollapsed(group.categoryCode)"
-        @click="toggleCollapse(group.categoryCode)"
-        @keydown.enter.prevent="toggleCollapse(group.categoryCode)"
-        @keydown.space.prevent="toggleCollapse(group.categoryCode)"
-      >
-        <span :class="['chevron', { folded: isCollapsed(group.categoryCode) }]" aria-hidden="true">
-          <el-icon><CaretBottom /></el-icon>
-        </span>
+      <div class="group-header">
         <button
           :class="['checkbox', groupCheckboxClass(group)]"
           type="button"
@@ -31,11 +31,22 @@
           @click.stop="onToggleGroup(group)"
           @keydown.stop
         ></button>
-        <span class="group-name">{{ group.categoryName }}</span>
-        <em class="count">{{ groupResourceCount(group) }}</em>
+        <button
+          class="group-collapse"
+          type="button"
+          :aria-expanded="!isCollapsed(group.categoryCode)"
+          :aria-controls="groupBodyId(group)"
+          @click="toggleCollapse(group.categoryCode)"
+        >
+          <span :class="['chevron', { folded: isCollapsed(group.categoryCode) }]" aria-hidden="true">
+            <el-icon><CaretBottom /></el-icon>
+          </span>
+          <span class="group-name">{{ group.categoryName }}</span>
+          <em class="count">{{ groupResourceCount(group) }}</em>
+        </button>
       </div>
 
-      <div v-show="!isCollapsed(group.categoryCode)" class="group-body">
+      <div :id="groupBodyId(group)" v-show="!isCollapsed(group.categoryCode)" class="group-body">
         <button
           v-for="cat in group.children ?? []"
           :key="cat.categoryId"
@@ -46,7 +57,7 @@
           @click="onToggleCategory(cat.categoryCode)"
         >
           <span :class="['checkbox', { 'is-checked': isSelected(cat.categoryCode) }]" aria-hidden="true"></span>
-          <span class="category-name">{{ cat.categoryName }}</span>
+          <span class="category-name" :title="cat.categoryName">{{ cat.categoryName }}</span>
           <em class="count">{{ cat.resourceCount ?? 0 }}</em>
         </button>
       </div>
@@ -60,7 +71,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { CaretBottom } from '@element-plus/icons-vue';
+import { CaretBottom, Files } from '@element-plus/icons-vue';
 import type { CategoryTreeNode } from '@/api/infoservice/types';
 import { getGroupCheckState, groupResourceCount, toggleCategory, toggleGroup } from '../categoryFacets';
 
@@ -77,6 +88,7 @@ const emit = defineEmits<{
 const collapsedCodes = ref<ReadonlySet<string>>(new Set());
 
 const isCollapsed = (code: string) => collapsedCodes.value.has(code);
+const groupBodyId = (group: CategoryTreeNode) => `resource-category-group-${group.categoryId}`;
 
 const toggleCollapse = (code: string) => {
   const next = new Set(collapsedCodes.value);
@@ -116,10 +128,7 @@ const clearSelection = () => emit('update:selected', []);
 
 <style scoped>
 .filter-panel {
-  border: 1px solid var(--ip-neutral-200);
-  border-radius: var(--ip-radius-md);
   background: var(--ip-neutral-0);
-  box-shadow: var(--ip-shadow-md);
 }
 
 .filter-title {
@@ -127,11 +136,15 @@ const clearSelection = () => emit('update:selected', []);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px 12px;
-  border-bottom: 1px solid var(--ip-neutral-100);
+  padding: 16px 16px 12px;
   color: var(--ip-neutral-900);
   font-size: var(--ip-font-emphasis);
-  font-weight: 800;
+  font-weight: 700;
+}
+
+.filter-title > span,
+.fold-toggle {
+  white-space: nowrap;
 }
 
 .fold-toggle {
@@ -149,47 +162,89 @@ const clearSelection = () => emit('update:selected', []);
   color: var(--ip-primary-600);
 }
 
+.all-resources {
+  width: calc(100% - 24px);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 8px;
+  border: 0;
+  border-radius: var(--ip-radius-sm);
+  padding: 0 12px;
+  background: transparent;
+  color: var(--ip-neutral-600);
+  font-size: var(--ip-font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--ip-motion-fast) var(--ip-motion-ease),
+    color var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+.all-resources:hover,
+.all-resources.active {
+  background: var(--ip-primary-50);
+  color: var(--ip-primary-700);
+}
+
 .filter-empty {
   margin: 0;
-  padding: 18px 16px;
+  padding: 16px;
   color: var(--ip-neutral-400);
   font-size: var(--ip-font-hint);
   text-align: center;
 }
 
 .filter-group + .filter-group {
-  border-top: 1px solid var(--ip-neutral-100);
+  margin-top: 8px;
 }
 
 .group-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: var(--ip-neutral-50);
-  border-left: 3px solid var(--ip-primary-500);
+  gap: 4px;
+  padding: 8px 12px;
+  background: transparent;
   color: var(--ip-neutral-900);
   font-size: var(--ip-font-body);
   font-weight: 700;
-  cursor: pointer;
   transition: background var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
 .group-header:hover {
-  background: var(--ip-neutral-100);
+  background: var(--ip-neutral-50);
 }
 
-.group-header .count {
+.group-collapse .count {
   font-weight: 700;
   color: var(--ip-neutral-500);
+}
+
+.group-collapse {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
 
 .group-name,
 .category-name {
   min-width: 0;
+  flex: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .chevron {
@@ -205,18 +260,25 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .count {
+  min-width: 28px;
+  flex: 0 0 auto;
   margin-left: auto;
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: var(--ip-neutral-100);
   color: var(--ip-neutral-400);
   font-size: var(--ip-font-caption);
   font-style: normal;
   font-weight: 500;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .checkbox {
   position: relative;
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
   box-sizing: border-box;
   border: 1px solid var(--ip-neutral-300);
   padding: 0;
@@ -236,8 +298,8 @@ const clearSelection = () => emit('update:selected', []);
 .checkbox.is-checked::after {
   content: '';
   position: absolute;
-  left: 4px;
-  top: 1px;
+  left: 5px;
+  top: 2px;
   width: 4px;
   height: 8px;
   border: solid var(--ip-neutral-0);
@@ -256,19 +318,19 @@ const clearSelection = () => emit('update:selected', []);
 }
 
 .group-body {
-  margin: 4px 10px 8px 25px;
+  margin: 0 8px 8px 24px;
   padding-left: 8px;
-  border-left: 2px solid var(--ip-neutral-100);
+  border-left: 1px solid var(--ip-neutral-200);
 }
 
 .category-row {
   width: 100%;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 4px;
   border: 0;
   border-radius: var(--ip-radius-sm);
-  padding: 6px 8px;
+  padding: 8px 12px;
   background: transparent;
   color: var(--ip-neutral-600);
   font-size: var(--ip-font-body);
@@ -280,23 +342,29 @@ const clearSelection = () => emit('update:selected', []);
     color var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
+.category-row .checkbox {
+  display: none;
+}
+
 .category-row:hover {
   background: var(--ip-neutral-50);
   color: var(--ip-primary-600);
 }
 
 .category-row.active {
+  box-shadow: inset 3px 0 var(--ip-primary-500);
   background: var(--ip-primary-50);
   color: var(--ip-primary-600);
   font-weight: 700;
 }
 
 .category-row.active .count {
+  background: var(--ip-primary-100);
   color: var(--ip-primary-600);
 }
 
 .filter-clear {
-  padding: 10px 16px 14px;
+  padding: 8px 16px 16px;
   border-top: 1px solid var(--ip-neutral-100);
 }
 
@@ -304,7 +372,8 @@ const clearSelection = () => emit('update:selected', []);
   width: 100%;
   border: 1px solid var(--ip-neutral-200);
   border-radius: var(--ip-radius-sm);
-  padding: 7px 0;
+  min-height: 36px;
+  padding: 0 8px;
   background: var(--ip-neutral-0);
   color: var(--ip-neutral-500);
   font-size: var(--ip-font-hint);
@@ -314,6 +383,12 @@ const clearSelection = () => emit('update:selected', []);
     border-color var(--ip-motion-fast) var(--ip-motion-ease),
     background var(--ip-motion-fast) var(--ip-motion-ease),
     color var(--ip-motion-fast) var(--ip-motion-ease);
+}
+
+button:focus-visible,
+.group-collapse:focus-visible {
+  outline: none;
+  box-shadow: var(--ip-focus-ring);
 }
 
 .filter-clear button:hover:not(:disabled) {
