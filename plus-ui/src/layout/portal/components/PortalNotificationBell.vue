@@ -2,13 +2,13 @@
   <el-popover
     v-model:visible="visible"
     placement="bottom-end"
-    :width="500"
+    :width="popoverWidth"
     trigger="click"
     popper-class="portal-notification-popper"
     @show="onShow"
   >
     <template #reference>
-      <button class="portal-notification-btn" type="button" title="通知">
+      <button class="portal-notification-btn" type="button" title="通知" aria-label="通知">
         <el-icon><Bell /></el-icon>
         <span v-if="unread > 0" class="portal-notification-badge">{{ badgeText }}</span>
       </button>
@@ -83,6 +83,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useWindowSize } from '@vueuse/core';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Bell, Box, ChatDotRound, Delete, Promotion, Refresh, UploadFilled, Tools } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/modules/user';
@@ -99,6 +100,7 @@ import {
 type NoticeTab = 'unread' | 'history';
 
 const userStore = useUserStore();
+const { width: viewportWidth } = useWindowSize();
 const visible = ref(false);
 const loading = ref(false);
 const tab = ref<NoticeTab>('unread');
@@ -111,6 +113,7 @@ let unreadTimer: number | undefined;
 
 const isLoggedIn = computed(() => Boolean(userStore.token || getToken()));
 const badgeText = computed(() => (unread.value > 99 ? '99+' : String(unread.value)));
+const popoverWidth = computed(() => Math.max(288, Math.min(500, viewportWidth.value - 32)));
 const emptyText = computed(() => (tab.value === 'unread' ? '暂无未读通知' : '暂无历史通知'));
 
 const typeMeta = {
@@ -236,26 +239,28 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d3dee8;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #58708c;
+  border: 1px solid color-mix(in srgb, var(--ip-neutral-300) 72%, transparent);
+  border-radius: var(--ip-radius-full);
+  background: color-mix(in srgb, var(--ip-neutral-0) 52%, transparent);
+  color: var(--ip-neutral-600);
   cursor: pointer;
-  box-shadow: 0 12px 26px rgba(31, 54, 76, 0.07);
   transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    color 0.16s ease,
-    box-shadow 0.16s ease,
-    transform 0.16s ease;
+    border-color var(--ip-motion-fast) var(--ip-motion-ease),
+    background var(--ip-motion-fast) var(--ip-motion-ease),
+    color var(--ip-motion-fast) var(--ip-motion-ease),
+    box-shadow var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
-.portal-notification-btn:hover {
-  border-color: #b8c9d9;
-  background: #eaf2f8;
-  color: #245f8f;
-  box-shadow: 0 14px 28px rgba(36, 95, 143, 0.12);
-  transform: translateY(-1px);
+.portal-notification-btn:hover,
+.portal-notification-btn:focus-visible {
+  border-color: var(--ip-primary-200);
+  background: color-mix(in srgb, var(--ip-neutral-0) 78%, transparent);
+  color: var(--ip-primary-700);
+}
+
+.portal-notification-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ip-focus-ring);
 }
 
 .portal-notification-btn .el-icon {
@@ -492,10 +497,26 @@ onBeforeUnmount(() => {
 }
 
 :global(.portal-notification-popper) {
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
   border: 1px solid #d3dee8 !important;
   border-radius: 12px !important;
   padding: 14px !important;
   box-shadow: 0 18px 46px rgba(31, 54, 76, 0.16) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-notification-btn {
+    transition: none;
+  }
+}
+
+@media (max-width: 840px) {
+  .portal-notification-btn {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
 }
 
 @media (max-width: 760px) {

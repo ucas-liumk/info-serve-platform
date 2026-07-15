@@ -8,45 +8,45 @@
       </div>
     </div>
 
-    <div class="status-panel">
-      <div class="status-row date-row">
-        <span>{{ dateText }}</span>
-        <span class="divider" aria-hidden="true"></span>
-        <span>{{ timeText }}</span>
-        <span class="divider" aria-hidden="true"></span>
-        <span>{{ weekText }}</span>
+    <div class="utility-toolbar">
+      <div class="date-group" :aria-label="`${dateText} ${weekText} ${timeText}`">
+        <strong>{{ timeText }}</strong>
+        <span>{{ dateText }} · {{ weekText }}</span>
       </div>
-      <div class="status-row user-row">
-        <el-dropdown trigger="click" @command="handleUserCommand">
-          <button class="user-pill" type="button">
-            <span class="avatar">
-              <img v-if="userStore.avatar" :src="userStore.avatar" alt="" />
-              <el-icon v-else><UserFilled /></el-icon>
-            </span>
-            <span>{{ userLabel }}</span>
-            <el-icon class="down"><ArrowDown /></el-icon>
-          </button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="profile">个人信息</el-dropdown-item>
-              <el-dropdown-item command="password">修改密码</el-dropdown-item>
-              <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <span class="divider" aria-hidden="true"></span>
+
+      <el-dropdown class="user-menu" trigger="click" @command="handleUserCommand">
+        <button class="user-pill" type="button" :aria-label="`打开${userLabel}的用户菜单`">
+          <span class="avatar">
+            <img v-if="showAvatar" :src="userStore.avatar" alt="" @error="handleAvatarError" />
+            <el-icon v-else><UserFilled /></el-icon>
+          </span>
+          <span class="user-label">{{ userLabel }}</span>
+          <el-icon class="down"><ArrowDown /></el-icon>
+        </button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="profile">个人信息</el-dropdown-item>
+            <el-dropdown-item command="password">修改密码</el-dropdown-item>
+            <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+
+      <div class="quick-actions">
         <button class="manual-entry" type="button" title="系统使用手册" aria-label="系统使用手册" @click="handleManualClick">
           <el-icon><Memo /></el-icon>
         </button>
-        <span class="divider" aria-hidden="true"></span>
-        <PortalNotificationBell />
+
+        <span class="notification-entry">
+          <PortalNotificationBell />
+        </span>
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ArrowDown, Memo, UserFilled } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/modules/user';
 import PortalNotificationBell from '@/layout/portal/components/PortalNotificationBell.vue';
@@ -59,9 +59,12 @@ const emit = defineEmits<{
 
 const userStore = useUserStore();
 const now = ref(new Date());
-let timer: ReturnType<typeof setInterval> | undefined;
+const avatarFailed = ref(false);
+let minuteTimeout: number | undefined;
+let minuteTimer: number | undefined;
 
 const userLabel = computed(() => userStore.nickname || userStore.name || '当前用户');
+const showAvatar = computed(() => Boolean(userStore.avatar) && !avatarFailed.value);
 
 const dateText = computed(() => {
   const year = now.value.getFullYear();
@@ -80,16 +83,33 @@ const weekText = computed(() => ['星期日', '星期一', '星期二', '星期�
 
 const handleUserCommand = (command: string | number | object) => emit('command', command);
 const handleManualClick = () => emit('open-manual');
+const handleAvatarError = () => {
+  avatarFailed.value = true;
+};
+
+watch(
+  () => userStore.avatar,
+  () => {
+    avatarFailed.value = false;
+  }
+);
 
 onMounted(() => {
-  timer = setInterval(() => {
+  const delayUntilNextMinute = 60000 - (Date.now() % 60000);
+  minuteTimeout = window.setTimeout(() => {
     now.value = new Date();
-  }, 60000);
+    minuteTimer = window.setInterval(() => {
+      now.value = new Date();
+    }, 60000);
+  }, delayUntilNextMinute);
 });
 
 onBeforeUnmount(() => {
-  if (timer) {
-    clearInterval(timer);
+  if (minuteTimeout) {
+    window.clearTimeout(minuteTimeout);
+  }
+  if (minuteTimer) {
+    window.clearInterval(minuteTimer);
   }
 });
 </script>
@@ -135,44 +155,55 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
-.status-panel {
-  width: 390px;
-  padding: 14px 18px;
-  border: 1px solid var(--ip-neutral-200);
-  border-radius: 16px;
-  background: rgba(230, 244, 255, 0.74);
-  box-shadow: var(--ip-shadow-md);
-  backdrop-filter: blur(14px);
-}
-
-.status-row {
+.utility-toolbar {
+  min-width: 0;
   display: flex;
   align-items: center;
-  color: var(--ip-neutral-800);
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.date-group {
+  min-width: 0;
+  padding-right: 16px;
+  border-right: 1px solid color-mix(in srgb, var(--ip-neutral-500) 28%, transparent);
+  text-align: right;
   white-space: nowrap;
 }
 
-.date-row {
-  height: 28px;
-  justify-content: center;
-  gap: 12px;
-  font-size: 16px;
+.date-group strong,
+.date-group span {
+  display: block;
+}
+
+.date-group strong {
+  color: var(--ip-neutral-900);
+  font-size: var(--ip-font-title-sm);
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.date-group span {
+  margin-top: 8px;
+  color: var(--ip-neutral-600);
+  font-size: var(--ip-font-hint);
+  line-height: 1;
   font-weight: 600;
 }
 
-.divider {
-  width: 1px;
-  height: 22px;
-  display: inline-block;
-  background: var(--ip-neutral-300);
+.user-menu {
+  min-width: 0;
 }
 
-.user-row {
-  justify-content: center;
-  gap: 14px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--ip-neutral-200);
+.quick-actions,
+.notification-entry {
+  display: inline-flex;
+}
+
+.quick-actions {
+  align-items: center;
+  gap: 8px;
 }
 
 .manual-entry {
@@ -183,26 +214,28 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d3dee8;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #58708c;
+  border: 1px solid color-mix(in srgb, var(--ip-neutral-300) 72%, transparent);
+  border-radius: var(--ip-radius-full);
+  background: color-mix(in srgb, var(--ip-neutral-0) 52%, transparent);
+  color: var(--ip-neutral-600);
   cursor: pointer;
-  box-shadow: 0 12px 26px rgba(31, 54, 76, 0.07);
   transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    color 0.16s ease,
-    box-shadow 0.16s ease,
-    transform 0.16s ease;
+    border-color var(--ip-motion-fast) var(--ip-motion-ease),
+    background var(--ip-motion-fast) var(--ip-motion-ease),
+    color var(--ip-motion-fast) var(--ip-motion-ease),
+    box-shadow var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
-.manual-entry:hover {
-  border-color: #b8c9d9;
-  background: #eaf2f8;
-  color: #245f8f;
-  box-shadow: 0 14px 28px rgba(36, 95, 143, 0.12);
-  transform: translateY(-1px);
+.manual-entry:hover,
+.manual-entry:focus-visible {
+  border-color: var(--ip-primary-200);
+  background: color-mix(in srgb, var(--ip-neutral-0) 78%, transparent);
+  color: var(--ip-primary-700);
+}
+
+.manual-entry:focus-visible {
+  outline: none;
+  box-shadow: var(--ip-focus-ring);
 }
 
 .manual-entry .el-icon {
@@ -210,23 +243,44 @@ onBeforeUnmount(() => {
 }
 
 .user-pill {
+  max-width: 220px;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   height: 40px;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--ip-radius-full);
+  background: color-mix(in srgb, var(--ip-neutral-0) 48%, transparent);
   color: var(--ip-primary-900);
-  font-size: 16px;
+  font-size: var(--ip-font-emphasis);
   font-weight: 700;
   cursor: pointer;
+  transition:
+    border-color var(--ip-motion-fast) var(--ip-motion-ease),
+    background var(--ip-motion-fast) var(--ip-motion-ease),
+    color var(--ip-motion-fast) var(--ip-motion-ease),
+    box-shadow var(--ip-motion-fast) var(--ip-motion-ease);
 }
 
 .user-pill:hover,
 .user-pill:focus-visible {
+  border-color: color-mix(in srgb, var(--ip-primary-200) 72%, transparent);
+  background: color-mix(in srgb, var(--ip-neutral-0) 76%, transparent);
   color: var(--ip-primary-600);
+}
+
+.user-pill:focus-visible {
   outline: none;
+  box-shadow: var(--ip-focus-ring);
+}
+
+.user-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .avatar {
@@ -257,6 +311,13 @@ onBeforeUnmount(() => {
   font-size: 16px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .user-pill,
+  .manual-entry {
+    transition: none;
+  }
+}
+
 @media (max-width: 1460px) {
   .brand-logo {
     width: 58px;
@@ -271,10 +332,12 @@ onBeforeUnmount(() => {
     font-size: 18px;
   }
 
-  .status-panel {
-    width: 336px;
-    padding: 12px 16px;
-    border-radius: 16px;
+  .utility-toolbar {
+    gap: 8px;
+  }
+
+  .date-group {
+    padding-right: 12px;
   }
 }
 
@@ -296,16 +359,8 @@ onBeforeUnmount(() => {
     font-size: 16px;
   }
 
-  .status-panel {
-    width: 328px;
-  }
-
-  .date-row {
-    font-size: 16px;
-  }
-
-  .admin-pill {
-    font-size: 15px;
+  .user-pill {
+    max-width: 180px;
   }
 }
 
@@ -315,9 +370,20 @@ onBeforeUnmount(() => {
     flex-direction: column;
   }
 
-  .status-panel {
+  .utility-toolbar {
     width: 100%;
-    max-width: 360px;
+    justify-content: flex-start;
+  }
+
+  .user-pill,
+  .manual-entry {
+    min-height: 44px;
+  }
+
+  .manual-entry {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
   }
 }
 
@@ -339,22 +405,40 @@ onBeforeUnmount(() => {
     font-size: 15px;
   }
 
-  .status-panel {
-    padding: 14px;
-    border-radius: 18px;
+  .utility-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
   }
 
-  .date-row {
-    gap: 9px;
-    font-size: 15px;
+  .date-group {
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 1;
+    padding-right: 8px;
+    text-align: left;
   }
 
-  .user-row {
-    gap: 12px;
+  .date-group span {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .admin-pill {
-    font-size: 15px;
+  .user-menu {
+    min-width: 0;
+    grid-column: 2 / 4;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .user-pill {
+    max-width: 168px;
+  }
+
+  .quick-actions {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    justify-self: end;
   }
 }
 </style>
