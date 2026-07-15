@@ -1,5 +1,14 @@
 <template>
   <div class="resource-preview-page">
+    <ResourcePreviewHeader
+      v-if="resource"
+      :resource="resource"
+      :type-label="typeLabel"
+      :can-close="canCloseWindow"
+      @back="goResourceList"
+      @download="downloadResource"
+      @close="closePreview"
+    />
     <main v-loading="loading" class="preview-shell">
       <section class="preview-stage">
         <div class="stage-body">
@@ -41,24 +50,19 @@
             </div>
           </div>
           <div v-else class="stage-empty">
-            <el-empty :image-size="110" :description="previewError || '暂无可预览内容'">
-              <button class="ghost-button" type="button" @click="goResourceList">
-                <el-icon><Back /></el-icon>
-                返回资料列表
-              </button>
-            </el-empty>
+            <div class="stage-state" role="status">
+              <strong>{{ previewError ? '暂时无法预览' : '暂无可预览内容' }}</strong>
+              <p>{{ previewError || '当前资料没有可用的在线预览地址。' }}</p>
+              <div class="state-actions">
+                <button class="secondary-button" type="button" @click="goResourceList"><IconBack />返回资料列表</button>
+                <button v-if="previewError" class="secondary-button" type="button" @click="loadResource"><IconRefresh />重新加载</button>
+                <button v-if="resource" class="secondary-button" type="button" @click="downloadResource"><IconDownload />下载原文件</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
-      <ResourcePreviewContextPanel
-        v-if="resource"
-        ref="contextPanelRef"
-        :resource="resource"
-        :resource-id="resourceId"
-        :type-label="typeLabel"
-        @download="downloadResource"
-        @close="closePreview"
-      />
+      <ResourcePreviewWorkbench v-if="resource" ref="contextPanelRef" :resource="resource" :resource-id="resourceId" />
     </main>
   </div>
 </template>
@@ -67,13 +71,16 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { Back } from '@element-plus/icons-vue';
+import IconBack from '~icons/material-symbols/arrow-back-rounded';
+import IconDownload from '~icons/material-symbols/download-rounded';
+import IconRefresh from '~icons/material-symbols/refresh-rounded';
 import { getResource, resourcePdfPreviewUrl, resourcePreviewUrl } from '@/api/portal/resources';
 import type { InfoResource } from '@/api/infoservice/types';
 import { getToken } from '@/utils/auth';
 import { downloadPortalResource } from './download';
 import PdfPreviewer from './components/PdfPreviewer.vue';
-import ResourcePreviewContextPanel from './components/ResourcePreviewContextPanel.vue';
+import ResourcePreviewHeader from './components/ResourcePreviewHeader.vue';
+import ResourcePreviewWorkbench from './components/ResourcePreviewWorkbench.vue';
 
 type PreviewMode = 'none' | 'pdf' | 'iframe' | 'image' | 'video' | 'audio';
 
@@ -84,6 +91,7 @@ const previewMode = ref<PreviewMode>('none');
 const previewSrc = ref('');
 const previewError = ref('');
 const loading = ref(false);
+const canCloseWindow = Boolean(window.opener);
 
 const resourceId = computed(() => String(route.params.resourceId || ''));
 const NATIVE_IMAGE_SUFFIXES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
@@ -334,7 +342,7 @@ const closePreview = () => {
   goResourceList();
 };
 
-const contextPanelRef = ref<InstanceType<typeof ResourcePreviewContextPanel>>();
+const contextPanelRef = ref<InstanceType<typeof ResourcePreviewWorkbench>>();
 
 /** 阅读器划词引用 → 右栏「我的笔记」编辑器 */
 const handleQuote = (text: string) => {
@@ -352,56 +360,28 @@ onBeforeUnmount(releasePreviewObjectUrl);
 
 <style scoped>
 .resource-preview-page {
-  height: 100vh;
-  --resource-primary: #245f8f;
-  --resource-primary-soft: #eaf2f8;
-  --resource-title: #14243a;
-  --resource-text: #32445c;
-  --resource-muted: #68788c;
-  --resource-weak: #96a1af;
-  --resource-border: #dce5ed;
+  height: 100dvh;
   display: grid;
-  grid-template-rows: minmax(0, 1fr);
-  padding: 10px;
-  background: #edf2f7;
-  color: var(--resource-text);
-  font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px;
+  background: var(--ip-neutral-100);
+  color: var(--ip-neutral-700);
 }
 
 .preview-stage {
-  border: 1px solid var(--resource-border);
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 14px 34px rgba(31, 54, 76, 0.07);
-}
-
-.ghost-button {
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border: 1px solid #d3dee8;
-  border-radius: 8px;
-  padding: 0 13px;
-  background: #fff;
-  color: var(--resource-text);
-  font-weight: 850;
-  cursor: pointer;
-}
-
-.ghost-button:hover {
-  border-color: var(--resource-primary);
-  background: var(--resource-primary-soft);
-  color: var(--resource-primary);
+  border: 1px solid var(--ip-neutral-200);
+  border-radius: var(--ip-radius-md);
+  background: var(--ip-neutral-0);
+  box-shadow: var(--ip-shadow-sm);
 }
 
 .preview-shell {
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(620px, 1fr) auto;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
 }
 
 .preview-stage {
@@ -417,7 +397,7 @@ onBeforeUnmount(releasePreviewObjectUrl);
   height: 100%;
   min-height: 0;
   display: grid;
-  background: #f2f6fc;
+  background: var(--ip-neutral-100);
 }
 
 .pdf-preview-surface {
@@ -438,14 +418,14 @@ onBeforeUnmount(releasePreviewObjectUrl);
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
-  background: #f4f7fc;
+  background: var(--ip-neutral-100);
 }
 
 .native-preview-body {
   min-height: 0;
   display: grid;
   place-items: center;
-  padding: 18px;
+  padding: 16px;
 }
 
 .native-preview-body iframe {
@@ -454,42 +434,95 @@ onBeforeUnmount(releasePreviewObjectUrl);
   min-height: 0;
   display: block;
   border: 0;
-  background: #fff;
+  background: var(--ip-neutral-0);
 }
 
 .preview-image {
   max-width: 100%;
   max-height: 100%;
   display: block;
-  border-radius: 8px;
+  border-radius: var(--ip-radius-md);
   object-fit: contain;
-  box-shadow: 0 16px 34px rgba(20, 36, 67, 0.12);
+  box-shadow: var(--ip-shadow-lg);
 }
 
 .preview-media {
   width: min(980px, 100%);
   max-height: 100%;
-  border-radius: 8px;
-  background: #14243a;
-  box-shadow: 0 16px 34px rgba(20, 36, 67, 0.12);
+  border-radius: var(--ip-radius-md);
+  background: var(--ip-neutral-900);
+  box-shadow: var(--ip-shadow-lg);
 }
 
 .preview-audio {
   width: min(720px, 100%);
 }
 
-@media (max-width: 1180px) {
-  .preview-shell {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(560px, 1fr) minmax(420px, auto);
-  }
+.stage-state {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 520px;
+  padding: 32px;
+  text-align: center;
+}
+.stage-state strong {
+  color: var(--ip-neutral-900);
+  font-size: var(--ip-font-title-sm);
+  font-weight: 700;
+}
+.stage-state p {
+  margin: 0;
+  color: var(--ip-neutral-500);
+  font-size: var(--ip-font-body);
+}
+.state-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.secondary-button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--ip-neutral-300);
+  border-radius: var(--ip-radius-sm);
+  padding: 0 12px;
+  background: var(--ip-neutral-0);
+  color: var(--ip-neutral-700);
+  font-size: var(--ip-font-caption);
+  font-weight: 700;
+  cursor: pointer;
+}
+.secondary-button:hover {
+  border-color: var(--ip-primary-300);
+  background: var(--ip-primary-50);
+  color: var(--ip-primary-700);
+}
+.secondary-button svg {
+  width: 18px;
+  height: 18px;
+}
 
-  .preview-stage {
-    min-height: 0;
+@media (max-width: 767px) {
+  .preview-shell {
+    padding-bottom: 64px;
+  }
+  .state-actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+  .secondary-button {
+    min-height: 44px;
+    justify-content: center;
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 767px) {
   .resource-preview-page {
     padding: 8px;
   }

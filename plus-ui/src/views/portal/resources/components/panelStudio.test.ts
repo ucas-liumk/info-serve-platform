@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type { InfoResource } from '@/api/infoservice/types';
-import type { PanelState } from './panelStudio';
 import {
   buildResourceInfoItems,
   clampPanelWidth,
@@ -8,203 +7,102 @@ import {
   DEFAULT_PANEL_WIDTH,
   formatDateTime,
   formatFileSize,
-  isWorkspaceTile,
+  PANEL_MAX_WIDTH,
   PANEL_MIN_WIDTH,
+  panelWidthLimit,
   reducePanelState,
+  shouldOverlayPanel,
   STUDIO_TILES
 } from './panelStudio';
 
-const tileByKey = (key: string) => {
+const tileByKey = (key: 'note' | 'chat' | 'info') => {
   const tile = STUDIO_TILES.find((item) => item.key === key);
   if (!tile) throw new Error(`missing tile: ${key}`);
   return tile;
 };
 
-describe('STUDIO_TILES 配置', () => {
-  it('按定稿顺序给出七个磁贴（文件信息紧随两个互动功能）', () => {
-    expect(STUDIO_TILES.map((tile) => tile.key)).toEqual(['note', 'chat', 'info', 'ocr', 'tts', 'summary', 'mindmap']);
-  });
-
-  it('我的笔记/交流互动/文件信息为 active，其余四个为 soon', () => {
-    expect(STUDIO_TILES.filter((tile) => tile.status === 'active').map((tile) => tile.key)).toEqual(['note', 'chat', 'info']);
-    expect(STUDIO_TILES.filter((tile) => tile.status === 'soon').map((tile) => tile.key)).toEqual(['ocr', 'tts', 'summary', 'mindmap']);
-  });
-
-  it('色调与图标按定稿逐一对应（政务风 Element 线性图标名，非 emoji）', () => {
-    expect(STUDIO_TILES.map((tile) => tile.tone)).toEqual(['blue', 'green', 'cyan', 'amber', 'purple', 'pink', 'blue']);
-    expect(STUDIO_TILES.map((tile) => tile.icon)).toEqual(['Notebook', 'ChatDotRound', 'Document', 'Aim', 'Headset', 'MagicStick', 'Share']);
-  });
-
-  it('配置为冻结只读数组（不可变）', () => {
+describe('文件预览功能轨', () => {
+  it('只呈现三个已实现工作区', () => {
+    expect(STUDIO_TILES.map((tile) => tile.key)).toEqual(['note', 'chat', 'info']);
     expect(Object.isFrozen(STUDIO_TILES)).toBe(true);
-    expect(Object.isFrozen(STUDIO_TILES[0])).toBe(true);
-  });
-});
-
-describe('isWorkspaceTile', () => {
-  it('active 磁贴是工作区磁贴，soon 磁贴不是', () => {
-    expect(isWorkspaceTile(tileByKey('note'))).toBe(true);
-    expect(isWorkspaceTile(tileByKey('chat'))).toBe(true);
-    expect(isWorkspaceTile(tileByKey('info'))).toBe(true);
-    expect(isWorkspaceTile(tileByKey('ocr'))).toBe(false);
-    expect(isWorkspaceTile(tileByKey('mindmap'))).toBe(false);
-  });
-});
-
-describe('reducePanelState 面板状态机', () => {
-  it('默认态为功能区总览、未收起，且冻结不可变', () => {
-    expect(DEFAULT_PANEL_STATE).toEqual({ view: 'overview', collapsed: false });
-    expect(Object.isFrozen(DEFAULT_PANEL_STATE)).toBe(true);
   });
 
-  it('点 active 磁贴展开对应工作区（独占显示）', () => {
-    expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('note') })).toEqual({ view: 'note', collapsed: false });
-    expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('chat') })).toEqual({ view: 'chat', collapsed: false });
-    expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('info') })).toEqual({ view: 'info', collapsed: false });
+  it('默认仅显示功能轨，同项二次点击收起', () => {
+    expect(DEFAULT_PANEL_STATE).toEqual({ view: null });
+    const opened = reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('note') });
+    expect(opened).toEqual({ view: 'note' });
+    expect(reducePanelState(opened, { type: 'clickTile', tile: tileByKey('note') })).toEqual({ view: null });
   });
 
-  it('收起态点 active 磁贴：展开面板并打开该工作区', () => {
-    const collapsed: PanelState = Object.freeze({ view: 'overview', collapsed: true });
-    expect(reducePanelState(collapsed, { type: 'clickTile', tile: tileByKey('note') })).toEqual({ view: 'note', collapsed: false });
-  });
-
-  it('点 soon 磁贴维持现状（返回原状态对象）', () => {
-    const state: PanelState = Object.freeze({ view: 'chat', collapsed: false });
-    expect(reducePanelState(state, { type: 'clickTile', tile: tileByKey('ocr') })).toBe(state);
-    expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('summary') })).toBe(DEFAULT_PANEL_STATE);
-  });
-
-  it('重复点当前已展开的磁贴不产生新状态', () => {
-    const state: PanelState = Object.freeze({ view: 'note', collapsed: false });
-    expect(reducePanelState(state, { type: 'clickTile', tile: tileByKey('note') })).toBe(state);
-  });
-
-  it('关闭工作区回到功能区总览', () => {
-    const state: PanelState = Object.freeze({ view: 'note', collapsed: false });
-    expect(reducePanelState(state, { type: 'closeWorkspace' })).toEqual({ view: 'overview', collapsed: false });
-  });
-
-  it('总览态下关闭工作区为空操作（返回原状态对象）', () => {
+  it('切换工作区、引用打开笔记和显式关闭均为不可变转换', () => {
+    const chat = reducePanelState(DEFAULT_PANEL_STATE, { type: 'clickTile', tile: tileByKey('chat') });
+    expect(reducePanelState(chat, { type: 'clickTile', tile: tileByKey('info') })).toEqual({ view: 'info' });
+    expect(reducePanelState(chat, { type: 'openWorkspace', view: 'note' })).toEqual({ view: 'note' });
+    expect(reducePanelState(chat, { type: 'closeWorkspace' })).toEqual(DEFAULT_PANEL_STATE);
     expect(reducePanelState(DEFAULT_PANEL_STATE, { type: 'closeWorkspace' })).toBe(DEFAULT_PANEL_STATE);
-  });
-
-  it('收起/展开互为反操作且保留当前工作区', () => {
-    const open: PanelState = Object.freeze({ view: 'chat', collapsed: false });
-    const collapsed = reducePanelState(open, { type: 'toggleCollapse' });
-    expect(collapsed).toEqual({ view: 'chat', collapsed: true });
-    expect(reducePanelState(collapsed, { type: 'toggleCollapse' })).toEqual({ view: 'chat', collapsed: false });
-  });
-
-  it('归约不修改入参状态（不可变）', () => {
-    const state: PanelState = Object.freeze({ view: 'overview', collapsed: false });
-    const next = reducePanelState(state, { type: 'clickTile', tile: tileByKey('note') });
-    expect(state).toEqual({ view: 'overview', collapsed: false });
-    expect(Object.isFrozen(next)).toBe(true);
+    expect(Object.isFrozen(chat)).toBe(true);
   });
 });
 
-describe('clampPanelWidth 拖拽宽度钳制', () => {
-  it('默认宽度 392、最小 320', () => {
+describe('抽屉宽度约束', () => {
+  it('使用 392 默认值与 320–820 绝对范围', () => {
     expect(DEFAULT_PANEL_WIDTH).toBe(392);
     expect(PANEL_MIN_WIDTH).toBe(320);
+    expect(PANEL_MAX_WIDTH).toBe(820);
   });
 
-  it('低于最小值钳到最小值', () => {
-    expect(clampPanelWidth(100, 1600)).toBe(PANEL_MIN_WIDTH);
-    expect(clampPanelWidth(-50, 1600)).toBe(PANEL_MIN_WIDTH);
+  it('动态上限扣除功能轨、间隙与 650px 阅读区', () => {
+    expect(panelWidthLimit(1440)).toBe(726);
+    expect(panelWidthLimit(1600)).toBe(820);
+    expect(clampPanelWidth(900, 1440)).toBe(726);
+    expect(clampPanelWidth(500.6, 1440)).toBe(501);
   });
 
-  it('常规区间原样通过（取整）', () => {
-    expect(clampPanelWidth(500, 1600)).toBe(500);
-    expect(clampPanelWidth(500.6, 1600)).toBe(501);
+  it('空间不足时标记覆盖式抽屉并保持绝对最小宽', () => {
+    expect(shouldOverlayPanel(1024)).toBe(true);
+    expect(shouldOverlayPanel(1200)).toBe(false);
+    expect(panelWidthLimit(900)).toBe(PANEL_MIN_WIDTH);
+    expect(clampPanelWidth(100, 1440)).toBe(PANEL_MIN_WIDTH);
   });
 
-  it('上限=视口减去阅读区保留宽，且不超过绝对上限 820', () => {
-    // 1600 视口:1600-650=950 > 820 → 绝对上限 820
-    expect(clampPanelWidth(1200, 1600)).toBe(820);
-    // 1200 视口:1200-650=550 为上限
-    expect(clampPanelWidth(900, 1200)).toBe(550);
-  });
-
-  it('极窄视口时上限退化但不低于最小值', () => {
-    expect(clampPanelWidth(800, 900)).toBe(PANEL_MIN_WIDTH);
-  });
-
-  it('非法输入回退默认宽度', () => {
-    expect(clampPanelWidth(Number.NaN, 1600)).toBe(DEFAULT_PANEL_WIDTH);
-    expect(clampPanelWidth(Infinity, 1600)).toBe(820);
+  it('非法输入回退默认值，无穷大钳到动态上限', () => {
+    expect(clampPanelWidth(Number.NaN, 1440)).toBe(DEFAULT_PANEL_WIDTH);
+    expect(clampPanelWidth(Infinity, 1440)).toBe(726);
   });
 });
 
-describe('formatFileSize', () => {
-  it('空值与 0 显示占位符', () => {
-    expect(formatFileSize(undefined)).toBe('-');
-    expect(formatFileSize(0)).toBe('-');
-  });
-
-  it('按 B/KB/MB 分档', () => {
-    expect(formatFileSize(512)).toBe('512 B');
-    expect(formatFileSize(2048)).toBe('2.0 KB');
-    expect(formatFileSize(3.7 * 1024 * 1024)).toBe('3.7 MB');
-  });
-});
-
-describe('formatDateTime', () => {
-  it('空值显示占位符', () => {
-    expect(formatDateTime(undefined)).toBe('-');
-    expect(formatDateTime('')).toBe('-');
-  });
-
-  it('去掉 ISO T 分隔并截到秒', () => {
-    expect(formatDateTime('2026-07-11T10:32:00.000')).toBe('2026-07-11 10:32:00');
-    expect(formatDateTime('2026-07-11 10:32:00')).toBe('2026-07-11 10:32:00');
-  });
-});
-
-describe('buildResourceInfoItems', () => {
+describe('资料信息格式', () => {
   const resource = {
-    resourceId: 1,
-    title: 'GB/T 37490-2019',
-    description: '',
-    categoryId: 300002,
     categoryName: '技术文档',
-    ossId: 1,
     originalName: 'GB/T 37490-2019.pdf',
-    fileSuffix: 'pdf',
-    mimeType: 'application/pdf',
     fileSize: 3.7 * 1024 * 1024,
-    previewType: 'pdf',
-    downloadCount: 1,
-    viewCount: 3,
-    status: '0',
     ownerName: '疯狂的狮子Li',
-    createTime: '2026-07-11T09:00:00'
+    createTime: '2026-07-11T09:00:00',
+    viewCount: 1234,
+    downloadCount: 1
   } as InfoResource;
 
-  it('产出六项资料信息（分类/原始文件/大小/发布人/发布时间/阅看下载合并）', () => {
+  it('文件大小与普通时间使用规范格式', () => {
+    expect(formatFileSize(512)).toBe('512 B');
+    expect(formatFileSize(2048)).toBe('2.0 KB');
+    expect(formatFileSize(0)).toBe('—');
+    expect(formatDateTime('2026-07-11T10:32:00.000')).toBe('2026-07-11 10:32');
+    expect(formatDateTime()).toBe('—');
+  });
+
+  it('数字使用千分位，零值显示破折号', () => {
     expect(buildResourceInfoItems(resource)).toEqual([
       { label: '资料分类', value: '技术文档' },
       { label: '原始文件', value: 'GB/T 37490-2019.pdf' },
-      { label: '大小', value: '3.7 MB' },
+      { label: '文件大小', value: '3.7 MB' },
       { label: '发布人', value: '疯狂的狮子Li' },
-      { label: '发布时间', value: '2026-07-11 09:00:00' },
-      { label: '阅看/下载', value: '3 次 / 1 次' }
+      { label: '发布时间', value: '2026-07-11 09:00' },
+      { label: '阅看次数', value: '1,234 次' },
+      { label: '下载次数', value: '1 次' }
     ]);
-  });
-
-  it('缺字段时逐项回退占位', () => {
-    expect(buildResourceInfoItems(undefined)).toEqual([
-      { label: '资料分类', value: '未分类' },
-      { label: '原始文件', value: '-' },
-      { label: '大小', value: '-' },
-      { label: '发布人', value: '平台用户' },
-      { label: '发布时间', value: '-' },
-      { label: '阅看/下载', value: '0 次 / 0 次' }
+    expect(buildResourceInfoItems(undefined).slice(-2)).toEqual([
+      { label: '阅看次数', value: '—' },
+      { label: '下载次数', value: '—' }
     ]);
-  });
-
-  it('发布人回退顺序 ownerName → createByName → 平台用户', () => {
-    const noOwner = { ...resource, ownerName: undefined, createByName: '张工' } as InfoResource;
-    expect(buildResourceInfoItems(noOwner)[3]).toEqual({ label: '发布人', value: '张工' });
   });
 });
