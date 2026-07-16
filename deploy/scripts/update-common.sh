@@ -262,12 +262,17 @@ recreate_nginx_web() {
 
 official_health_check() {
   local base_url="${INFO_SERVE_HEALTH_BASE_URL:-http://127.0.0.1:7010}"
-  local code
-  code="$(curl -sS -o /dev/null -w '%{http_code}' "$base_url/")"
-  [[ "$code" =~ ^(2|3)[0-9][0-9]$ ]] || info_serve_die "web health check failed: HTTP $code"
-  code="$(curl -sS -o /dev/null -w '%{http_code}' "$base_url/prod-api/auth/code")"
-  [[ "$code" == 200 ]] || info_serve_die "auth health check failed: HTTP $code"
-  docker inspect --format '{{.State.Running}}' infosys-ruoyi-cloud-plus-web | grep -qx true || info_serve_die "nginx-web is not running"
+  local attempt root_code auth_code running
+  for attempt in $(seq 1 30); do
+    root_code="$(curl -s -o /dev/null -w '%{http_code}' "$base_url/" || true)"
+    auth_code="$(curl -s -o /dev/null -w '%{http_code}' "$base_url/prod-api/auth/code" || true)"
+    running="$(docker inspect --format '{{.State.Running}}' infosys-ruoyi-cloud-plus-web 2>/dev/null || true)"
+    if [[ "$root_code" =~ ^(2|3)[0-9][0-9]$ && "$auth_code" == 200 && "$running" == true ]]; then
+      return 0
+    fi
+    [[ "$attempt" == 30 ]] || sleep 1
+  done
+  info_serve_die "health check timed out: root=$root_code auth=$auth_code running=$running"
 }
 
 verify_backup_payload() {
@@ -300,7 +305,7 @@ restore_from_backup() {
     rm -f "$target/.release-info"
   fi
 
-  recreate_nginx_web "$target"
-  official_health_check
+  recreate_nginx_web "$target" || return $?
+  official_health_check || return $?
   rm -rf "$failed"
 }
