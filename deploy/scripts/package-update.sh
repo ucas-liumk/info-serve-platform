@@ -101,7 +101,7 @@ mv "$MANIFEST_TEMP" "$PACKAGE_ROOT/MANIFEST.sha256"
 verify_canonical_manifest "$PACKAGE_ROOT" "$PACKAGE_ROOT/MANIFEST.sha256"
 
 ARCHIVE="$OUTPUT_DIR/info-serve-update-0.3.6-${SOURCE_SHORT_COMMIT}-arm64.tar.gz"
-COPYFILE_DISABLE=1 tar -C "$ASSEMBLY_PARENT" -czf "$ARCHIVE" "$(basename "$PACKAGE_ROOT")"
+COPYFILE_DISABLE=1 tar --no-xattrs -C "$ASSEMBLY_PARENT" -czf "$ARCHIVE" "$(basename "$PACKAGE_ROOT")"
 (cd "$OUTPUT_DIR" && sha256sum "$(basename "$ARCHIVE")" >"$(basename "$ARCHIVE").sha256")
 printf 'Archive: %s\n' "$ARCHIVE"
 printf 'SHA256: %s\n' "$(sha256_file "$ARCHIVE")"
