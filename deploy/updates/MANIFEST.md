@@ -27,7 +27,7 @@
 | 0.3.5 | `0.3.5-resource-preview-notes.sql` | PG `ry-cloud` | 待投放。资料预览页笔记与阅看记录表 |
 | 0.3.5 | `0.3.5-portal-dataease-integration.sql` | PG `ry-cloud` | 待投放。DataEase 应用态势入口 + `portal_analytics_*` 态势分析表骨架 |
 | 0.3.5 | `0.3.5-portal-budibase-integration.sql` | PG `ry-cloud` | 待投放。治理工具 AppCenter 管理入口 + 指定角色开放范围 + 首页模块排序 |
-| 0.3.6 | —（无 SQL） | Nacos `ry-config` | 待投放（版本号以 0.3.5 发布线合流后核定）。批次 A 服务拆分：新增 data-id portal-kernel/appcenter/forum/requiredknowledge/resources.yml + 更新 ruoyi-gateway.yml，存量环境用 deploy/scripts/nacos-publish.sh 按 dev/prod 双 namespace 发布（禁 SQL 直写）；删除 data-id ruoyi-portal.yml（控制台手工，可选） |
+| 0.3.6 | —（无 SQL） | UTM 指纹增量 / Nacos `ry-config` | 正式包仅适配已完成五服务拆分的 UTM `f632f96` 现场快照，交付前端静态资源、基线凭据、升级与回退脚本，不重复投放 Nacos。其他存量环境仍须用 `deploy/scripts/nacos-publish.sh` 按 dev/prod 双 namespace 发布 portal-kernel/appcenter/forum/requiredknowledge/resources.yml 与 ruoyi-gateway.yml（禁 SQL 直写）；可选清理 ruoyi-portal.yml。 |
 | 0.3.7 | `0.3.7-resource-category-tree.sql` | PG `ry-cloud` | 待投放。资料分类升级为栏目/分类两级体系：`info_resource_category` 加 `parent_id` 列、默认栏目「综合资料」(300000/general)、存量分类挂入默认栏目（幂等可重放） |
 | 0.3.8 | `0.3.8-resource-multi-category.sql` | PG `ry-cloud` | 待投放。资料多分类：新建 `info_resource_category_link` 关联表（带 tenant_id）并从存量 `category_id` 回填（幂等可重放）；`category_id` 保留为主分类 |
 
