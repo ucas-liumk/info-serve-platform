@@ -56,8 +56,7 @@ trap cleanup_apply EXIT
 trap handle_apply_error ERR
 
 "$SCRIPT_DIR/verify-package.sh"
-# shellcheck disable=SC1091
-source "$PACKAGE_ROOT/RELEASE-METADATA.env"
+load_release_metadata "$PACKAGE_ROOT/RELEASE-METADATA.env"
 
 [[ "$(tr -d '[:space:]' <"$TARGET/VERSION")" == "$REQUIRED_BASE_VERSION" ]] || info_serve_die "target version is not $REQUIRED_BASE_VERSION"
 

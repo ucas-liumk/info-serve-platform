@@ -106,6 +106,10 @@ printf 'a' >"$TEST_ROOT/manifest-tree/normal"
 printf 'b' >"$TEST_ROOT/manifest-tree/line
 break"
 source "$COMMON"
+metadata_fixture="$TEST_ROOT/metadata.env"
+printf 'PACKAGE_VERSION=0.3.6\nDIST_MANIFEST_SHA256=%064d\n' 0 >"$metadata_fixture"
+load_release_metadata "$metadata_fixture"
+assert_eq "$PACKAGE_VERSION" '0.3.6'
 canonical_manifest "$TEST_ROOT/manifest-tree" "$TEST_ROOT/tree.manifest"
 verify_canonical_manifest "$TEST_ROOT/manifest-tree" "$TEST_ROOT/tree.manifest"
 

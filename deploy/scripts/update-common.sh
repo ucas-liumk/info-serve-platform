@@ -22,6 +22,24 @@ sha256_stdin() {
   sha256sum | awk '{print $1}'
 }
 
+load_release_metadata() {
+  local metadata="$1"
+  local key value
+  [[ -f "$metadata" ]] || info_serve_die "release metadata not found: $metadata"
+  while IFS='=' read -r key value; do
+    [[ "$key" =~ ^[A-Z][A-Z0-9_]*$ ]] || info_serve_die "invalid metadata key: $key"
+    [[ "$value" != *$'\n'* && "$value" != *$'\r'* ]] || info_serve_die "invalid metadata value for $key"
+    case "$key" in
+      PACKAGE_VERSION|REQUIRED_BASE_VERSION|REQUIRED_BASE_COMMIT|REQUIRED_BASELINE_ID|REQUIRED_BASE_DIST_MANIFEST_SHA256|SOURCE_TAG|SOURCE_COMMIT|SOURCE_SHORT_COMMIT|RELEASE_BRANCH_BASE_COMMIT|NODE_VERSION|NPM_VERSION|PACKAGE_LOCK_SHA256|DIST_MANIFEST_SHA256|BUILD_ARCH|BUILD_TIME_UTC)
+        printf -v "$key" '%s' "$value"
+        export "$key"
+        ;;
+      *) info_serve_die "unknown metadata key: $key" ;;
+    esac
+  done <"$metadata"
+  [[ "${PACKAGE_VERSION:-}" == 0.3.6 && -n "${DIST_MANIFEST_SHA256:-}" ]] || info_serve_die "release metadata is incomplete"
+}
+
 canonical_manifest() {
   local root="$1"
   local output="$2"
